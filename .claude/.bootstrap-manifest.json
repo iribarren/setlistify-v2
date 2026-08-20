@@ -1,0 +1,7 @@
+{
+  "name": "Setlistify",
+  "type": "fullstack",
+  "tools": ["codegraph", "rtk"],
+  "bootstrapSource": "/home/aritz/projects/claude-bootstrap",
+  "installedAt": "2026-08-20T21:15:21Z"
+}
