@@ -19,6 +19,12 @@ decisions with rationale rather than leaving them open, and surface them at the 
 See [[spec-00-monorepo-decisions]].
 
 **Decision IDs are project-global, not per-spec.** `docs/architecture.md` owns D-1..D-3; each new
-spec continues the sequence (spec 01 introduced D-4..D-9) so a decision can be cited by ID across
-documents without ambiguity. Check the highest existing D-number before numbering a new spec's
-decisions.
+spec continues the sequence (spec 01 introduced D-4..D-9, spec 03 D-10..D-17) so a decision can be
+cited by ID across documents without ambiguity. Check the highest existing D-number before numbering
+a new spec's decisions.
+
+**Not every prompt produces a spec.** Prompt 02 (design system foundations) shipped as a design
+canvas in `docs/design/canvas/` — nine `.dc.html` artboards plus `canvas.json` — with no file in
+`docs/specs/`. It is the authoritative source for tokens (palette light/dark, type scale, 4px
+spacing scale, radius, elevation, 44×44 touch targets, WCAG AA pairs, Lucide icons). When a later
+spec depends on 02, read the artboards, not a spec.

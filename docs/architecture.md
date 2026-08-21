@@ -53,6 +53,16 @@ Deliberate, not an omission: Expo's native tooling (Metro bundler, device/simula
 pairing over the LAN) works poorly through container networking. `compose.yaml` defines no frontend
 service; run it on the host (`README.md`).
 
+**D-17 — Expo Router's web output stays a SPA; SEO is explicitly deferred**
+(`docs/specs/2026-08-21-frontend-skeleton.md`). The frontend skeleton (prompt 03) ships Expo
+Router's default single-page-app web output — no static rendering, no server. That is fine for
+every screen this repository has today, all of them behind a login. Prompt 21's public concert
+pages (shared, unauthenticated, expected to carry link previews when pasted into Slack/Twitter/etc.)
+will need a rendering mode that produces real HTML per URL — static generation or a server — which
+Expo Router also supports, but choosing between them now would mean deciding for a page that doesn't
+exist yet. Recorded here (R-7 in the frontend-skeleton spec) so prompt 21 starts from this known
+constraint instead of rediscovering it mid-implementation.
+
 ## 2. Shape of the system
 
 ```

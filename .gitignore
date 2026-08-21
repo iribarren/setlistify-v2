@@ -20,6 +20,10 @@ backend/public/bundles/
 backend/.php-cs-fixer.cache
 backend/.phpunit.cache/
 backend/phpunit.xml
+# Transient export used to feed `npm run generate:api` locally (D-10) — CI produces the same
+# document as a build artifact instead of a committed file. `frontend/api/` (the generated TS
+# client) IS committed; this raw OpenAPI JSON export is not.
+backend/openapi.json
 *.p8
 *.key
 
@@ -28,7 +32,6 @@ frontend/node_modules/
 frontend/.expo/
 frontend/dist/
 frontend/.expo-shared/
-frontend/api/generated/
 
 # OS / editor
 .DS_Store
