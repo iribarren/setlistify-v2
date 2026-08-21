@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Setlistify",
+    "slug": "setlistify",
+    "scheme": "setlistify",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "backgroundColor": "#faf8f4",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.setlistify.app"
+    },
+    "android": {
+      "edgeToEdgeEnabled": true,
+      "package": "com.setlistify.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-status-bar", "expo-font", "expo-splash-screen"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
