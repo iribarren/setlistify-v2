@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1580px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+    .row { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+    .label { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; margin-top: 8px; max-width: 340px; }
+    .panel { width: 340px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; padding: 20px; }
+
+    @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+    .skel { border-radius: 8px; background: linear-gradient(90deg, #f1eee9 0%, #e7e3db 50%, #f1eee9 100%); background-size: 200px 100%; }
+    .skelcard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 18px 20px; margin-bottom: 12px; }
+    .skelcard .l1 { height: 17px; width: 65%; margin-bottom: 8px; }
+    .skelcard .l2 { height: 12px; width: 45%; margin-bottom: 14px; }
+    .skelcard .l3 { height: 11px; width: 30%; }
+
+    .skelhero { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 22px; margin-bottom: 14px; }
+    .skelhero .l1 { height: 22px; width: 55%; margin-bottom: 10px; }
+    .skelhero .l2 { height: 13px; width: 70%; margin-bottom: 16px; }
+    .skelhero .l3 { height: 11px; width: 40%; }
+    .skelrow { display: flex; align-items: center; gap: 12px; background: #fffffc; border: 1px solid #e1ded7; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; }
+    .skelavatar { width: 34px; height: 34px; border-radius: 999px; flex-shrink: 0; }
+    .skelrow .l1 { flex: 1; height: 13px; }
+
+    .errorbanner { display: flex; gap: 12px; align-items: flex-start; background: #fbe1e8; border: 1px solid #f0b4c4; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+    .errorbanner svg { width: 18px; height: 18px; color: #980035; flex-shrink: 0; margin-top: 1px; }
+    .errorbanner .msg { font-size: 13px; color: #5c001f; font-weight: 500; line-height: 1.4; }
+    .errorbanner .action { font-size: 12px; font-weight: 700; color: #980035; margin-top: 4px; display: inline-block; }
+
+    .offlinebar { display: flex; gap: 10px; align-items: center; background: #221812; color: #f1eee9; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 12.5px; font-weight: 500; }
+    .offlinebar svg { width: 16px; height: 16px; color: #e0af3b; flex-shrink: 0; }
+
+    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 500; background: #221812; color: #f1eee9; box-shadow: 0 4px 10px rgba(34,24,18,0.12); }
+    .toast svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .miniempty { text-align: center; padding: 30px 16px; background: #fffffc; border: 1.5px dashed #e1ded7; border-radius: 14px; }
+    .miniempty svg { width: 32px; height: 32px; color: #d7d2c9; margin-bottom: 8px; }
+    .miniempty p { font-size: 12.5px; color: #a8a099; margin: 0; }
+
+    .savingbtn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 12px; background: #f1eee9; color: #a8a099; font-size: 14.5px; font-weight: 600; }
+    .spin { width: 15px; height: 15px; border: 2px solid #d7d2c9; border-top-color: #7d7a74; border-radius: 999px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1300px; margin-top: 12px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">07 · Loading, error &amp; offline states</p>
+
+  <h2 class="section">Concert list</h2>
+  <div class="row">
+    <div><div class="panel">
+      <div class="skelcard"><div class="skel l1"></div><div class="skel l2"></div><div class="skel l3"></div></div>
+      <div class="skelcard"><div class="skel l1"></div><div class="skel l2"></div><div class="skel l3"></div></div>
+      <div class="skelcard"><div class="skel l1"></div><div class="skel l2"></div><div class="skel l3"></div></div>
+    </div><p class="label">loading — skeleton ticket cards, same 18px radius as the real card so nothing pops when content resolves</p></div>
+
+    <div><div class="panel">
+      <div class="errorbanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div><div class="msg">Couldn't load your concerts.</div><span class="action">Try again</span></div>
+      </div>
+    </div><p class="label">error — replaces the list area entirely; retry is the only action</p></div>
+
+    <div><div class="panel">
+      <div class="offlinebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 9l2 2a15 15 0 0118 0l2-2M5 13l2 2a9 9 0 0110 0l2-2M9 17l2 2a3 3 0 012 0l2-2M12 21h.01" transform="translate(0 -1)" opacity="0"/><path d="M2 8.82a16 16 0 0120 0M5.5 12.5a11 11 0 0113 0M8.9 16.2a6.5 6.5 0 016.2 0M12 20h.01"/><path d="M2 2l20 20" stroke-width="2"/></svg>
+        You're offline — showing what's already synced
+      </div>
+      <div class="skelcard" style="opacity:0.55"><div class="skel l1"></div><div class="skel l2"></div><div class="skel l3"></div></div>
+    </div><p class="label">offline — cached concerts stay visible and interactive; only "Add concert" is disabled until reconnect</p></div>
+
+    <div><div class="panel">
+      <div class="miniempty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>
+        <p>No past concerts yet</p>
+      </div>
+    </div><p class="label">"filtered to zero" — the Past section when Upcoming has entries but Past doesn't; compact, inline, not the full-screen empty state</p></div>
+  </div>
+
+  <h2 class="section">Concert detail</h2>
+  <div class="row">
+    <div><div class="panel">
+      <div class="skelhero"><div class="skel l1"></div><div class="skel l2"></div><div class="skel l3"></div></div>
+      <div class="skelrow"><div class="skel skelavatar"></div><div class="skel l1"></div></div>
+    </div><p class="label">loading</p></div>
+
+    <div><div class="panel">
+      <div class="errorbanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div><div class="msg">This concert couldn't be found.</div><span class="action">Back to concerts</span></div>
+      </div>
+    </div><p class="label">error — includes the "not another user's concert" 404 case; the message never distinguishes "doesn't exist" from "not yours"</p></div>
+
+    <div><div class="panel">
+      <div class="toast">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        Couldn't save your changes — still offline
+      </div>
+    </div><p class="label">offline — editing while offline queues locally; a toast explains the change hasn't synced yet</p></div>
+  </div>
+
+  <h2 class="section">Add / edit concert</h2>
+  <div class="row">
+    <div><div class="panel">
+      <div class="savingbtn"><div class="spin"></div>Saving…</div>
+    </div><p class="label">saving — the primary button becomes the only loading indicator; band/date fields lock while in flight</p></div>
+
+    <div><div class="panel">
+      <div class="errorbanner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div><div class="msg">Couldn't reach setlist.fm to check that band name.</div></div>
+      </div>
+    </div><p class="label">error — a band lookup failing doesn't block saving; typed names still save as free text and resolve later</p></div>
+
+    <div><div class="panel">
+      <div class="offlinebar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M2 8.82a16 16 0 0120 0M5.5 12.5a11 11 0 0113 0M8.9 16.2a6.5 6.5 0 016.2 0M12 20h.01"/></svg>
+        You're offline — this will save once you're back online
+      </div>
+    </div><p class="label">offline — the form stays fully usable; save is queued rather than blocked, since jotting a concert down is exactly the moment connectivity is least reliable</p></div>
+  </div>
+
+  <p class="note"><b>General rule.</b> Loading always uses skeletons shaped like the real content (never a spinner over blank space), so layout doesn't jump on resolve. Error always names what failed and offers exactly one recovery action. Offline never blocks reading what's already cached — Setlistify's whole premise is "jot it down in a hurry," so the add-concert flow in particular degrades to queue-and-sync rather than a hard stop.</p>
+</div>
+</x-dc>
+</body>
+</html>

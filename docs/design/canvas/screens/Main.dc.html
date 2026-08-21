@@ -1,0 +1,265 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1940px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    /* ---- shared ticket card (from design-system prompt 02) ---- */
+    .cc { position: relative; display: flex; background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; box-shadow: 0 1px 2px rgba(34,24,18,0.08), 0 1px 1px rgba(34,24,18,0.05); overflow: visible; }
+    .cc-main { flex: 1; padding: 18px 16px 18px 20px; min-width: 0; }
+    .cc-bands { font-family: Petrona, serif; font-weight: 600; font-size: 18px; line-height: 1.25; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cc-venue { font-size: 12.5px; color: #4f4641; margin-bottom: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cc-date { font-family: 'Space Mono', monospace; font-size: 11px; color: #871600; }
+    .cc-stub { width: 84px; flex-shrink: 0; position: relative; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+    .cc-stub::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px dashed #e1ded7; }
+    .cc-notch { position: absolute; left: -9px; width: 18px; height: 18px; border-radius: 999px; background: #faf8f4; border: 1px solid #e1ded7; }
+    .cc-notch.top { top: -10px; } .cc-notch.bottom { bottom: -10px; }
+    .cc-status-icon { width: 22px; height: 22px; }
+    .cc-status-label { font-size: 10px; font-weight: 700; line-height: 1.3; color: #4f4641; }
+
+    /* ---- desktop app frame ---- */
+    .desktop { width: 1440px; height: 940px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; overflow: hidden; display: flex; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .sidebar { width: 232px; flex-shrink: 0; background: #fffffc; border-right: 1px solid #e1ded7; padding: 24px 16px; display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 28px; }
+    .brand svg { width: 24px; height: 24px; color: #871600; }
+    .brand .name { font-family: Petrona, serif; font-weight: 600; font-size: 18px; }
+    .navitem { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; font-size: 14.5px; font-weight: 600; color: #4f4641; }
+    .navitem svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .navitem.active { background: #f3e6df; color: #871600; }
+    .navitem.active svg { color: #871600; }
+    .navspacer { flex: 1; }
+    .navaccount { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid #e1ded7; margin-top: 8px; }
+    .navavatar { width: 30px; height: 30px; border-radius: 999px; background: linear-gradient(135deg,#d16022,#501a65); flex-shrink: 0; }
+    .navaccount .who { font-size: 13px; font-weight: 600; }
+    .navaccount .email { font-size: 11px; color: #4f4641; }
+
+    .content { flex: 1; padding: 36px 44px; overflow: hidden; }
+    .pageheader { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+    .pageheader h2 { font-family: Petrona, serif; font-weight: 600; font-size: 28px; margin: 0 0 4px; }
+    .pageheader .meta { font-size: 13px; color: #4f4641; }
+    .addbtn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px 0 14px; border-radius: 12px; background: #871600; color: #fffffc; font-size: 14.5px; font-weight: 600; border: none; }
+    .addbtn svg { width: 18px; height: 18px; }
+
+    .sectionhead { display: flex; align-items: baseline; gap: 10px; margin: 0 0 14px; }
+    .sectionhead h3 { font-family: Petrona, serif; font-weight: 600; font-size: 17px; margin: 0; }
+    .sectionhead .count { font-family: 'Space Mono', monospace; font-size: 11px; color: #a8a099; }
+    .cardgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 34px; }
+    .desk-cc { width: 100%; }
+    .desk-cc .cc-main { padding: 20px 16px 20px 22px; }
+
+    /* ---- phone frame ---- */
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; padding: 0; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 22px 18px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 24px; margin: 0; }
+    .phoneiconbtn { width: 38px; height: 38px; border-radius: 999px; background: #871600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .phoneiconbtn svg { width: 18px; height: 18px; color: #fffffc; }
+    .phonescroll { flex: 1; overflow: hidden; padding: 4px 18px 0; }
+    .phonesectionhead { display: flex; align-items: baseline; gap: 8px; margin: 18px 0 10px; }
+    .phonesectionhead:first-child { margin-top: 4px; }
+    .phonesectionhead h3 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonesectionhead .count { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #a8a099; }
+    .phone-cc { width: 100%; margin-bottom: 10px; }
+    .tabbar { height: 76px; border-top: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: flex-start; padding-top: 10px; }
+    .tabitem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tabitem svg { width: 22px; height: 22px; color: #a8a099; }
+    .tabitem.active svg { color: #871600; }
+    .tabitem .lbl { font-size: 10px; font-weight: 600; color: #a8a099; }
+    .tabitem.active .lbl { color: #871600; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1000px; margin-top: 24px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">01 · Concert list — home screen, populated</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="sidebar">
+        <div class="brand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+          <span class="name">Setlistify</span>
+        </div>
+        <div class="navitem active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          Concerts
+        </div>
+        <div class="navspacer"></div>
+        <div class="navaccount">
+          <div class="navavatar"></div>
+          <div>
+            <div class="who">Jamie Doyle</div>
+            <div class="email">jamie@example.com</div>
+          </div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="pageheader">
+          <div>
+            <h2>Your concerts</h2>
+            <div class="meta">3 upcoming · 4 past</div>
+          </div>
+          <button class="addbtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add concert
+          </button>
+        </div>
+
+        <div class="sectionhead"><h3>Upcoming</h3><span class="count">3</span></div>
+        <div class="cardgrid">
+          <div class="cc desk-cc">
+            <div class="cc-main">
+              <div class="cc-bands">Fontaines D.C.</div>
+              <div class="cc-venue">Brixton Academy, London</div>
+              <div class="cc-date">14 SEP 2026</div>
+            </div>
+            <div class="cc-stub">
+              <span class="cc-notch top"></span>
+              <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#4f4641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="cc-status-label">Upcoming</span>
+              <span class="cc-notch bottom"></span>
+            </div>
+          </div>
+          <div class="cc desk-cc">
+            <div class="cc-main">
+              <div class="cc-bands">Bloc Party + Interpol</div>
+              <div class="cc-venue">O2 Academy, Leeds</div>
+              <div class="cc-date">2 OCT 2026</div>
+            </div>
+            <div class="cc-stub">
+              <span class="cc-notch top"></span>
+              <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#4f4641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="cc-status-label">Upcoming</span>
+              <span class="cc-notch bottom"></span>
+            </div>
+          </div>
+          <div class="cc desk-cc">
+            <div class="cc-main">
+              <div class="cc-bands">boygenius + 2 more</div>
+              <div class="cc-venue">All Points East, London</div>
+              <div class="cc-date">19 NOV 2026</div>
+            </div>
+            <div class="cc-stub">
+              <span class="cc-notch top"></span>
+              <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#4f4641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <span class="cc-status-label">Upcoming</span>
+              <span class="cc-notch bottom"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sectionhead"><h3>Past</h3><span class="count">4</span></div>
+        <div class="cardgrid">
+          <div class="cc desk-cc">
+            <div class="cc-main">
+              <div class="cc-bands">Iceage</div>
+              <div class="cc-venue">The Garage, Glasgow</div>
+              <div class="cc-date">3 JUL 2026</div>
+            </div>
+            <div class="cc-stub">
+              <span class="cc-notch top"></span>
+              <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#a8a099" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span class="cc-status-label" style="color:#a8a099">Past</span>
+              <span class="cc-notch bottom"></span>
+            </div>
+          </div>
+          <div class="cc desk-cc">
+            <div class="cc-main">
+              <div class="cc-bands">Radiohead</div>
+              <div class="cc-venue">Wembley Stadium, London</div>
+              <div class="cc-date">28 JUN 2026</div>
+            </div>
+            <div class="cc-stub">
+              <span class="cc-notch top"></span>
+              <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#a8a099" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <span class="cc-status-label" style="color:#a8a099">Past</span>
+              <span class="cc-notch bottom"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop">
+        <h2>Concerts</h2>
+        <div class="phoneiconbtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+      </div>
+      <div class="phonescroll">
+        <div class="phonesectionhead"><h3>Upcoming</h3><span class="count">3</span></div>
+        <div class="cc phone-cc">
+          <div class="cc-main">
+            <div class="cc-bands">Fontaines D.C.</div>
+            <div class="cc-venue">Brixton Academy, London</div>
+            <div class="cc-date">14 SEP 2026</div>
+          </div>
+          <div class="cc-stub">
+            <span class="cc-notch top"></span>
+            <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#4f4641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span class="cc-status-label">Upcoming</span>
+            <span class="cc-notch bottom"></span>
+          </div>
+        </div>
+        <div class="cc phone-cc">
+          <div class="cc-main">
+            <div class="cc-bands">Bloc Party + Interpol</div>
+            <div class="cc-venue">O2 Academy, Leeds</div>
+            <div class="cc-date">2 OCT 2026</div>
+          </div>
+          <div class="cc-stub">
+            <span class="cc-notch top"></span>
+            <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#4f4641" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span class="cc-status-label">Upcoming</span>
+            <span class="cc-notch bottom"></span>
+          </div>
+        </div>
+        <div class="phonesectionhead"><h3>Past</h3><span class="count">4</span></div>
+        <div class="cc phone-cc">
+          <div class="cc-main">
+            <div class="cc-bands">Iceage</div>
+            <div class="cc-venue">The Garage, Glasgow</div>
+            <div class="cc-date">3 JUL 2026</div>
+          </div>
+          <div class="cc-stub">
+            <span class="cc-notch top"></span>
+            <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#a8a099" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            <span class="cc-status-label" style="color:#a8a099">Past</span>
+            <span class="cc-notch bottom"></span>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tabitem active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          <span class="lbl">Concerts</span>
+        </div>
+        <div class="tabitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <span class="lbl">Account</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Why the stub only says "Upcoming"/"Past" here.</b> The signature ticket card (design system, page 3) reserves its stub for playlist-match status — but that data doesn't exist until prompt 15+. Showing it here would be inventing state the API can't back. Once playlist generation ships, the stub's icon/label swap to the richer states already designed; the card's structure doesn't change. "boygenius + 2 more" is the truncation rule for a lineup that won't fit inline — full billing order is on the concert detail page. Grid is 3-up at 1440px, single column below ~900px (tablet breakpoint), matching the phone layout at right.</p>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Core loop" },
+    { "id": "page-2", "name": "Shell & states" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 2020, "h": 1160, "page": "page-1" },
+    { "file": "EmptyState.dc.html", "x": 2140, "y": 0, "w": 2020, "h": 1160, "page": "page-1" },
+    { "file": "AddConcert.dc.html", "x": 0, "y": 1280, "w": 2020, "h": 1420, "page": "page-1" },
+    { "file": "ConcertDetail.dc.html", "x": 2140, "y": 1280, "w": 2020, "h": 1120, "page": "page-1" },
+    { "file": "EditDelete.dc.html", "x": 0, "y": 2740, "w": 2020, "h": 1620, "page": "page-1" },
+
+    { "file": "NavShell.dc.html", "x": 0, "y": 0, "w": 1680, "h": 900, "page": "page-2" },
+    { "file": "States.dc.html", "x": 1800, "y": 0, "w": 1680, "h": 1180, "page": "page-2" },
+    { "file": "NewComponents.dc.html", "x": 0, "y": 1020, "w": 1680, "h": 1180, "page": "page-2" }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

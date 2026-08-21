@@ -1,0 +1,263 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1940px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .flabel { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
+    .fhint { font-size: 11.5px; color: #a8a099; font-weight: 500; }
+    .finput { height: 46px; border-radius: 10px; padding: 0 14px; font-size: 15px; display: flex; align-items: center; background: #fffffc; border: 1.5px solid #4a4742; color: #221812; gap: 8px; }
+    .finput svg { width: 17px; height: 17px; color: #4f4641; flex-shrink: 0; }
+    .finput input { border: none; background: transparent; outline: none; font: inherit; color: inherit; flex: 1; width: 100%; }
+    .finput .ph { color: #7d7a74; }
+
+    /* ---- desktop panel ---- */
+    .desktop { width: 1440px; height: 1180px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); display: flex; flex-direction: column; overflow: hidden; }
+    .apptop { padding: 22px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: center; gap: 14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; }
+    .backbtn svg { width: 17px; height: 17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 20px; margin: 0; }
+    .formwrap { flex: 1; display: flex; justify-content: center; padding: 36px 40px; overflow: hidden; }
+    .formpanel { width: 620px; }
+
+    .grouplabel { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #4f4641; margin: 0 0 12px; }
+    .bandlist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .bandrow { display: flex; align-items: center; gap: 10px; background: #fffffc; border: 1.5px solid #4a4742; border-radius: 10px; padding: 0 8px 0 4px; height: 50px; }
+    .banddrag { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #a8a099; flex-shrink: 0; cursor: grab; }
+    .banddrag svg { width: 15px; height: 15px; }
+    .bandbadge { font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+    .bandbadge.headliner { background: #f3e6df; color: #871600; }
+    .bandbadge.support { background: #f1eee9; color: #4f4641; }
+    .bandrow input { flex: 1; border: none; background: transparent; outline: none; font-size: 14.5px; font-weight: 500; color: #221812; min-width: 0; }
+    .bandremove { width: 26px; height: 26px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #a8a099; flex-shrink: 0; }
+    .bandremove svg { width: 15px; height: 15px; }
+    .addbandbtn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px dashed #4a4742; color: #221812; font-size: 14px; font-weight: 600; margin-bottom: 30px; width: 100%; justify-content: center; }
+    .addbandbtn svg { width: 16px; height: 16px; }
+
+    .datewrap { position: relative; margin-bottom: 30px; }
+    .datepop { position: absolute; top: 54px; left: 0; width: 300px; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 12px 28px rgba(34,24,18,0.18); padding: 16px 18px 18px; z-index: 2; }
+    .datepop .cal-head { display: flex; justify-content: space-between; align-items: center; font-family: Petrona, serif; font-weight: 600; font-size: 14px; margin-bottom: 10px; }
+    .datepop .cal-head svg { width: 15px; height: 15px; color: #4f4641; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+    .cal-dow { font-family: 'Space Mono', monospace; font-size: 9px; color: #a8a099; text-align: center; padding-bottom: 4px; }
+    .cal-day { font-size: 12.5px; text-align: center; padding: 6px 0; border-radius: 8px; color: #221812; }
+    .cal-day.muted { color: #d7d2c9; }
+    .cal-day.selected { background: #871600; color: #fffffc; font-weight: 700; }
+    .cal-day.today { border: 1.5px solid #871600; }
+
+    .disclosurebtn { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 4px; font-size: 14.5px; font-weight: 600; color: #871600; border-top: 1px solid #e1ded7; border-bottom: 1px solid #e1ded7; margin-bottom: 22px; }
+    .disclosurebtn svg { width: 17px; height: 17px; }
+    .fieldsrow2 { display: flex; gap: 16px; margin-bottom: 16px; }
+    .fieldsrow2 .field { flex: 1; }
+    .fieldsrow3 { display: flex; gap: 16px; margin-bottom: 16px; }
+    .fieldsrow3 .field { flex: 1; }
+    .fieldsrow3 .field.narrow { flex: 0 0 130px; }
+    .notearea { min-height: 76px; border-radius: 10px; padding: 12px 14px; font-size: 14px; background: #fffffc; border: 1.5px solid #4a4742; color: #312620; line-height: 1.5; }
+    .tzcaption { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #a8a099; margin-top: 6px; }
+
+    .footerbtns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 46px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; }
+    .p-default { background: #871600; color: #fffffc; }
+    .s-default { background: transparent; color: #221812; border-color: #4a4742; }
+
+    /* ---- phone ---- */
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 20px 16px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #e1ded7; }
+    .phonetop .backbtn { width: 30px; height: 30px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phonescroll { flex: 1; overflow: hidden; padding: 18px 16px; }
+    .phonescroll .grouplabel { font-size: 10px; }
+    .phonescroll .bandrow { height: 46px; }
+    .phonescroll .bandrow input { font-size: 13.5px; }
+    .phonescroll .addbandbtn { height: 40px; font-size: 13px; margin-bottom: 22px; }
+    .phonescroll .datewrap { margin-bottom: 22px; }
+    .phonescroll .disclosurebtn { margin-bottom: 0; }
+    .phonebottom { padding: 14px 16px 22px; border-top: 1px solid #e1ded7; background: #fffffc; }
+    .phonebottom .btn { width: 100%; height: 50px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1000px; margin-top: 24px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">03 · Add concert — multi-band entry, progressive disclosure</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP — disclosure expanded ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <h2>Add concert</h2>
+      </div>
+      <div class="formwrap">
+        <div class="formpanel">
+          <p class="grouplabel">Lineup — billing order, headliner first</p>
+          <div class="bandlist">
+            <div class="bandrow">
+              <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+              <span class="bandbadge headliner">Headliner</span>
+              <input type="text" value="Fontaines D.C.">
+              <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+            <div class="bandrow">
+              <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+              <span class="bandbadge support">2nd</span>
+              <input type="text" value="Been Stellar">
+              <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+            <div class="bandrow">
+              <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+              <span class="bandbadge support">3rd</span>
+              <input type="text" value="The Murder Capital">
+              <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+            </div>
+          </div>
+          <button class="addbandbtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add another band
+          </button>
+
+          <p class="grouplabel">When</p>
+          <div class="datewrap">
+            <span class="flabel">Date</span>
+            <div class="finput">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+              <span>14 Sep 2026</span>
+            </div>
+            <p class="tzcaption">Europe/London — detected from this device</p>
+            <div class="datepop">
+              <div class="cal-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+                September 2026
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+              </div>
+              <div class="cal-grid">
+                <span class="cal-dow">S</span><span class="cal-dow">M</span><span class="cal-dow">T</span><span class="cal-dow">W</span><span class="cal-dow">T</span><span class="cal-dow">F</span><span class="cal-dow">S</span>
+                <span class="cal-day muted">30</span><span class="cal-day muted">31</span><span class="cal-day">1</span><span class="cal-day">2</span><span class="cal-day">3</span><span class="cal-day">4</span><span class="cal-day">5</span>
+                <span class="cal-day">6</span><span class="cal-day">7</span><span class="cal-day">8</span><span class="cal-day">9</span><span class="cal-day">10</span><span class="cal-day">11</span><span class="cal-day">12</span>
+                <span class="cal-day">13</span><span class="cal-day selected">14</span><span class="cal-day today">15</span><span class="cal-day">16</span><span class="cal-day">17</span><span class="cal-day">18</span><span class="cal-day">19</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="disclosurebtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg>
+            Venue, price &amp; times
+          </button>
+
+          <div style="padding-top:18px">
+            <div class="fieldsrow2">
+              <div class="field">
+                <span class="flabel">Venue</span>
+                <div class="finput"><span class="ph">Search venues…</span></div>
+              </div>
+              <div class="field">
+                <span class="flabel">City</span>
+                <div class="finput"><span>London</span></div>
+              </div>
+            </div>
+            <div class="fieldsrow3">
+              <div class="field narrow">
+                <span class="flabel">Country</span>
+                <div class="finput"><span>GB</span></div>
+              </div>
+              <div class="field">
+                <span class="flabel">Ticket price</span>
+                <div class="finput"><span>£&nbsp;38.50</span></div>
+              </div>
+            </div>
+            <div class="fieldsrow2">
+              <div class="field">
+                <span class="flabel">Doors <span class="fhint">optional</span></span>
+                <div class="finput"><span>19:00</span></div>
+              </div>
+              <div class="field">
+                <span class="flabel">Show starts <span class="fhint">optional</span></span>
+                <div class="finput"><span class="ph">--:--</span></div>
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <span class="flabel">Note <span class="fhint">optional</span></span>
+              <div class="notearea">Bought tickets the day they went on sale — get there early…</div>
+            </div>
+          </div>
+
+          <div class="footerbtns">
+            <div class="btn s-default">Cancel</div>
+            <div class="btn p-default">Save concert</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE — disclosure collapsed (default) ============ -->
+    <div class="phoneframe">
+      <div class="phonetop">
+        <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+        <h2>Add concert</h2>
+      </div>
+      <div class="phonescroll">
+        <p class="grouplabel">Lineup</p>
+        <div class="bandlist">
+          <div class="bandrow">
+            <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+            <span class="bandbadge headliner">Headliner</span>
+            <input type="text" value="Fontaines D.C.">
+            <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div class="bandrow">
+            <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+            <span class="bandbadge support">2nd</span>
+            <input type="text" value="Been Stellar">
+            <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+          <div class="bandrow">
+            <span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span>
+            <span class="bandbadge support">3rd</span>
+            <input type="text" value="The Murder Capital">
+            <span class="bandremove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>
+          </div>
+        </div>
+        <button class="addbandbtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Add another band
+        </button>
+
+        <div class="datewrap">
+          <span class="flabel">Date</span>
+          <div class="finput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span>14 Sep 2026</span>
+          </div>
+          <p class="tzcaption">Europe/London — detected from this device</p>
+        </div>
+
+        <button class="disclosurebtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          Venue, price &amp; times
+        </button>
+      </div>
+      <div class="phonebottom">
+        <div class="btn p-default">Save concert</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Multi-band entry.</b> One tap adds a row; the drag handle reorders billing (index 0 = headliner, matching the API 1:1 — no separate "who's headlining" picker). The first row is visually locked to the "Headliner" badge; every row below just renumbers as "2nd", "3rd"… on reorder. Typing a name either matches an existing <code>Band</code> (dedup happens server-side by normalized name) or creates one — the field doesn't need to know which. <b>Progressive disclosure.</b> Venue/price/times/note stay collapsed by default (phone, right) — jotting down a show is three taps: add band, pick date, save. The desktop mock (left) shows the section expanded to document every field it contains; collapsed is still the default state on both widths. <b>Date picker.</b> The calendar popover is the web/desktop control; on iOS/Android this same trigger opens the platform's native date picker instead (a modal wheel/calendar), so the field itself — icon, label, formatted value — is the only piece shared cross-platform. <b>Timezone</b> is a required API field (D-24: it drives the upcoming/past boundary) but isn't a field the user fills in — it's read from the device and shown as a small caption under the date, editable only if it's wrong (e.g. adding a show abroad after the fact); this keeps the fast path at zero extra taps for the common case.</p>
+</div>
+</x-dc>
+</body>
+</html>

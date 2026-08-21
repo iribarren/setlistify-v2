@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1580px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+    .row { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+    .label { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; margin-top: 8px; text-align: center; }
+
+    .sidebar { width: 232px; height: 480px; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; padding: 24px 16px; display: flex; flex-direction: column; }
+    .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 28px; }
+    .brand svg { width: 24px; height: 24px; color: #871600; }
+    .brand .name { font-family: Petrona, serif; font-weight: 600; font-size: 18px; }
+    .navitem { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 10px; font-size: 14.5px; font-weight: 600; color: #4f4641; margin-bottom: 2px; }
+    .navitem svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .navitem.active { background: #f3e6df; color: #871600; }
+    .navitem.hover { background: #f1eee9; color: #221812; }
+    .navspacer { flex: 1; }
+    .navaccount { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid #e1ded7; margin-top: 8px; }
+    .navavatar { width: 30px; height: 30px; border-radius: 999px; background: linear-gradient(135deg,#d16022,#501a65); flex-shrink: 0; }
+    .navaccount .who { font-size: 13px; font-weight: 600; }
+    .navaccount .email { font-size: 11px; color: #4f4641; }
+
+    .railcollapsed { width: 68px; height: 480px; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; padding: 24px 12px; display: flex; flex-direction: column; align-items: center; }
+    .railcollapsed .brand { padding: 4px 0 28px; }
+    .railcollapsed .navitem { width: 44px; height: 44px; justify-content: center; padding: 0; }
+
+    .drawerscrim { width: 420px; height: 480px; background: rgba(15,10,8,0.5); border-radius: 14px; position: relative; overflow: hidden; }
+    .drawer { position: absolute; left: 0; top: 0; bottom: 0; width: 260px; background: #fffffc; padding: 24px 16px; display: flex; flex-direction: column; box-shadow: 4px 0 16px rgba(34,24,18,0.15); }
+
+    .phonemock { width: 300px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 30px; overflow: hidden; }
+    .tabbar { height: 76px; border-top: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: flex-start; padding-top: 10px; }
+    .tabitem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tabitem svg { width: 22px; height: 22px; color: #a8a099; }
+    .tabitem.active svg { color: #871600; }
+    .tabitem .lbl { font-size: 10px; font-weight: 600; color: #a8a099; }
+    .tabitem.active .lbl { color: #871600; }
+    .phonefill { height: 340px; display: flex; align-items: center; justify-content: center; color: #d7d2c9; font-family: 'Space Mono', monospace; font-size: 11px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1300px; margin-top: 12px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">06 · Navigation shell — sidebar, collapsed rail, drawer, phone tab bar</p>
+
+  <h2 class="section">Desktop — persistent sidebar (≥1120px)</h2>
+  <div class="row">
+    <div><div class="sidebar">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+        <span class="name">Setlistify</span>
+      </div>
+      <div class="navitem active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+        Concerts
+      </div>
+      <div class="navspacer"></div>
+      <div class="navaccount">
+        <div class="navavatar"></div>
+        <div><div class="who">Jamie Doyle</div><div class="email">jamie@example.com</div></div>
+      </div>
+    </div><p class="label">default</p></div>
+
+    <div><div class="sidebar">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+        <span class="name">Setlistify</span>
+      </div>
+      <div class="navitem hover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+        Concerts
+      </div>
+      <div class="navspacer"></div>
+      <div class="navaccount">
+        <div class="navavatar"></div>
+        <div><div class="who">Jamie Doyle</div><div class="email">jamie@example.com</div></div>
+      </div>
+    </div><p class="label">item hover</p></div>
+
+    <div><div class="railcollapsed">
+      <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="#871600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+      <div class="navitem active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg></div>
+      <div class="navspacer"></div>
+      <div class="navavatar"></div>
+    </div><p class="label">collapsed rail — 900–1119px</p></div>
+
+    <div><div class="drawerscrim">
+      <div class="drawer">
+        <div class="brand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+          <span class="name">Setlistify</span>
+        </div>
+        <div class="navitem active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          Concerts
+        </div>
+      </div>
+    </div><p class="label">tablet drawer — &lt;900px, triggered by menu icon</p></div>
+  </div>
+
+  <h2 class="section">Phone — bottom tab bar</h2>
+  <div class="row">
+    <div><div class="phonemock">
+      <div class="phonefill">screen content</div>
+      <div class="tabbar">
+        <div class="tabitem active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg>
+          <span class="lbl">Concerts</span>
+        </div>
+        <div class="tabitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+          <span class="lbl">Account</span>
+        </div>
+      </div>
+    </div><p class="label">default — 2 destinations</p></div>
+  </div>
+
+  <p class="note"><b>Why only two destinations today.</b> "Concerts" and "Account" are the only things this product does right now — Playlists, Notes and Sharing (prompts 15–21) each earn a nav entry only once they ship; the tab bar and sidebar both have room to grow to 3–4 items without redesign, but nothing is stubbed in now to avoid promising a feature that isn't there. <b>Breakpoints.</b> Persistent sidebar ≥1120px (used in every desktop artboard in this canvas); a collapsed icon-only rail from 900–1119px keeps navigation reachable without eating content width; below 900px (tablet portrait and phone-in-landscape edge cases) it becomes a drawer behind a menu icon; true phone width uses the bottom tab bar exclusively, never the drawer, since thumb reach matters more than screen space there.</p>
+</div>
+</x-dc>
+</body>
+</html>

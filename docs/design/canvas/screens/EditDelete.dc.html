@@ -1,0 +1,207 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1940px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap; row-gap: 44px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 20px; border-radius: 12px; font-size: 14.5px; font-weight: 600; border: 1.5px solid transparent; }
+    .s-default { background: transparent; color: #221812; border-color: #4a4742; }
+    .d-default { background: #980035; color: #fffffc; }
+    .p-default { background: #871600; color: #fffffc; }
+
+    .flabel { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
+    .finput { height: 46px; border-radius: 10px; padding: 0 14px; font-size: 15px; display: flex; align-items: center; background: #fffffc; border: 1.5px solid #4a4742; color: #221812; gap: 8px; }
+    .finput svg { width: 17px; height: 17px; color: #4f4641; }
+
+    /* ---- desktop edit ---- */
+    .desktop { width: 900px; height: 720px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 36px; border-bottom: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: center; gap: 14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; }
+    .backbtn svg { width: 17px; height: 17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 19px; margin: 0; }
+    .editbody { padding: 30px 36px; flex: 1; overflow: hidden; }
+    .diffnote { display: flex; gap: 10px; align-items: flex-start; background: #f3e6df; border-radius: 12px; padding: 12px 16px; margin-bottom: 22px; }
+    .diffnote svg { width: 18px; height: 18px; color: #871600; flex-shrink: 0; margin-top: 1px; }
+    .diffnote p { font-size: 12.5px; color: #521000; margin: 0; line-height: 1.5; }
+    .bandlist { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .bandrow { display: flex; align-items: center; gap: 10px; background: #fffffc; border: 1.5px solid #4a4742; border-radius: 10px; padding: 0 10px; height: 48px; }
+    .bandbadge { font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #f3e6df; color: #871600; }
+    .bandrow span.nm { flex: 1; font-size: 14.5px; font-weight: 500; }
+    .lockedfield { height: 46px; border-radius: 10px; padding: 0 14px; font-size: 15px; display: flex; align-items: center; justify-content: space-between; background: #f1eee9; border: 1.5px solid #e1ded7; color: #7d7a74; }
+    .lockedfield svg { width: 15px; height: 15px; }
+    .fieldsrow2 { display: flex; gap: 16px; margin-bottom: 18px; }
+    .fieldsrow2 .field { flex: 1; }
+    .footerbtns { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    /* ---- delete confirm: desktop modal ---- */
+    .modalstage { width: 760px; height: 500px; background: rgba(15,10,8,0.5); border-radius: 16px; display: flex; align-items: center; justify-content: center; }
+    .modal { width: 420px; background: #fffffc; border-radius: 18px; padding: 26px 28px; box-shadow: 0 12px 28px rgba(34,24,18,0.22); }
+    .modal .micon { width: 44px; height: 44px; border-radius: 12px; background: #fbe1e8; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+    .modal .micon svg { width: 22px; height: 22px; color: #980035; }
+    .modal h3 { font-family: Petrona, serif; font-weight: 600; font-size: 19px; margin: 0 0 8px; }
+    .modal p { font-size: 13.5px; color: #4f4641; margin: 0 0 20px; line-height: 1.55; }
+    .modal .concertref { font-size: 13px; font-weight: 600; color: #221812; background: #f1eee9; border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; }
+    .modal .row2 { display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ---- phone: edit form ---- */
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phoneframe.editform { display: flex; flex-direction: column; }
+    .phonetop { padding: 20px 16px 14px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #e1ded7; }
+    .phonetop .backbtn { width: 30px; height: 30px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phonescroll { flex: 1; overflow: hidden; padding: 18px 16px; }
+    .phonescroll .diffnote { padding: 11px 14px; margin-bottom: 18px; }
+    .phonescroll .diffnote p { font-size: 12px; }
+    .phonescroll .bandrow { height: 46px; }
+    .phonescroll .fieldsrow2 { flex-direction: column; gap: 16px; }
+    .phonebottom { padding: 14px 16px 22px; border-top: 1px solid #e1ded7; background: #fffffc; }
+    .phonebottom .btn { width: 100%; height: 50px; }
+
+    /* ---- phone: sheet ---- */
+    .phonebgscrim { position: absolute; inset: 0; background: rgba(15,10,8,0.5); }
+    .phonebg { padding: 20px 16px; opacity: 0.5; }
+    .phonebg h2 { font-family: Petrona, serif; font-weight: 600; font-size: 20px; margin: 0 0 20px; }
+    .phonebg .herocard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; padding: 18px; }
+    .phonebg .herobands { font-family: Petrona, serif; font-weight: 600; font-size: 19px; }
+    .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fffffc; border-radius: 24px 24px 0 0; padding: 10px 22px 30px; box-shadow: 0 -8px 24px rgba(34,24,18,0.16); }
+    .sheethandle { width: 36px; height: 4px; border-radius: 999px; background: #e1ded7; margin: 0 auto 18px; }
+    .sheet .micon { width: 44px; height: 44px; border-radius: 12px; background: #fbe1e8; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+    .sheet .micon svg { width: 22px; height: 22px; color: #980035; }
+    .sheet h3 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0 0 8px; }
+    .sheet p { font-size: 13.5px; color: #4f4641; margin: 0 0 22px; line-height: 1.55; }
+    .sheet .btn { width: 100%; margin-bottom: 10px; height: 48px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1000px; margin-top: 24px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">05 · Edit concert &amp; delete confirmation</p>
+
+  <div class="row">
+    <div>
+      <div class="desktop">
+        <div class="apptop">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Edit concert</h2>
+        </div>
+        <div class="editbody">
+          <div class="diffnote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <p>This concert is marked <b>past</b> — the date is locked so it can't drift back to upcoming by accident. Everything else stays editable.</p>
+          </div>
+          <p class="flabel" style="margin-bottom:10px">Lineup</p>
+          <div class="bandlist">
+            <div class="bandrow"><span class="bandbadge">Headliner</span><span class="nm">Iceage</span></div>
+          </div>
+          <div class="fieldsrow2">
+            <div class="field">
+              <span class="flabel">Date</span>
+              <div class="lockedfield">
+                <span>3 Jul 2026</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <span class="flabel">Venue</span>
+              <div class="finput"><span>The Garage, Glasgow</span></div>
+            </div>
+          </div>
+          <div class="footerbtns">
+            <div class="btn s-default">Cancel</div>
+            <div class="btn p-default">Save changes</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:#a8a099; margin:10px 4px 0">edit form — desktop, reuses Add concert's fields</p>
+    </div>
+
+    <div>
+      <div class="phoneframe editform">
+        <div class="phonetop">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Edit concert</h2>
+        </div>
+        <div class="phonescroll">
+          <div class="diffnote">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+            <p>Past concert — date is locked.</p>
+          </div>
+          <p class="flabel" style="margin-bottom:10px">Lineup</p>
+          <div class="bandlist">
+            <div class="bandrow"><span class="bandbadge">Headliner</span><span class="nm">Iceage</span></div>
+          </div>
+          <div class="fieldsrow2">
+            <div class="field">
+              <span class="flabel">Date</span>
+              <div class="lockedfield">
+                <span>3 Jul 2026</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
+              </div>
+            </div>
+            <div class="field">
+              <span class="flabel">Venue</span>
+              <div class="finput"><span>The Garage, Glasgow</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="phonebottom">
+          <div class="btn p-default">Save changes</div>
+        </div>
+      </div>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:#a8a099; margin:10px 4px 0">edit form — phone</p>
+    </div>
+
+    <div>
+      <div class="modalstage">
+        <div class="modal">
+          <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+          <h3>Delete this concert?</h3>
+          <div class="concertref">Iceage — The Garage, Glasgow, 3 Jul 2026</div>
+          <p>The playlist stays in Spotify, but Setlistify will no longer track this concert or its setlist. This can't be undone.</p>
+          <div class="row2">
+            <div class="btn s-default">Cancel</div>
+            <div class="btn d-default">Delete concert</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:#a8a099; margin:10px 4px 0">delete confirmation — desktop, centered modal</p>
+    </div>
+
+    <div>
+      <div class="phoneframe">
+        <div class="phonebgscrim"></div>
+        <div class="phonebg">
+          <h2>Concert</h2>
+          <div class="herocard"><div class="herobands">Iceage</div></div>
+        </div>
+        <div class="sheet">
+          <div class="sheethandle"></div>
+          <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+          <h3>Delete this concert?</h3>
+          <p>The playlist stays in Spotify, but Setlistify will no longer track this concert or its setlist.</p>
+          <div class="btn d-default">Delete concert</div>
+          <div class="btn s-default">Cancel</div>
+        </div>
+      </div>
+      <p style="font-family:'Space Mono',monospace; font-size:11px; color:#a8a099; margin:10px 4px 0">delete confirmation — phone, bottom sheet</p>
+    </div>
+  </div>
+
+  <p class="note"><b>Why the date locks on a past concert.</b> Once a concert is past, editing the date to a future one would silently move it back to "upcoming," which is confusing given <code>status</code> is derived, not stored (D-24) — the UI just refuses to relitigate that boundary once it's crossed. <b>Destructive action styling.</b> The delete button is the only red UI in the whole design — reserved entirely for this one irreversible action, per the component inventory's destructive-button token. The confirmation always names the concert being deleted (band + venue + date), never a bare "Delete this?", since a user with several past shows shouldn't have to trust the tap alone.</p>
+</div>
+</x-dc>
+</body>
+</html>

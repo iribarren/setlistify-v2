@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1580px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 6px; }
+    h2.section:first-of-type { margin-top: 0; }
+    .desc { font-size: 13px; color: #4f4641; margin: 0 0 16px; max-width: 900px; line-height: 1.5; }
+    .panel { background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; padding: 26px 28px; }
+    .row { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+
+    .bandrow { display: flex; align-items: center; gap: 10px; background: #fffffc; border: 1.5px solid #4a4742; border-radius: 10px; padding: 0 10px; height: 48px; width: 280px; }
+    .banddrag svg { width: 15px; height: 15px; color: #a8a099; }
+    .bandbadge { font-family: 'Space Mono', monospace; font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #f3e6df; color: #871600; }
+    .bandbadge.support { background: #f1eee9; color: #4f4641; }
+    .bandrow span.nm { flex: 1; font-size: 14.5px; font-weight: 500; }
+    .bandrow .x svg { width: 14px; height: 14px; color: #a8a099; }
+
+    .disclosurebtn { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; font-size: 14.5px; font-weight: 600; color: #871600; border: 1px solid #e1ded7; border-radius: 10px; width: 260px; }
+    .disclosurebtn svg { width: 17px; height: 17px; }
+
+    .reserved { border: 1.5px dashed #d7d2c9; border-radius: 16px; padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start; width: 380px; }
+    .reserved .ricon { width: 36px; height: 36px; border-radius: 9px; background: #f1eee9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .reserved .ricon svg { width: 18px; height: 18px; color: #7d7a74; }
+    .reserved h4 { font-family: Petrona, serif; font-weight: 600; font-size: 14px; margin: 0 0 4px; }
+    .reserved p { font-size: 12.5px; color: #4f4641; margin: 0; line-height: 1.45; }
+
+    .skelcard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 18px 20px; width: 280px; }
+    .skel { border-radius: 8px; background: linear-gradient(90deg, #f1eee9 0%, #e7e3db 50%, #f1eee9 100%); background-size: 200px 100%; }
+    .skelcard .l1 { height: 17px; width: 65%; margin-bottom: 8px; }
+    .skelcard .l2 { height: 12px; width: 45%; }
+
+    .tabbar-mini { width: 280px; height: 68px; border-top: 1px solid #e1ded7; background: #fffffc; border-radius: 0 0 12px 12px; display: flex; align-items: flex-start; padding-top: 10px; border-left:1px solid #e1ded7; border-right:1px solid #e1ded7; border-bottom:1px solid #e1ded7; }
+    .tabitem { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .tabitem svg { width: 20px; height: 20px; color: #a8a099; }
+    .tabitem.active svg { color: #871600; }
+    .tabitem .lbl { font-size: 9.5px; font-weight: 600; color: #a8a099; }
+    .tabitem.active .lbl { color: #871600; }
+
+    .spec { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #a8a099; margin-top: 10px; line-height: 1.6; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">08 · New components — added to the design-system inventory (design system, page 02)</p>
+
+  <h2 class="section">Band entry row</h2>
+  <p class="desc">Reusable in Add and Edit concert. Drag handle reorders billing order; the badge is derived, never editable directly ("Headliner" is always index 0).</p>
+  <div class="panel"><div class="row">
+    <div><div class="bandrow"><span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span><span class="bandbadge">Headliner</span><span class="nm">Fontaines D.C.</span><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div><p class="spec">index 0</p></div>
+    <div><div class="bandrow"><span class="banddrag"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="6" r="1.6"/><circle cx="8" cy="12" r="1.6"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="6" r="1.6"/><circle cx="16" cy="12" r="1.6"/><circle cx="16" cy="18" r="1.6"/></svg></span><span class="bandbadge support">2nd</span><span class="nm">Been Stellar</span><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span></div><p class="spec">index &gt; 0, badge = ordinal</p></div>
+  </div></div>
+
+  <h2 class="section">Disclosure trigger</h2>
+  <p class="desc">Collapses secondary fields (venue, price, times, note) behind one row. Chevron rotates on toggle; no separate "advanced" label — the field names themselves are the label.</p>
+  <div class="panel"><div class="row">
+    <div><div class="disclosurebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>Venue, price &amp; times</div><p class="spec">collapsed (default)</p></div>
+    <div><div class="disclosurebtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M18 15l-6-6-6 6"/></svg>Venue, price &amp; times</div><p class="spec">expanded</p></div>
+  </div></div>
+
+  <h2 class="section">Reserved-section placeholder</h2>
+  <p class="desc">Marks space a later prompt will fill on concert detail. Dashed border (never solid — signals "not real content yet"), muted icon, a "prompt N" tag so implementers know which spec owns it.</p>
+  <div class="panel"><div class="row">
+    <div class="reserved">
+      <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+      <div><h4>Playlist &amp; playback</h4><p>Copy varies by why it's empty — see Concert detail.</p></div>
+    </div>
+  </div></div>
+
+  <h2 class="section">Skeleton card</h2>
+  <p class="desc">Matches the real ticket card's radius and proportions exactly, so the loading→loaded transition doesn't reflow.</p>
+  <div class="panel"><div class="row">
+    <div class="skelcard"><div class="skel l1"></div><div class="skel l2"></div></div>
+  </div></div>
+
+  <h2 class="section">Bottom tab bar</h2>
+  <p class="desc">Phone-only navigation shell; documented in full (including the sidebar/rail/drawer desktop variants) on the Navigation shell artboard.</p>
+  <div class="panel"><div class="row">
+    <div class="tabbar-mini">
+      <div class="tabitem active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg><span class="lbl">Concerts</span></div>
+      <div class="tabitem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg><span class="lbl">Account</span></div>
+    </div>
+  </div></div>
+</div>
+</x-dc>
+</body>
+</html>

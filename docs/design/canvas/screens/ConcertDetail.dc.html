@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1940px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+    .badge .dot { width: 6px; height: 6px; border-radius: 999px; }
+    .b-neutral { background: #f1eee9; color: #4f4641; } .b-neutral .dot { background: #7d7a74; }
+
+    .reserved { border: 1.5px dashed #d7d2c9; border-radius: 16px; padding: 22px 24px; display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+    .reserved .ricon { width: 40px; height: 40px; border-radius: 10px; background: #f1eee9; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .reserved .ricon svg { width: 20px; height: 20px; color: #7d7a74; }
+    .reserved h4 { font-family: Petrona, serif; font-weight: 600; font-size: 15.5px; margin: 0 0 4px; display:flex; align-items:center; gap:8px; }
+    .reserved h4 .tag { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #a8a099; background: #f1eee9; padding: 2px 6px; border-radius: 5px; }
+    .reserved p { font-size: 13px; color: #4f4641; margin: 0; line-height: 1.5; }
+    .reserved .ghostbtn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 9px; border: 1.5px solid #d7d2c9; color: #a8a099; font-size: 12.5px; font-weight: 600; margin-top: 10px; }
+
+    /* ---- desktop ---- */
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: center; justify-content: space-between; }
+    .apptop .left { display: flex; align-items: center; gap: 14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width: 17px; height: 17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .headeractions { display: flex; gap: 10px; }
+    .iconbtn { width: 38px; height: 38px; border-radius: 10px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; }
+    .iconbtn svg { width: 17px; height: 17px; }
+    .iconbtn.danger { border-color: #db4b6d; color: #980035; }
+
+    .detailbody { padding: 36px 40px 44px; display: flex; gap: 40px; }
+    .maincol { flex: 1.35; }
+    .sidecol { flex: 1; }
+
+    .herocard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 26px 28px; margin-bottom: 24px; }
+    .herotop { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+    .herobands { font-family: Petrona, serif; font-weight: 600; font-size: 26px; line-height: 1.2; }
+    .herovenue { font-size: 14.5px; color: #4f4641; margin: 6px 0 14px; display: flex; align-items: center; gap: 6px; }
+    .herovenue svg { width: 15px; height: 15px; color: #a8a099; }
+    .herometarow { display: flex; gap: 20px; flex-wrap: wrap; }
+    .herometa { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #221812; }
+    .herometa svg { width: 15px; height: 15px; color: #a8a099; }
+    .herometa .mono { font-family: 'Space Mono', monospace; }
+
+    .lineuplabel { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #4f4641; margin: 0 0 12px; }
+    .lineup { display: flex; flex-direction: column; gap: 0; background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; overflow: hidden; margin-bottom: 24px; }
+    .lineuprow { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid #e1ded7; }
+    .lineuprow:last-child { border-bottom: none; }
+    .lavatar { width: 38px; height: 38px; border-radius: 999px; background: linear-gradient(135deg,#d16022,#501a65); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fffffc; font-family: Petrona, serif; font-weight: 600; font-size: 14px; }
+    .lname { font-size: 15px; font-weight: 600; flex: 1; }
+    .lbill { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #a8a099; }
+
+    .notecard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; padding: 20px 22px; }
+    .notecard h4 { font-family: Petrona, serif; font-weight: 600; font-size: 14.5px; margin: 0 0 8px; }
+    .notecard p { font-size: 13.5px; color: #312620; line-height: 1.55; margin: 0; }
+
+    /* ---- phone ---- */
+    .phoneframe { width: 390px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 20px 16px 12px; display: flex; align-items: center; justify-content: space-between; }
+    .phonetop .left { display: flex; align-items: center; gap: 10px; }
+    .phonetop .backbtn { width: 30px; height: 30px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { padding: 6px 16px 24px; }
+    .phonebody .herocard { padding: 18px 18px; }
+    .phonebody .herobands { font-size: 20px; }
+    .phonebody .lineuprow { padding: 12px 16px; }
+    .phonebody .reserved { padding: 16px 16px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1000px; margin-top: 24px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Concert Screens</h1>
+  <p class="subtitle">04 · Concert detail — past show, reserved playlist/notes/share regions</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Concert</h2>
+        </div>
+        <div class="headeractions">
+          <div class="iconbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></div>
+          <div class="iconbtn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+        </div>
+      </div>
+      <div class="detailbody">
+        <div class="maincol">
+          <div class="herocard">
+            <div class="herotop">
+              <div>
+                <div class="herobands">Iceage</div>
+                <div class="herovenue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                  The Garage, Glasgow
+                </div>
+              </div>
+              <span class="badge b-neutral"><span class="dot"></span>Past</span>
+            </div>
+            <div class="herometarow">
+              <div class="herometa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span class="mono">3 Jul 2026</span></div>
+              <div class="herometa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="mono">Doors 19:00 · Show 20:00</span></div>
+              <div class="herometa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span class="mono">£16.00</span></div>
+            </div>
+          </div>
+
+          <p class="lineuplabel">Lineup</p>
+          <div class="lineup">
+            <div class="lineuprow">
+              <div class="lavatar">IC</div>
+              <div class="lname">Iceage</div>
+              <span class="lbill">Headliner</span>
+            </div>
+          </div>
+
+          <div class="notecard">
+            <h4>Your note</h4>
+            <p>Sweatiest gig of the year. Elias climbed the PA stack during "Take It All."</p>
+          </div>
+        </div>
+
+        <div class="sidecol">
+          <p class="lineuplabel">Coming later</p>
+          <div class="reserved">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+            <div>
+              <h4>Playlist &amp; playback <span class="tag">prompt 19</span></h4>
+              <p>No playlist yet — this show's setlist isn't on setlist.fm, so there's nothing to build from. Setlistify checks back automatically.</p>
+              <div class="ghostbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7"/><path d="M21 4v5h-5"/></svg>Check again</div>
+            </div>
+          </div>
+          <div class="reserved">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v13H7l-3 3z"/><path d="M8 9h8M8 12h5"/></svg></div>
+            <div>
+              <h4>Notes &amp; review <span class="tag">prompt 20</span></h4>
+              <p>Star rating and a longer write-up will live here — the free-text note above is all this concert stores for now.</p>
+            </div>
+          </div>
+          <div class="reserved">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg></div>
+            <div>
+              <h4>Share <span class="tag">prompt 21</span></h4>
+              <p>A share card for this concert and its playlist — needs a playlist to exist first.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop">
+        <div class="left">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Concert</h2>
+        </div>
+        <div class="headeractions">
+          <div class="iconbtn" style="width:32px;height:32px;border-radius:8px"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></div>
+        </div>
+      </div>
+      <div class="phonebody">
+        <div class="herocard">
+          <div class="herotop">
+            <div>
+              <div class="herobands">Iceage</div>
+              <div class="herovenue" style="margin-bottom:10px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                The Garage, Glasgow
+              </div>
+            </div>
+          </div>
+          <div class="herometarow" style="gap:12px">
+            <span class="badge b-neutral"><span class="dot"></span>Past</span>
+            <div class="herometa"><span class="mono">3 Jul 2026</span></div>
+          </div>
+        </div>
+        <p class="lineuplabel">Lineup</p>
+        <div class="lineup">
+          <div class="lineuprow"><div class="lavatar">IC</div><div class="lname">Iceage</div><span class="lbill">Headliner</span></div>
+        </div>
+        <p class="lineuplabel">Coming later</p>
+        <div class="reserved">
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+          <div>
+            <h4>Playlist <span class="tag">p.19</span></h4>
+            <p>No setlist found yet — we'll keep checking.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Reserved regions.</b> Each dashed panel is a labeled placeholder, not a mockup of the future feature — it exists so prompt 19–21 slot in without moving anything else on the page. <b>Past vs. upcoming, no playlist.</b> This artboard shows the <i>past</i> case: the show happened but setlist.fm has nothing yet, so the copy is active ("we'll keep checking" + a manual recheck action) — there is something to wait for. An <i>upcoming</i> concert's reserved playlist region reads differently: "Playlist unlocks once the show happens" with no recheck action at all, because there is nothing to check — the setlist can't exist before the gig. That distinction is the answer to the open question in the brief: same slot, different copy and affordance depending on why it's empty.</p>
+</div>
+</x-dc>
+</body>
+</html>
