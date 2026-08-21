@@ -60,6 +60,7 @@ git config core.hooksPath .githooks
 | Health check | <http://localhost:8000/api/health> |
 | OpenAPI docs (UI) | <http://localhost:8000/api/docs> |
 | OpenAPI document (JSON) | <http://localhost:8000/api/docs.jsonopenapi> |
+| Frontend (web) | <http://localhost:8081> |
 | PostgreSQL | internal only — `docker compose exec postgres psql -U setlistify -d setlistify` |
 | Redis | internal only — `docker compose exec redis redis-cli` |
 
@@ -73,19 +74,36 @@ Contract, and `backend/README.md` for the backend command set.
 
 ## Frontend (runs on the host)
 
+An Expo + Expo Router + TypeScript app — one codebase for web, iOS and Android. See
+`frontend/README.md` for the full command set, the design-token rule, and the generated-API-client
+workflow.
+
 ```bash
-cd frontend && npx expo start        # then press w / i / a, or scan the QR code
+cd frontend && npm install
+npx expo start        # then press w / i / a, or scan the QR code with Expo Go
 ```
 
-The frontend is **deliberately not containerized** (decision D-3, `docs/architecture.md`): Expo's
-tooling — the Metro bundler, simulator/device access, QR pairing over the LAN — works poorly through
-container networking, and containerizing it would cost a day of fighting Docker for no benefit. Run
-it natively; it reaches the containerized backend at `EXPO_PUBLIC_API_URL`
-(`frontend/.env.example`), already pointed at `http://localhost:8000`.
+Opens at <http://localhost:8081> on web. The frontend is **deliberately not containerized**
+(decision D-3, `docs/architecture.md`): Expo's tooling — the Metro bundler, simulator/device access,
+QR pairing over the LAN — works poorly through container networking, and containerizing it would
+cost a day of fighting Docker for no benefit. Run it natively; it reaches the containerized backend
+at `EXPO_PUBLIC_API_URL` (`frontend/.env.example`), already pointed at `http://localhost:8000`.
 
 Testing on a physical device? `localhost` resolves to the device itself, not your machine. Set
 `EXPO_PUBLIC_API_URL` in `frontend/.env.local` to your machine's LAN IP instead
 (e.g. `http://192.168.1.23:8000`).
+
+**After any backend API change**, regenerate the typed client in the same branch (`CLAUDE.md`, API
+Contract):
+
+```bash
+docker compose exec backend bin/console api:openapi:export --output=openapi.json
+docker compose cp backend:/app/openapi.json backend/openapi.json
+cd frontend && npm run generate:api
+```
+
+CI re-checks this on every push and fails the build if `frontend/api/` has drifted from the backend
+contract.
 
 ## Tearing down
 
