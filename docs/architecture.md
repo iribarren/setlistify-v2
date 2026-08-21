@@ -162,6 +162,58 @@ band name 1–120 characters, note ≤ 2000 characters, page size ≤ 100, date 
 [1900-01-01, now + 5 years]. Validation constants in one place (`App\ApiResource\ConcertInput` /
 `ConcertPatchInput`, `App\Validator\ConcertDateRange`), easy to raise later.
 
+**D-32 — The concert list is one scroll with Upcoming/Past sections, not two tabs**
+(`docs/specs/2026-08-21-concert-tracker-ui.md`, `frontend/app/(app)/concerts/index.tsx`). Sections
+keep past concerts visible without a deliberate act, implemented as two independent
+`useConcertsSection` paginated queries (`status=upcoming`/`status=past`) so a later move to tabs is
+a layout change, not a data-layer rewrite.
+
+**D-33 — Optimistic concert creation is reconciled from the response, never merged with it.** The
+optimistic card (`lib/concerts/queries.ts`'s `useCreateConcert`) carries a client-generated temp id
+and is marked pending; on `201` it is discarded and replaced wholesale by the server's
+`Concert.ConcertOutput` — never merged — because band dedup (D-25) may return a different `Band` id
+and a differently-cased name than the client sent.
+
+**D-34 — All date/time platform branching lives in one `DateField` component**
+(`frontend/components/DateField.native.tsx` / `DateField.web.tsx`). Web uses the browser's native
+`<input type="date">`; native is plain `YYYY-MM-DD` text entry pending a vetted cross-platform date
+picker dependency clearing D-15's web-support gate. No screen imports `Platform` directly.
+
+**D-35 — The client sends the device's IANA timezone and renders a concert in its own zone, never
+the viewer's.** `Intl.DateTimeFormat().resolvedOptions().timeZone` supplies `timezone` on create;
+`lib/concerts/mapping.ts`'s `formatConcertDate` formats from the concert's own `date` + `timezone`,
+anchored at local noon so no `timeZone` can push the result to an adjacent day (D-24).
+
+**D-36 — Client-side concert-form validation mirrors D-31's bounds but is advisory only; the
+server is authoritative.** `lib/concerts/validation.ts` blocks an obviously-invalid submit and shows
+inline errors, but every response is rendered as-is — a server violation is never suppressed or
+overridden by what the client believed was valid. RFC 7807 violations (`lib/concerts/violations.ts`)
+map `propertyPath` (including indexed `lineup[n].*` paths) onto form fields; an unrecognised path
+surfaces in a form-level summary rather than being dropped.
+
+**D-37 — Reads fall back to the TanStack Query cache offline; writes fail rather than queue.** No
+offline write queue or background sync for concerts — a queued write needs conflict handling, a
+durable outbox and a duplicate-create story, each its own spec. A write attempted offline fails fast
+with the user's input intact.
+
+**D-38 — Money and dates are converted in exactly one place**, `frontend/lib/concerts/mapping.ts` —
+decimal ⇄ minor units (D-28) and `Intl`-based formatting. No component does arithmetic on a price or
+parses a date string itself.
+
+**D-39 — Phone vs. desktop concert-shell layout is a width breakpoint in one layout file**
+(`frontend/app/(app)/_layout.tsx`, `frontend/components/nav/breakpoint.ts`), not a `Platform.OS`
+fork, continuing spec 03's D-15/AC-1.8. Simplified to a single 900px breakpoint (bottom tab bar below
+it, persistent sidebar at or above it) rather than the design canvas's extra collapsed-rail and
+tablet-drawer bands — a recorded simplification, not a missed requirement.
+
+**D-40 — Concert delete is permanent and the confirmation says so.** The API hard-deletes (spec 05,
+AC-6.5) — `DeleteConfirmation` names the concert and uses destructive styling; there is no undo, no
+trash.
+
+**D-41 — Concert list infinite scroll reads the Hydra `view.next` link's own `page` number as the
+next cursor**, rather than computing page numbers client-side, so the client never disagrees with
+the server about how many pages exist. Page size 20 (`lib/concerts/queries.ts`).
+
 ## 2. Shape of the system
 
 ```

@@ -12,7 +12,7 @@ export default function AuthLayout(): React.JSX.Element {
   const { status } = useSession();
 
   if (status === "authenticated") {
-    return <Redirect href="/home" />;
+    return <Redirect href="/concerts" />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;
