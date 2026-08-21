@@ -1,0 +1,85 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+    .row { display: flex; gap: 40px; }
+    .col { flex: 1; }
+    .space-row { display: flex; align-items: center; gap: 16px; padding: 8px 0; }
+    .space-row .tok { font-family: 'Space Mono', monospace; font-size: 11px; color: #871600; width: 90px; }
+    .space-row .px { font-family: 'Space Mono', monospace; font-size: 11px; color: #4f4641; width: 44px; }
+    .space-row .bar { height: 14px; background: #d16022; border-radius: 3px; }
+    .radii { display: flex; gap: 20px; flex-wrap: wrap; }
+    .radius-item { text-align: center; }
+    .radius-item .box { width: 100px; height: 72px; background: #fffffc; border: 1.5px solid #4a4742; margin-bottom: 8px; }
+    .radius-item .lbl { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; }
+    .elevs { display: flex; gap: 28px; margin-top: 16px; }
+    .elev-item { text-align: center; }
+    .elev-item .box { width: 160px; height: 100px; background: #fffffc; border-radius: 10px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #4f4641; }
+    .elev-item .lbl { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #871600; }
+    .elev-item .spec { font-size: 11px; color: #4f4641; margin-top: 2px; }
+    .e0 { border: 1px solid #e1ded7; }
+    .e1 { box-shadow: 0 1px 2px rgba(34,24,18,0.08), 0 1px 1px rgba(34,24,18,0.05); }
+    .e2 { box-shadow: 0 4px 10px rgba(34,24,18,0.12), 0 1px 2px rgba(34,24,18,0.06); }
+    .e3 { box-shadow: 0 12px 28px rgba(34,24,18,0.18), 0 2px 6px rgba(34,24,18,0.08); }
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 900px; margin-top: 10px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">03 · Spacing, radius &amp; elevation</p>
+
+  <h2 class="section">Spacing scale — 4px base unit</h2>
+  <div class="row">
+    <div class="col">
+      <div class="space-row"><span class="tok">space-1</span><span class="px">4px</span><div class="bar" style="width:4px"></div></div>
+      <div class="space-row"><span class="tok">space-2</span><span class="px">8px</span><div class="bar" style="width:8px"></div></div>
+      <div class="space-row"><span class="tok">space-3</span><span class="px">12px</span><div class="bar" style="width:12px"></div></div>
+      <div class="space-row"><span class="tok">space-4</span><span class="px">16px</span><div class="bar" style="width:16px"></div></div>
+      <div class="space-row"><span class="tok">space-5</span><span class="px">20px</span><div class="bar" style="width:20px"></div></div>
+      <div class="space-row"><span class="tok">space-6</span><span class="px">24px</span><div class="bar" style="width:24px"></div></div>
+    </div>
+    <div class="col">
+      <div class="space-row"><span class="tok">space-8</span><span class="px">32px</span><div class="bar" style="width:32px"></div></div>
+      <div class="space-row"><span class="tok">space-10</span><span class="px">40px</span><div class="bar" style="width:40px"></div></div>
+      <div class="space-row"><span class="tok">space-12</span><span class="px">48px</span><div class="bar" style="width:48px"></div></div>
+      <div class="space-row"><span class="tok">space-16</span><span class="px">64px</span><div class="bar" style="width:64px"></div></div>
+      <div class="space-row"><span class="tok">space-20</span><span class="px">80px</span><div class="bar" style="width:80px"></div></div>
+      <div class="space-row"><span class="tok">space-24</span><span class="px">96px</span><div class="bar" style="width:96px"></div></div>
+    </div>
+  </div>
+  <p class="note">space-3/4 for internal component padding, space-4/6 between related fields, space-8/12 between sections, space-16+ for screen-level rhythm. No off-scale one-off values.</p>
+
+  <h2 class="section">Radius scale</h2>
+  <div class="radii">
+    <div class="radius-item"><div class="box" style="border-radius:6px"></div><span class="lbl">radius-sm — 6px<br>inputs, badges, chips</span></div>
+    <div class="radius-item"><div class="box" style="border-radius:12px"></div><span class="lbl">radius-md — 12px<br>buttons, list rows</span></div>
+    <div class="radius-item"><div class="box" style="border-radius:18px"></div><span class="lbl">radius-lg — 18px<br>cards, sheets</span></div>
+    <div class="radius-item"><div class="box" style="border-radius:999px; width:72px"></div><span class="lbl">radius-full<br>avatars, pills, FAB</span></div>
+  </div>
+
+  <h2 class="section">Elevation</h2>
+  <div class="elevs">
+    <div class="elev-item"><div class="box e0">flat</div><span class="lbl">elevation-0</span><div class="spec">border only, no shadow</div></div>
+    <div class="elev-item"><div class="box e1">raised</div><span class="lbl">elevation-1</span><div class="spec">card, list row on hover</div></div>
+    <div class="elev-item"><div class="box e2">floating</div><span class="lbl">elevation-2</span><div class="spec">dropdown, toast</div></div>
+    <div class="elev-item"><div class="box e3">overlay</div><span class="lbl">elevation-3</span><div class="spec">modal, bottom sheet</div></div>
+  </div>
+  <p class="note">Single-layer, low-blur shadows only — two stacked shadows max, no colored glows, no inset+outset combinations. This is what survives react-native-web unchanged: it maps directly to RN's <code>shadowColor/shadowOffset/shadowOpacity/shadowRadius</code> on iOS and <code>elevation</code> on Android without a second, divergent style branch. elevation-0 is the default for flat surfaces in dark mode, where a shadow reads as nothing against near-black — lean on the border-strong token instead.</p>
+</div>
+</x-dc>
+</body>
+</html>

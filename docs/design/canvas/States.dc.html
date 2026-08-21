@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    p.lede { font-size: 14px; color: #312620; max-width: 900px; line-height: 1.6; margin: 0 0 32px; }
+    .grid { display: flex; gap: 22px; }
+    .cell { flex: 1; background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 30px 26px; display: flex; flex-direction: column; align-items: center; text-align: center; min-height: 300px; }
+    .cell .tag { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #4f4641; align-self: flex-start; margin-bottom: 18px; }
+    .icon { width: 56px; height: 56px; margin-bottom: 18px; }
+    .cell h3 { font-family: Petrona, serif; font-weight: 600; font-size: 17px; margin: 0 0 8px; }
+    .cell p { font-size: 13px; color: #4f4641; line-height: 1.5; margin: 0 0 18px; }
+    .cta { font-size: 13.5px; font-weight: 600; color: #871600; }
+    .skel { width: 100%; }
+    .sk-row { height: 14px; border-radius: 6px; background: linear-gradient(90deg,#f1eee9 25%,#e6e2da 37%,#f1eee9 63%); background-size: 400% 100%; animation: sk 1.4s ease infinite; margin-bottom: 10px; }
+    @keyframes sk { 0% { background-position: 100% 50% } 100% { background-position: 0 50% } }
+    .partial-bar { width: 100%; height: 8px; border-radius: 999px; background: #f1eee9; overflow: hidden; margin-bottom: 14px; }
+    .partial-fill { height: 100%; width: 74%; background: #2382ba; }
+    .partial-count { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 20px; color: #00336a; margin-bottom: 4px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">06 · Empty, loading, degraded &amp; error states</p>
+  <p class="lede">These four are the normal case here, not the exception — a band with no setlist.fm entry, or a playlist matched at 14 of 19 songs, is a successful run of the product, not a failure. None of them should read as "something is broken."</p>
+
+  <div class="grid">
+    <div class="cell">
+      <span class="tag">Empty</span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#a8a099" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V7a2 2 0 0 1 2-2h3l2-2h2l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M9 13h6M9 17h4"/></svg>
+      <h3>No concerts yet</h3>
+      <p>Track the first show you're going to — Setlistify builds the playlist once it's happened.</p>
+      <span class="cta">+ Track a concert</span>
+    </div>
+
+    <div class="cell">
+      <span class="tag">Loading</span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#871600" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="9" stroke-dasharray="42 14"/></svg>
+      <h3>Pulling the setlist</h3>
+      <div class="skel">
+        <div class="sk-row" style="width:90%"></div>
+        <div class="sk-row" style="width:75%"></div>
+        <div class="sk-row" style="width:82%"></div>
+      </div>
+      <p style="margin-top:14px">Checking setlist.fm — this can take a few seconds.</p>
+    </div>
+
+    <div class="cell">
+      <span class="tag">Degraded</span>
+      <div class="partial-count">14 / 19</div>
+      <div class="partial-bar"><div class="partial-fill"></div></div>
+      <h3>Playlist ready — 5 songs need a pick</h3>
+      <p>Everything else matched automatically. Review the rest to finish the playlist.</p>
+      <span class="cta">Review unmatched songs</span>
+    </div>
+
+    <div class="cell">
+      <span class="tag">Error</span>
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="#980035" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.5 17.5a1.5 1.5 0 0 0 1.3 2.3h16.4a1.5 1.5 0 0 0 1.3-2.3L13.7 3.9a1.5 1.5 0 0 0-2.6 0Z"/></svg>
+      <h3>Couldn't reach setlist.fm</h3>
+      <p>The daily lookup budget may be exhausted, or the connection dropped. Your tracked concert is safe.</p>
+      <span class="cta">Try again</span>
+    </div>
+  </div>
+
+  <p style="font-size:12.5px; color:#4f4641; line-height:1.6; max-width:900px; margin-top:24px;">Iconography stays identical in tone across all four — thin, warm-neutral line icons, never a red/orange "warning triangle" reflex for degraded (that belongs to Error alone). Degraded gets its own visual language entirely — a progress fraction and an amber-free info-blue fill — so 14/19 reads as mostly-done, not half-broken.</p>
+</div>
+</x-dc>
+</body>
+</html>

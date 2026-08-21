@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+    .panel { background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; padding: 28px 32px; }
+
+    .cardrow { display: flex; gap: 24px; }
+    .setlist-card { flex: 1; background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(34,24,18,0.08), 0 1px 1px rgba(34,24,18,0.05); }
+    .setlist-card.hover { box-shadow: 0 4px 10px rgba(34,24,18,0.12), 0 1px 2px rgba(34,24,18,0.06); transform: translateY(-1px); }
+    .setlist-card .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .setlist-card .venue { font-family: Petrona, serif; font-weight: 600; font-size: 17px; }
+    .setlist-card .city { font-size: 12.5px; color: #4f4641; margin-top: 2px; }
+    .setlist-card .date { font-family: 'Space Mono', monospace; font-size: 11px; color: #871600; background: #f3e6df; padding: 3px 8px; border-radius: 999px; }
+    .setlist-card .songcount { font-size: 13px; color: #4f4641; }
+    .cardstate { font-family: 'Space Mono', monospace; font-size: 9.5px; color: #4f4641; margin-top: 8px; }
+
+    .rows { display: flex; flex-direction: column; }
+    .row { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #e1ded7; }
+    .row:last-child { border-bottom: none; }
+    .row.hover { background: #f1eee9; }
+    .row .idx { font-family: 'Space Mono', monospace; font-size: 12px; color: #a8a099; width: 20px; }
+    .row .title { flex: 1; font-size: 15px; font-weight: 500; }
+    .row .sub { font-size: 12px; color: #4f4641; }
+    .row .status { width: 20px; height: 20px; border-radius: 999px; flex-shrink: 0; display:flex; align-items:center; justify-content:center; }
+    .status.matched { background: #e2f2e3; }
+    .status.unmatched { background: #f3e8d3; }
+    .status svg { width: 12px; height: 12px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 900px; margin-top: 12px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">05 · Cards &amp; list rows</p>
+
+  <h2 class="section">Generic card — setlist card</h2>
+  <div class="cardrow">
+    <div>
+      <div class="setlist-card">
+        <div class="top">
+          <div><div class="venue">Brixton Academy</div><div class="city">London, UK</div></div>
+          <span class="date">14 SEP 2026</span>
+        </div>
+        <div class="songcount">19 songs · setlist.fm</div>
+      </div>
+      <p class="cardstate">default — elevation-1</p>
+    </div>
+    <div>
+      <div class="setlist-card hover">
+        <div class="top">
+          <div><div class="venue">Brixton Academy</div><div class="city">London, UK</div></div>
+          <span class="date">14 SEP 2026</span>
+        </div>
+        <div class="songcount">19 songs · setlist.fm</div>
+      </div>
+      <p class="cardstate">hover/pressed — lifts to elevation-2, no color change</p>
+    </div>
+  </div>
+
+  <h2 class="section">List row — setlist song</h2>
+  <div class="panel" style="padding:0">
+    <div class="rows">
+      <div class="row">
+        <span class="idx">01</span>
+        <div><div class="title">The Bends</div><div class="sub">matched · Spotify</div></div>
+        <span class="status matched"><svg viewBox="0 0 24 24" fill="none" stroke="#003d00" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+      </div>
+      <div class="row hover">
+        <span class="idx">02</span>
+        <div><div class="title">Fake Plastic Trees</div><div class="sub">matched · Spotify</div></div>
+        <span class="status matched"><svg viewBox="0 0 24 24" fill="none" stroke="#003d00" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg></span>
+      </div>
+      <div class="row">
+        <span class="idx">03</span>
+        <div><div class="title">Talk Show Host</div><div class="sub">no confident match — pick a version</div></div>
+        <span class="status unmatched"><svg viewBox="0 0 24 24" fill="none" stroke="#522700" stroke-width="2.5" stroke-linecap="round"><path d="M12 8v5M12 16h.01"/></svg></span>
+      </div>
+    </div>
+  </div>
+  <p class="note">List rows use elevation-0 (flat, divider only) — hover is a background tint (surface-sunken), never a shadow; on touch there is no hover state at all, only pressed (same tint, no delay). Row height is 44px minimum for the touch target even where content is shorter.</p>
+</div>
+</x-dc>
+</body>
+</html>
