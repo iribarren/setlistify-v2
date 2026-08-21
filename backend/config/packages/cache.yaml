@@ -17,3 +17,11 @@ framework:
         # Namespaced pools use the above "app" backend by default
         #pools:
             #my.dedicated.cache: null
+
+        # Backs every Symfony RateLimiter policy declared in rate_limiter.yaml (US-9). Redis so
+        # limits are shared across app instances, not per-process — a lockout on one container must
+        # hold on all of them.
+        pools:
+            cache.rate_limiter:
+                adapter: cache.adapter.redis
+                provider: '%env(REDIS_URL)%'
