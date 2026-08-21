@@ -49,8 +49,15 @@ not take the other down. Redirect URIs are registered per environment.
 |---|---|---|
 | `JWT_SECRET_KEY` / `JWT_PUBLIC_KEY` | **yes** | API token signing keypair paths |
 | `JWT_PASSPHRASE` | **yes** | Passphrase for the private key |
-| `JWT_TTL` | no | Access-token lifetime, seconds |
-| `REFRESH_TOKEN_TTL` | no | Refresh-token lifetime, seconds |
+| `JWT_TTL` | no | Access-token lifetime, seconds. `900` (15 min) — AC-2.2 |
+| `REFRESH_TOKEN_TTL` | no | Refresh-token lifetime, seconds. `2592000` (30 days) — AC-2.2 |
+| `EMAIL_VERIFICATION_TOKEN_TTL` | no | Email verification token lifetime, seconds. `86400` (24h) — AC-7.1 |
+| `PASSWORD_RESET_TOKEN_TTL` | no | Password reset token lifetime, seconds. `3600` (60 min) — AC-6.2 |
+| `AUTH_REQUIRE_VERIFIED_EMAIL` | no | D-19: gates the email-verification security attribute. Default `false` — verification is built but not enforced at MVP |
+| `AUTH_COOKIE_SECURE` | no | `Secure` flag on the refresh-token cookie (D-18). `true` in every real deployment; browsers treat `localhost` as a secure context so `true` also works for local dev |
+| `MAILER_DSN` | **yes** | Symfony Mailer DSN. `smtp://mailpit:1025` in dev (D-20); a real provider DSN in production. No provider SDK in application code |
+| `MAILER_FROM_ADDRESS` | no | `From:` address on verification/reset emails |
+| `WEB_APP_URL` | no | Base URL of the web app — used to build the links inside verification/reset emails (AC-6.8) |
 | `TOKEN_ENCRYPTION_KEY` | **yes** | libsodium key encrypting **users' provider OAuth tokens** at rest. See below. |
 
 ### setlist.fm

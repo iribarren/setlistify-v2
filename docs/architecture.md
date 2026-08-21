@@ -63,6 +63,50 @@ Expo Router also supports, but choosing between them now would mean deciding for
 exist yet. Recorded here (R-7 in the frontend-skeleton spec) so prompt 21 starts from this known
 constraint instead of rediscovering it mid-implementation.
 
+**D-18 — Web token storage: refresh token in an httpOnly cookie, access token in memory only**
+(`docs/specs/2026-08-21-auth-and-accounts.md`). Of the three candidates (`localStorage`, in-memory
+only, httpOnly cookie + memory), the third is the only one that changes the outcome of an XSS: it
+cannot exfiltrate the 30-day refresh token, only ride the session while the page is open — the same
+exposure every option has anyway. Costs accepted: the web app and API must be same-site
+(`SameSite=Strict`), and the storage adapter carries one platform branch (`storage.web.ts` /
+`storage.native.ts`). **Implementation note**: the cookie is scoped to `/api`, not narrowly to the
+refresh endpoint as first described — `/api/logout` also has to read it to know which family to
+revoke, and a `/api/token/refresh`-scoped cookie is never sent to a different path at all. Only
+`RefreshProcessor` and `LogoutProcessor` ever read it, so the CSRF argument (every other endpoint is
+pure bearer auth and never consults a cookie) is unaffected in practice.
+
+**D-19 — Email verification is shipped, enforced by a flag, and off by default at MVP.** The full
+flow (token, email, confirm, resend, `emailVerifiedAt`) ships now; enforcement is a single
+`IS_EMAIL_VERIFIED` security attribute (`App\Security\Voter\EmailVerifiedVoter`) governed by
+`AUTH_REQUIRE_VERIFIED_EMAIL`, default `false`. Flipping it on later is a config change, not a new
+code path — the login processor already checks it and fails with the same generic 401 as a wrong
+password either way, so enabling it can never become an enumeration oracle. Prompt 10 (streaming
+account linking) is the natural place to turn it on first.
+
+**D-20 — Mailpit in compose for development; a DSN-only mailer everywhere.** A `mailpit` service in
+`compose.yaml` (SMTP on 1025, web UI on 8025) backs `MAILER_DSN=smtp://mailpit:1025` in dev.
+Application code depends on `symfony/mailer` and the DSN only — no provider SDK — so choosing a
+production provider is a secret-store change, not a code change. `test` uses the in-memory/null
+transport so mailer assertions never reach a real service (D-2).
+
+**D-21 — A custom refresh-token implementation, not `gesdinet/jwt-refresh-token-bundle`.** That
+bundle stores tokens in plaintext and implements neither rotation nor reuse detection — the two
+properties this feature exists for. `App\Entity\RefreshToken` + `App\Service\Security\
+RefreshTokenService` own hashing, families, rotation and reuse detection directly, including a
+grace-window mitigation (a token rotated less than 10 seconds ago is treated as a benign duplicate
+rather than theft) so a dropped response or a race between tabs doesn't log a real user out.
+
+**D-22 — `App\Entity\User` is never a writable API resource; DTOs bind every public payload.**
+Registration binds `RegisterUserInput` (`email`, `password` — nothing else); `/api/me` returns a
+`Me` DTO. This is what makes "no public endpoint can grant `ROLE_ADMIN`" structural rather than
+defensive — there is no `roles` field anywhere in the public contract to filter or forget to filter.
+
+**D-23 — Enumeration resistance is total on login and reset, deliberately partial on registration.**
+Login and password-reset-request leak nothing — those are the endpoints an attacker scripts.
+Registration against a taken email returns a distinguishable 422, a deliberate trade-off: hiding it
+would mean accepting every signup and deferring all feedback to email, degrading the primary
+conversion path to close a low-value oracle that's already rate-limited to 5/hour/IP.
+
 ## 2. Shape of the system
 
 ```
@@ -234,7 +278,11 @@ can use sessions and 2FA instead of the API's JWTs.
 - **Separate firewall** from the API. Session-based login, `ROLE_ADMIN` required, TOTP second factor
   (`scheb/2fa`). The API's JWT firewall grants no admin access.
 - **The owner account is provisioned by console command only.** `ROLE_ADMIN` must be unreachable
-  through public registration — that is a test, not a convention.
+  through public registration — that is a test, not a convention. As of
+  `docs/specs/2026-08-21-auth-and-accounts.md`, this is in fact the case: `bin/console
+  app:admin:create <email> [<password>]` creates or promotes a user, `RegisterUserInput` (the entire
+  registration request surface) has no `roles` field to attack, and `NoPublicRolesInOpenApiTest`
+  fails the build if any public write operation's schema ever grows one.
 - **Read views** for users, concerts, playlists, generation jobs and setlist-cache health, so
   operating the app never requires a database client.
 - **Write access is narrow**: provider configuration, plus user-level administrative actions
@@ -274,3 +322,25 @@ the source setlist has a row, including the ones that produced no track.
 - The admin firewall is separate, 2FA-gated, and rate-limited.
 - All external calls have timeouts, retry-with-backoff, and circuit-breaking; no external service is
   trusted to be up.
+- **User session model** (`docs/specs/2026-08-21-auth-and-accounts.md`, D-18/D-21): a short-lived
+  (15 min) JWT access token, never persisted server-side, carrying only `sub` (user id), `roles`,
+  `iat`, `exp`, `jti` — no email, no name. A 30-day refresh token rotates on every use, is stored
+  **hashed** (SHA-256; the plaintext exists only in the response/cookie), and belongs to a *family*
+  shared by every token descended from one login. Presenting an already-rotated token — outside a
+  short grace window that absorbs dropped responses and racing tabs (R-3) — is treated as theft and
+  revokes the entire family. Native stores the refresh token in `expo-secure-store`; web gets it
+  **only** as an httpOnly, `Secure`, `SameSite=Strict` cookie (D-18) — never `localStorage`, never
+  in a JS-readable response body.
+- Passwords are hashed with Symfony's auto password hasher (no algorithm named in application code),
+  checked against Symfony's compromised-password list at registration and reset, and a password
+  reset revokes every refresh-token family for that user — one recovered account can't leave a
+  stolen session alive elsewhere.
+- Credential endpoints (login, registration, refresh, password reset, verification resend) are rate
+  limited via Symfony RateLimiter on Redis, and **fail closed**: if the limiter's storage is
+  unreachable, the request is rejected (429), never silently allowed through.
+- Login and password-reset-request are enumeration-resistant by design — wrong password, unknown
+  email and (when `AUTH_REQUIRE_VERIFIED_EMAIL` is on) an unverified account all produce one
+  identical response. Registration is the one deliberate, documented exception (D-23).
+- A Monolog processor redacts credential-shaped values (`password`, `token`, `refresh_token`,
+  `authorization`, `set-cookie`, …) from every log record, on every channel, so a password never
+  reaches a log aggregator even if a future call site logs its context carelessly.

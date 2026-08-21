@@ -32,6 +32,43 @@
         <env name="KERNEL_CLASS" value="App\Kernel" force="true" />
         <server name="KERNEL_CLASS" value="App\Kernel" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+
+        <!-- ###+ lexik/jwt-authentication-bundle ### -->
+        <env name="JWT_SECRET_KEY" value="%kernel.project_dir%/config/jwt/private.pem"/>
+        <env name="JWT_PUBLIC_KEY" value="%kernel.project_dir%/config/jwt/public.pem"/>
+        <env name="JWT_PASSPHRASE" value="c17356e19b0a6e2df73650ec4a31fbfa8fd27732192d7997c919f3389fd0fff9"/>
+        <!-- ###- lexik/jwt-authentication-bundle ### -->
+
+        <!-- ###+ symfony/lock ### -->
+        <!-- Choose one of the stores below -->
+        <!-- postgresql+advisory://db_user:db_password@localhost/db_name -->
+        <env name="LOCK_DSN" value="flock"/>
+        <!-- ###- symfony/lock ### -->
+
+        <!-- ###+ symfony/mailer ### -->
+        <!-- force="true": backend/.env.local sets a real (dev) MAILER_DSN, and compose injects it
+             into this container's real process env — without force, that would win over this
+             value, and AC-12.2's mailer-assertion tests would try a real SMTP connection. -->
+        <env name="MAILER_DSN" value="null://null" force="true"/>
+        <!-- ###- symfony/mailer ### -->
+
+        <!-- ###+ symfony/messenger ### -->
+        <!-- Choose one of the transports below -->
+        <!-- MESSENGER_TRANSPORT_DSN=amqp://guest:guest@localhost:5672/%2f/messages -->
+        <!-- MESSENGER_TRANSPORT_DSN=redis://localhost:6379/messages -->
+        <env name="MESSENGER_TRANSPORT_DSN" value="doctrine://default?auto_setup=0"/>
+        <!-- ###- symfony/messenger ### -->
+
+        <!-- Auth and accounts (docs/specs/2026-08-21-auth-and-accounts.md). force="true" for the
+             same reason as MAILER_DSN above — these must not depend on whatever's in .env.local. -->
+        <env name="JWT_TTL" value="900" force="true"/>
+        <env name="REFRESH_TOKEN_TTL" value="2592000" force="true"/>
+        <env name="EMAIL_VERIFICATION_TOKEN_TTL" value="86400" force="true"/>
+        <env name="PASSWORD_RESET_TOKEN_TTL" value="3600" force="true"/>
+        <env name="AUTH_REQUIRE_VERIFIED_EMAIL" value="false" force="true"/>
+        <env name="AUTH_COOKIE_SECURE" value="false" force="true"/>
+        <env name="MAILER_FROM_ADDRESS" value="no-reply@setlistify.test" force="true"/>
+        <env name="WEB_APP_URL" value="http://localhost:8081" force="true"/>
     </php>
 
     <testsuites>
