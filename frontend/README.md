@@ -57,10 +57,50 @@ wrong, the fix belongs in the backend's API Platform resource metadata or in
 
 `frontend/lib/api/` is the one place HTTP happens: `apiClient` (an `openapi-fetch` client bound to
 the generated `paths` type), a timeout (`AbortController`, default 10s), RFC 7807
-(`application/problem+json`) error parsing into a typed `ApiError`, and the one documented header
-seam (`apiClient.use(...)` in `lib/api/client.ts`) that prompt 04 (auth) attaches
-`Authorization` to. Query hooks (e.g. `useHealth`) live here too, built on TanStack Query v5. A
-screen or component that needs data calls a hook from `lib/api/`, never `fetch`.
+(`application/problem+json`) error parsing into a typed `ApiError`, and the header seam
+(`apiClient.use(...)` in `lib/api/client.ts`) that `lib/auth/authMiddleware.ts` attaches
+`Authorization`/`X-Client-Platform` to and drives the single-flight refresh-on-401 retry from.
+Query hooks (e.g. `useHealth`) live here too, built on TanStack Query v5. A screen or component
+that needs data calls a hook from `lib/api/`, never `fetch`.
+
+## Authentication — one session module owns every token
+
+`frontend/lib/auth/` (spec: `docs/specs/2026-08-21-auth-and-accounts.md`) is the **only** place a
+token is read or written anywhere in this app (AC-8.4) — `grep` for `getAccessToken`/
+`setAccessToken`/`refreshTokenStorage` outside `lib/auth/` should find nothing except the wiring
+line in `lib/api/client.ts`.
+
+- **`SessionProvider`/`useSession()`** (`lib/auth/SessionProvider.tsx`) — a React context holding
+  `status` (`"restoring" | "authenticated" | "unauthenticated"`) and the current user, plus
+  `login`/`register`/`logout`/`requestPasswordReset`/`confirmPasswordReset`/
+  `confirmEmailVerification`/`resendEmailVerification`. It is the only sanctioned way a screen
+  performs an auth action — no screen calls `lib/auth/api.ts` directly.
+- **The access token lives in memory only** (`lib/auth/tokenStore.ts`), never `AsyncStorage`,
+  never `localStorage` (D-18). It does not survive a reload; that's what restore is for.
+- **The storage adapter is the one platform-branched module in this app** (`storage.native.ts` /
+  `storage.web.ts`, D-18's exception to AC-1.8's "no platform fork" rule): native persists the
+  refresh token in `expo-secure-store`; web's adapter is inert by construction — the refresh token
+  lives only in the httpOnly, `Secure`, `SameSite=Strict` cookie the backend sets on `/api`
+  responses, which this client never reads. `expo-secure-store` passed the D-15 web-support gate
+  by never being imported on web at all (Metro/Jest platform-extension resolution picks
+  `storage.web.ts` there instead) — `tsconfig.json`'s `moduleSuffixes` makes `tsc` resolve the same
+  way.
+- **`X-Client-Platform: native|web`** is attached in exactly one place
+  (`lib/auth/authMiddleware.ts`), never per call site — it tells the backend whether to return the
+  refresh token in the response body (native) or httpOnly-cookie-only (web).
+- **Single-flight refresh-on-401** (`lib/auth/refreshCoordinator.ts` + `authMiddleware.ts`):
+  concurrent 401s join one in-flight `/api/token/refresh` call and each retries its own request
+  once against the new access token; a refresh that itself fails clears the session and emits
+  `sessionExpired` (`lib/auth/sessionEvents.ts`), which `SessionProvider` reacts to by flipping
+  `status` to `"unauthenticated"` — routing is a consequence of that state change, not an
+  imperative navigation call from non-React code.
+- **Routing**: `app/(auth)/` (login, register, forgot-password, reset-password) and `app/(app)/`
+  (everything requiring a session — currently just `home`) are Expo Router groups, each with a
+  `_layout.tsx` redirect guard reading `useSession().status`. The root `app/_layout.tsx` renders
+  the canvas `LoadingState` while `status === "restoring"` so neither guard evaluates — and no
+  screen flashes — before cold-start restore has settled. `app/index.tsx` (health) and
+  `app/verify-email.tsx` stay outside both groups, reachable regardless of session state — the
+  email-verification link must not bounce through a login redirect.
 
 ## Design tokens — the canvas is the source of truth
 
@@ -89,7 +129,8 @@ a platform-forked file (`*.ios.tsx` etc., forbidden by AC-1.8) — stop and reco
 
 Currently approved, all gate-checked: `expo-router`, `expo-font` (+ `@expo-google-fonts/*` for the
 bundled OFL weight files, D-13), `@tanstack/react-query`, `openapi-fetch`, `lucide-react-native` +
-`react-native-svg`.
+`react-native-svg`, `expo-secure-store` (D-18 — a documented exception: it is genuinely a no-op on
+web, which is why the storage adapter branches instead of this dependency being used directly).
 
 ## Testing
 
@@ -113,12 +154,18 @@ On a physical device, `localhost` resolves to the device itself — set `EXPO_PU
 
 ```
 frontend/
-├─ app/              Expo Router — _layout.tsx (theme/query providers, font loading), index.tsx (health screen scaffold)
+├─ app/
+│  ├─ _layout.tsx     theme/query/session providers, font loading, restore-gated loading state
+│  ├─ index.tsx        health screen scaffold — unauthenticated, outside (auth)/(app)
+│  ├─ verify-email.tsx  email verification confirm — unauthenticated, outside (auth)/(app)
+│  ├─ (auth)/           login, register, forgot-password, reset-password — redirects in if already signed in
+│  └─ (app)/            home — redirects to login if signed out
 ├─ api/               GENERATED — openapi-typescript output, committed, never hand-edited
 ├─ theme/             colors · typography · spacing · radius · elevation · ThemeProvider
 ├─ components/        Button, TextInput, Card, ListRow, Badge, Avatar
 │  └─ state/          LoadingState, EmptyState, DegradedState, ErrorState
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
+├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```
@@ -126,6 +173,7 @@ frontend/
 ## Not built yet, on purpose (D-16)
 
 Tabs, modals/bottom sheets, toasts and date inputs are specified on the canvas but land with their
-first real consumer (prompt 04 or 07) rather than being built speculatively here. Concert screens,
-playlist flows, authentication UI, and an in-app theme toggle are all out of scope for this branch —
-see `docs/specs/2026-08-21-frontend-skeleton.md`, "Out of Scope".
+first real consumer rather than being built speculatively here. Concert screens, playlist flows,
+and an in-app theme toggle remain out of scope — see `docs/specs/2026-08-21-frontend-skeleton.md`,
+"Out of Scope". Authentication UI shipped in `feature/auth-and-accounts`
+(`docs/specs/2026-08-21-auth-and-accounts.md`).
