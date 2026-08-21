@@ -1,6 +1,7 @@
-import createClient, { type Middleware } from "openapi-fetch";
+import createClient from "openapi-fetch";
 
 import type { paths } from "@/api";
+import { authHeaderMiddleware, refreshRetryMiddleware } from "@/lib/auth/authMiddleware";
 
 import { networkApiError, toApiError, type ApiError } from "./errors";
 
@@ -34,20 +35,17 @@ export const apiClient = createClient<paths>({
   // that stub `global.fetch` (D-14, AC-10.5) after this module has already loaded still take
   // effect — with no behavioral difference in the app, which never reassigns `global.fetch`.
   fetch: (input) => globalThis.fetch(input),
+  // D-18: the refresh-token cookie is httpOnly and `SameSite=Strict` — the browser only attaches
+  // it on a credentialed request. Harmless on native, which has no cookie jar to speak of and
+  // authenticates the refresh flow via the request body instead (AC-4.6).
+  credentials: "include",
 });
 
-/**
- * AC-7.6 — the one documented place request headers are attached. This is the extension point
- * prompt 04 (auth) uses to add `Authorization: Bearer <token>`. It exists now and attaches
- * nothing yet. AC-7.8: whatever prompt 04 adds here must not log the token on any platform.
- */
-const authHeaderSeam: Middleware = {
-  onRequest() {
-    // Intentionally empty — prompt 04 attaches `Authorization` here.
-    return undefined;
-  },
-};
-apiClient.use(authHeaderSeam);
+// AC-2.6/AC-7.6 (frontend skeleton): `Authorization`/`X-Client-Platform` attachment and the
+// single-flight refresh-on-401 retry both live in `lib/auth/authMiddleware.ts` — this is the one
+// place they're wired onto the client every request goes through. No screen or hook touches a
+// token or sets these headers itself (AC-8.4).
+apiClient.use(authHeaderMiddleware, refreshRetryMiddleware);
 
 export interface RequestOptions {
   /** Overrides the default 10s timeout (AC-7.5). */
@@ -76,8 +74,10 @@ export async function unwrap<T>(
 
   try {
     const { data, error, response } = await run(controller.signal);
-    if (response.ok && data !== undefined) {
-      return data;
+    if (response.ok) {
+      // A 204 (logout, password-reset/confirm, email-verification/confirm — US-5/6/7) has no
+      // body, so `data` is `undefined` even on success; only a non-2xx is a failure.
+      return data as T;
     }
     // `error` is the body openapi-fetch already parsed for a non-2xx response — reuse it rather
     // than reading `response.json()` again, which would throw ("body already consumed").
