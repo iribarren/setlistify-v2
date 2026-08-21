@@ -13,7 +13,7 @@ trait JsonResponseTrait
     /**
      * @return array<string, mixed>
      */
-    private static function decodeJsonObject(string $json): array
+    protected static function decodeJsonObject(string $json): array
     {
         $data = json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
 

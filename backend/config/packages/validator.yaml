@@ -8,4 +8,6 @@ framework:
 when@test:
     framework:
         validation:
+            # AC-1.4 checks new passwords against haveibeenpwned.com in dev/prod; disabled in test
+            # so the registration/reset test suite never makes an external network call (D-2).
             not_compromised_password: false

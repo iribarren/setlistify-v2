@@ -1,0 +1,48 @@
+# Every limiter here backs a credential endpoint (US-9, AC-9.1). All share the Redis-backed
+# `cache.rate_limiter` pool (config/packages/cache.yaml) so limits hold across app instances.
+# Consumption always goes through App\Service\Security\RateLimiterGuard, never a factory directly,
+# so a broken Redis fails the request closed (429) instead of failing the limiter open (AC-9.6).
+framework:
+    rate_limiter:
+        # Login: 5 per 15 min per (IP + email) and 20 per 15 min per IP (AC-9.1). The two limiters
+        # are consumed together by LoginProcessor.
+        login_credentials:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+        login_ip:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '15 minutes'
+
+        registration_ip:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '1 hour'
+
+        # Password-reset request: 3 per hour per email, 10 per hour per IP (AC-9.1).
+        password_reset_request_email:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '1 hour'
+        password_reset_request_ip:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '1 hour'
+
+        # AC-6.7: confirm is also rate-limited. Not enumerated with its own value in AC-9.1, so it
+        # reuses the request endpoint's per-IP number.
+        password_reset_confirm_ip:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '1 hour'
+
+        verification_resend_user:
+            policy: 'sliding_window'
+            limit: 3
+            interval: '1 hour'
+
+        refresh_ip:
+            policy: 'sliding_window'
+            limit: 60
+            interval: '1 hour'

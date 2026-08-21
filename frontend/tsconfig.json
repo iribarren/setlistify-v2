@@ -5,7 +5,11 @@
     "types": ["jest", "node"],
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    // D-18: lets `tsc` resolve the bare `./storage` specifier to `storage.native.ts` the same way
+    // Metro (app builds) and jest-expo (tests) do — the one platform-branched module in this app
+    // (`lib/auth/storage.native.ts` / `storage.web.ts`, see frontend/README.md).
+    "moduleSuffixes": [".ios", ".android", ".native", ""]
   },
   "include": [
     "**/*.ts",
