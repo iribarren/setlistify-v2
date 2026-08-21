@@ -214,6 +214,98 @@ trash.
 next cursor**, rather than computing page numbers client-side, so the client never disagrees with
 the server about how many pages exist. Page size 20 (`lib/concerts/queries.ts`).
 
+**D-42 — `/admin` keeps the default path and is IP-restricted in production**
+(`docs/specs/2026-08-21-backoffice-foundation.md`). Path obscurity is not security, so
+`ADMIN_PATH_PREFIX` stays `/admin`; the real question is whether the door is publicly routable at
+all. `ADMIN_IP_ALLOWLIST` empty means unrestricted (dev/CI); non-empty means
+`App\EventSubscriber\AdminIpAllowlistListener` rejects non-matching sources with a **404** (never
+403 — an outsider must not learn the prefix exists) before authentication runs, reading the client
+IP through Symfony's trusted-proxy-aware `getClientIp()`. A startup check logs `error` if `prod` runs
+with an empty allowlist.
+
+**D-43 — Audit records store an actor reference and personal-data digests, never plaintext or FKs.**
+`AuditLogEntry.actorId` is a plain integer with **no foreign key** to `users`; `actorLabel` and any
+`oldValue`/`newValue` for a personal-data field are a keyed HMAC digest (`App\Service\Admin\
+AuditLogger::digest()`), never the plaintext. A boolean flip (`isActive`) is stored literally. This
+lets the trail survive the deletion of the user it describes (GDPR erasure) without resurrecting
+their personal data — at the cost of an entry that cannot be read back as "who exactly" once the
+actor's own account is gone.
+
+**D-44 — Suspension reuses `User::$isActive`; no new state field.** `LoginProcessor` already refuses
+inactive users, so suspension works through an already-tested path. Revoking every refresh token is
+part of the action (`RefreshTokenRepository::revokeAllForUser()`), not an afterthought — otherwise
+suspension is cosmetic for up to the refresh token's lifetime.
+
+**D-45 — Erasure is a hard delete with an explicit cascade, executed by one service**
+(`App\Service\Admin\UserEraser`, one DB transaction). `Concert`, `RefreshToken`,
+`PasswordResetToken` and `EmailVerificationToken` all declare `onDelete: 'CASCADE'` on their
+`user`/`owner` foreign key already, so deleting the `users` row cascades at the database level;
+`Band` and `Venue` carry no such foreign key at all, so they survive by construction. The audit entry
+is written in the same transaction and (D-43) holds no FK to the row being deleted.
+
+**D-46 — Field lists are allowlists, structurally enforced.** EasyAdmin's own
+`AbstractCrudController::configureFields()` has a non-abstract default that exposes every entity
+property — the mechanism a hash or token ends up on a screen. **Deviation from the original plan**:
+PHP does not allow re-declaring an inherited *concrete* method as `abstract`, so
+`App\Controller\Admin\AbstractAdminCrudController` instead overrides it with an implementation that
+unconditionally throws; every concrete controller must override it again to render anything, and a
+test asserts the throw directly. `configureActions()` also disables `NEW`/`EDIT`/`DELETE`/
+`BATCH_DELETE` by default, so a new controller inherits read-only rather than write access by
+omission.
+
+**D-47 — The admin reads across owners through Doctrine, never by weakening the API's gate.**
+`App\Security\ConcertOwnerExtension` is not modified, not made role-aware, not bypassed with a
+`ROLE_ADMIN` branch. EasyAdmin's CRUD controllers query Doctrine directly; every one of those reads
+is an operator action inside an audited, 2FA-gated session — a separate channel from the public API,
+not a hole in it.
+
+**D-48 — Firewall order is `dev` → `admin` → `api` → `main`, and the prefix is a build-time value.**
+Firewall matching is first-match-wins, so `admin` precedes `api` in `security.yaml`. Symfony compiles
+firewall patterns and route paths into the container, so `ADMIN_PATH_PREFIX` is a **build-time**
+setting — changing it needs a cache clear/rebuild, not just an env change.
+
+**D-49 — 2FA enrollment is forced on first login and recovery is console-only.** An admin account
+with no TOTP secret can reach only the enrollment route
+(`App\Controller\Admin\TwoFactorEnrollmentController`) — enforced primarily by replacing scheb/2fa's
+`authentication_required_handler` (`App\Security\Admin\ForceEnrollmentAuthenticationRequiredHandler`;
+scheb's own `TwoFactorAccessListener` runs *inside* the firewall's listener stack, too early for an
+external `kernel.request` subscriber to override its redirect target — this was the actual
+implementation surprise, documented in the handler's own docblock). Lost-device recovery is
+`bin/console app:admin:2fa:reset` — the same shell-access bar as provisioning; there is no web-based
+recovery flow.
+
+**D-50 — Admin login errors are honest; enumeration is not a threat here.** The API's uniform-401
+posture (auth spec US-9) doesn't apply: there is exactly one admin account, its address is known to
+the one person who should be logging in, and a lockout message states the lockout and its remaining
+duration (`App\Security\Admin\AdminUserChecker`).
+
+**D-51 — Masking is one field type, used everywhere an email is rendered**
+(`App\Field\MaskedEmailField`, backed by `App\Service\Admin\EmailMasker`). **A second leak path
+turned up during implementation and is now covered by the same rule**: EasyAdmin's stock
+`crud/field/text.html.twig` renders `title="{{ field.value }}"` — the field's *raw*, pre-formatValue
+value — as a hover tooltip, regardless of `formatValue()`; `MaskedEmailField` uses a custom template
+that omits it. EasyAdmin's own dashboard user-menu widget was a third instance (it calls
+`getUserIdentifier()` on the logged-in user directly) — `DashboardController::configureUserMenu()`
+overrides it to mask the operator's own email too.
+
+**D-52 — No API change, and a test that keeps it that way.** This feature adds no endpoint, changes
+no schema, regenerates no client types. `AdminOpenApiTest` asserts no path in the generated OpenAPI
+document starts with the admin prefix and no schema references `AuditLogEntry`.
+
+**D-53 — Dashboard counts are computed per request, uncached.** Three `COUNT` queries cost less than
+a cache-invalidation story; revisit if a count gets slow.
+
+**D-54 — The admin session is a separate cookie with a short idle timeout, stored in Redis.** Name
+`admin_session`, path scoped to the admin prefix — distinct from the API's `refresh_token` cookie
+(`/api`), so neither is ever sent where the other is expected. 30-minute idle timeout via
+`gc_maxlifetime` (Redis-backed, so it holds across app instances); an 8-hour **absolute** lifetime is
+enforced separately by `App\EventSubscriber\AdminSessionLifetimeSubscriber`, since Symfony's session
+component has no native concept of "session started at".
+
+**D-55 — The linked-provider count is omitted from the users list, not stubbed as zero.**
+`StreamingAccount` doesn't exist until prompt 10; a column that always reads `0` would teach the
+operator to ignore it.
+
 ## 2. Shape of the system
 
 ```
@@ -382,22 +474,33 @@ Server-rendered EasyAdmin at `/admin`, inside the Symfony app, deliberately not 
 no admin code ships to public clients, no admin route enters the OpenAPI spec, and the admin firewall
 can use sessions and 2FA instead of the API's JWTs.
 
-- **Separate firewall** from the API. Session-based login, `ROLE_ADMIN` required, TOTP second factor
-  (`scheb/2fa`). The API's JWT firewall grants no admin access.
-- **The owner account is provisioned by console command only.** `ROLE_ADMIN` must be unreachable
-  through public registration — that is a test, not a convention. As of
-  `docs/specs/2026-08-21-auth-and-accounts.md`, this is in fact the case: `bin/console
-  app:admin:create <email> [<password>]` creates or promotes a user, `RegisterUserInput` (the entire
-  registration request surface) has no `roles` field to attack, and `NoPublicRolesInOpenApiTest`
-  fails the build if any public write operation's schema ever grows one.
-- **Read views** for users, concerts, playlists, generation jobs and setlist-cache health, so
-  operating the app never requires a database client.
-- **Write access is narrow**: provider configuration, plus user-level administrative actions
-  (suspend, delete on request). It does not become a general-purpose data editor.
-- **Every write is audited.** `AuditLogEntry` records actor, entity, field, old → new, timestamp.
-  Provider-config changes above all, since they alter the app's legal classification.
-- **Personal data is minimized in list views** (partial email masking), with full detail behind an
-  explicit, logged action.
+- **Separate firewall** from the API — session-based login, `ROLE_ADMIN` required, mandatory TOTP
+  second factor (`scheb/2fa`), declared before `api` in `security.yaml` since firewall matching is
+  first-match-wins (D-48). The API's JWT firewall grants no admin access and an admin session cookie
+  grants no API access, in both directions, proven by test (`AdminAccessControlTest`).
+- **The owner account is provisioned by console command only.** `ROLE_ADMIN` is unreachable through
+  public registration — `bin/console app:admin:create <email> [<password>]` creates or promotes a
+  user (and now reports whether 2FA enrollment is still needed, never printing the secret itself),
+  `RegisterUserInput` has no `roles` field to attack, and `NoPublicRolesInOpenApiTest` fails the build
+  if any public write operation's schema ever grows one. A `ROLE_ADMIN` account with no TOTP secret
+  can reach only the enrollment route (D-49) — provisioned and usable are not the same moment.
+  Lost-device recovery is `bin/console app:admin:2fa:reset`, console-only, same bar as provisioning.
+- **Shipped in this feature** (`docs/specs/2026-08-21-backoffice-foundation.md`): read-only lists and
+  detail views for **users, concerts and bands**, plus a read-only **audit log** view and a dashboard
+  with three counts (total users, total concerts, concerts in the last 7 days). **Not yet shipped**:
+  playlists, generation jobs and setlist-cache health views — those land with the prompts that create
+  those entities (09, 14–19), per D-47's "admin reads through Doctrine directly" pattern.
+- **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
+  token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
+  shared `Band`/`Venue` untouched), and reveal-email (rate-limited, audited). Provider configuration
+  is prompt 11 — this feature does not become a general-purpose data editor (D-46 makes read-only the
+  structural default, not a convention).
+- **Every write is audited.** `App\Service\Admin\AuditLogger` is the single write path for
+  `AuditLogEntry` — actor, entity, field, old → new, timestamp, IP. The entity is append-only (a
+  Doctrine event subscriber rejects update/delete outright) and its digested personal-data fields
+  (D-43) let it survive the deletion of the user it describes.
+- **Personal data is minimized in every view** (`App\Field\MaskedEmailField`, D-51), with the full
+  value behind an explicit, rate-limited, audited reveal action — never a hover or a query parameter.
 
 ## 10. Data model sketch
 
@@ -439,7 +542,21 @@ migration. Everything else in this sketch (`Playlist`, `StreamingAccount`, `Setl
   in the repo; `.env.example` holds names and dummy values only.
 - Separate OAuth app registrations for dev and prod, so a leaked development key cannot reach
   production data.
-- The admin firewall is separate, 2FA-gated, and rate-limited.
+- **Admin firewall and session model** (`docs/specs/2026-08-21-backoffice-foundation.md`, D-42–D-55):
+  a second, session-based firewall declared before `api` (D-48), gated by password + mandatory TOTP
+  2FA (`scheb/2fa`, forced enrollment for a secret-less account — D-49) with 10 single-use hashed
+  backup codes. The session cookie (`admin_session`, D-54) is distinct in name and path from the
+  API's `refresh_token` cookie, Redis-backed, `Secure` outside dev, `HttpOnly`, `SameSite=Lax`, with a
+  30-minute idle timeout and an 8-hour absolute lifetime. Two Redis-backed rate limiters
+  (credentials, IP) plus a 10-consecutive-failure/15-minute account lockout gate the login form;
+  `ADMIN_IP_ALLOWLIST`, when non-empty, rejects non-matching sources with a 404 before authentication
+  runs (D-42). Every admin route sits under one `access_control` rule requiring `ROLE_ADMIN` (D-46's
+  same structural-enforcement principle applied to authorization, not just field lists). Reads never
+  go through the API's `ConcertOwnerExtension` — a separate channel (D-47) — so the API's
+  cross-owner-404 invariant is never touched by admin traffic.
+- **Every admin write is audited, append-only, and survives the subject's own deletion** (D-43):
+  `AuditLogEntry.actorId` carries no foreign key, and personal-data fields are stored as keyed
+  digests rather than plaintext.
 - All external calls have timeouts, retry-with-backoff, and circuit-breaking; no external service is
   trusted to be up.
 - **User session model** (`docs/specs/2026-08-21-auth-and-accounts.md`, D-18/D-21): a short-lived
