@@ -17,6 +17,33 @@ Status: **decided** (2026-08-21). Changes to anything in this document need a sp
 Version floor: PHP ≥ 8.4 (Symfony 8.1 requires it), EasyAdmin ≥ 5.5 (first release supporting
 Symfony 8). Symfony 8.4 will be the next LTS — plan the upgrade path, do not pin to 8.1 forever.
 
+### Decisions
+
+**D-1 — PHP runtime: FrankenPHP.**
+The stack runs as a single `backend` container built on FrankenPHP (`docker/backend/Dockerfile`)
+rather than a paired nginx + PHP-FPM setup. One container instead of two removes an inter-container
+networking surface and a second config file from local dev; it maps cleanly onto the managed-PaaS
+production target above, which prefers one process on one port; and it is the runtime Symfony itself
+now leads with. Worker mode is **not** enabled at MVP — classic request-per-process first, worker mode
+revisited only if measurements justify it, since worker mode changes application-state assumptions
+and there is no application yet to measure. The cost is lower team familiarity with FrankenPHP's Caddy
+layer; the mitigation is that the alternative remains mechanical to adopt — swap the runtime stage, add
+an nginx service — because nothing above the container depends on the choice.
+
+**D-2 — CI runs no integration tests against real external APIs.**
+CI (`.github/workflows/ci.yml`) exercises only local services (the `compose-build-and-healthy` job)
+and, later, recorded fixtures — never setlist.fm, Spotify or YouTube directly. setlist.fm's standard
+key allows **1,440 requests per day for the entire application**, not per user or per environment
+(§5 above; `docs/env-vars.md`) — a CI job running on every push could consume the production budget and
+take the product down. Provider quotas (YouTube units, Spotify rate limits) carry the same hazard.
+Contract verification against live providers, when needed, is a deliberate manual or scheduled run
+using dedicated test credentials, never a per-push job.
+
+**D-3 — The frontend is not containerized.**
+Deliberate, not an omission: Expo's native tooling (Metro bundler, device/simulator access, QR
+pairing over the LAN) works poorly through container networking. `compose.yaml` defines no frontend
+service; run it on the host (`README.md`).
+
 ## 2. Shape of the system
 
 ```

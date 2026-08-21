@@ -1,3 +1,3 @@
 # Memory Index
 
-_No memories yet. This file is the index the agent loads each session._
+- [monorepo-infra-decisions](monorepo_infra_decisions.md) — FrankenPHP port/UID choices, gitleaks quirks, no GH remote yet

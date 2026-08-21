@@ -1,0 +1,25 @@
+# Gitleaks configuration for Setlistify.
+# Extends the default gitleaks ruleset and adds allowlisting for the
+# obviously-fake placeholders that live in *.env.example and docs.
+#
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+title = "setlistify-gitleaks-config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and fixtures that are not real credentials"
+paths = [
+  '''(.*/)?\.env\.example$''',
+  '''docs/env-vars\.md$''',
+  '''docs/specs/.*\.md$''',
+]
+
+regexes = [
+  # Placeholder tokens used throughout .env.example files.
+  '''changeme''',
+  '''replace-me-[a-z0-9-]*''',
+  '''x{4,}''',
+]

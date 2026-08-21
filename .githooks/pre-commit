@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Setlistify pre-commit hook: blocks a commit that introduces a credential-shaped
+# string. Runs gitleaks over the staged diff only, via Docker, so no developer
+# needs a local gitleaks install.
+#
+# Installed by: git config core.hooksPath .githooks   (see README.md)
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+GITLEAKS_IMAGE="zricethezav/gitleaks:v8.30.1"
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "pre-commit: docker is required to run the gitleaks secret scan, but was not found." >&2
+  echo "pre-commit: install Docker or run 'git commit --no-verify' only if you have manually verified there is no secret (not recommended)." >&2
+  exit 1
+fi
+
+set +e
+docker run --rm \
+  -v "${REPO_ROOT}:/repo" \
+  -w /repo \
+  "${GITLEAKS_IMAGE}" \
+  git --staged --redact --config /repo/.gitleaks.toml /repo
+status=$?
+set -e
+
+if [ "${status}" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit: gitleaks found a credential-shaped string in the staged changes. Commit blocked." >&2
+  echo "pre-commit: if this is a false positive, add an allowlist entry to .gitleaks.toml (see docs/env-vars.md, 'Handling a leak')." >&2
+  exit 1
+fi
+
+exit 0

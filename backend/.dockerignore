@@ -1,0 +1,19 @@
+# Never let environment files or secrets reach a build context / image layer.
+.env
+.env.local
+.env.*.local
+.env.example
+
+vendor/
+var/
+node_modules/
+
+config/jwt/*.pem
+config/jwt/*.key
+*.p8
+*.key
+
+.git/
+.gitignore
+.dockerignore
+*.md

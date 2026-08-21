@@ -1,0 +1,162 @@
+name: CI
+
+# Runs on push to any branch and on pull requests targeting master (AC-6.1).
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [master]
+
+# Least-privilege default; jobs opt into more only if a future step needs it.
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, so the scan covers the whole pushed branch (AC-3.3)
+
+      - name: Run gitleaks
+        # Same invocation as the local pre-commit hook (.githooks/pre-commit), so a developer can
+        # reproduce a CI failure locally with one command. No third-party Action, so no question of
+        # a GITLEAKS_LICENSE requirement.
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo \
+            zricethezav/gitleaks:v8.30.1 \
+            git --config /repo/.gitleaks.toml --redact /repo
+
+      - name: Check .env.example matches docs/env-vars.md
+        run: ./scripts/check-env-vars-drift.sh
+
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    # Stub job: backend/ has no application code yet (prompt 01). Wired so that adding
+    # `composer install` / `composer lint` / `composer test` later is a one-line change (AC-6.2).
+    # No real external API is ever called here — see D-2 in docs/architecture.md.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          if [ -f composer.json ]; then
+            composer install --no-interaction --prefer-dist
+          else
+            echo "No composer.json yet (prompt 01) — nothing to install."
+          fi
+
+      - name: Lint
+        working-directory: backend
+        run: |
+          if [ -f composer.json ]; then
+            composer lint
+          else
+            echo "No composer.json yet (prompt 01) — lint stub."
+          fi
+
+      - name: Test
+        working-directory: backend
+        run: |
+          if [ -f composer.json ]; then
+            composer test
+          else
+            echo "No composer.json yet (prompt 01) — test stub."
+          fi
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    # Stub job: frontend/ has no application code yet (prompt 03). Wired so that adding
+    # `npm ci` / `npm run lint` / `npm test` later is a one-line change (AC-6.2).
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # No package-lock.json until prompt 03 (frontend skeleton); caching is added
+          # then with `cache: npm` / `cache-dependency-path: frontend/package-lock.json`.
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: |
+          if [ -f package.json ]; then
+            npm ci
+          else
+            echo "No package.json yet (prompt 03) — nothing to install."
+          fi
+
+      - name: Lint
+        working-directory: frontend
+        run: |
+          if [ -f package.json ]; then
+            npm run lint
+          else
+            echo "No package.json yet (prompt 03) — lint stub."
+          fi
+
+      - name: Test
+        working-directory: frontend
+        run: |
+          if [ -f package.json ]; then
+            npm test
+          else
+            echo "No package.json yet (prompt 03) — test stub."
+          fi
+
+  compose-build-and-healthy:
+    name: compose-build-and-healthy
+    runs-on: ubuntu-latest
+    # Validates that compose.yaml and the Dockerfiles build, and that the stack comes up
+    # healthy — entirely against local services, no external API call (AC-6.3, AC-6.5, D-2).
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env files
+        run: |
+          cp backend/.env.example backend/.env.local
+          cp frontend/.env.example frontend/.env.local
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Bring the stack up
+        run: docker compose up -d
+
+      - name: Wait for postgres, redis and backend to report healthy
+        run: |
+          deadline=$((SECONDS + 90))
+          while true; do
+            unhealthy=$(docker compose ps --format '{{.Name}} {{.Health}}' | grep -v -c 'healthy' || true)
+            if [ "$unhealthy" -eq 0 ]; then
+              echo "All services healthy."
+              docker compose ps
+              exit 0
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "Timed out waiting for services to become healthy." >&2
+              docker compose ps
+              docker compose logs
+              exit 1
+            fi
+            sleep 3
+          done
+
+      - name: Probe backend health endpoint
+        run: |
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

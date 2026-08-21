@@ -1,0 +1,79 @@
+# Setlistify local development stack.
+#
+# Frontend is deliberately NOT a service here (decision D-3, docs/architecture.md) — run it on
+# the host with `cd frontend && npx expo start`. See README.md.
+#
+# Usage:
+#   cp backend/.env.example backend/.env.local
+#   cp frontend/.env.example frontend/.env.local
+#   docker compose up -d
+#
+# `docker compose down` preserves postgres_data/redis_data; `docker compose down -v` discards them.
+
+name: setlistify
+
+services:
+  postgres:
+    image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+    restart: unless-stopped
+    environment:
+      # Local-dev-only, obviously-fake credentials — matches the placeholder DATABASE_URL in
+      # backend/.env.example. Never used outside a developer's own machine (docs/env-vars.md).
+      POSTGRES_USER: setlistify
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: setlistify
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U setlistify -d setlistify"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    # No host port published — reached only from other containers on the compose network
+    # (AC-5.6). Use `docker compose exec postgres psql ...` for local inspection.
+
+  redis:
+    image: redis:7.4-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    # No host port published (AC-5.6). Use `docker compose exec redis redis-cli` locally.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Present once you've run `cp backend/.env.example backend/.env.local` (AC-1.1); gitignored,
+    # never committed.
+    env_file:
+      - ./backend/.env.local
+    ports:
+      - "8000:8080"
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  redis_data:
