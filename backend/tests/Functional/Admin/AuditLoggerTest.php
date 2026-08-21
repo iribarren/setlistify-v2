@@ -28,7 +28,6 @@ final class AuditLoggerTest extends KernelTestCase
         $em->flush();
 
         $logger = $container->get(AuditLogger::class);
-        \assert($logger instanceof AuditLogger);
 
         $subjectId = random_int(1, \PHP_INT_MAX);
 
@@ -57,14 +56,12 @@ final class AuditLoggerTest extends KernelTestCase
         self::assertSame('isActive', $entry->getField());
         self::assertSame('true', $entry->getOldValue());
         self::assertSame('false', $entry->getNewValue());
-        self::assertNotNull($entry->getOccurredAt());
     }
 
     public function testDigestIsStableAndNonReversible(): void
     {
         self::bootKernel();
         $logger = static::getContainer()->get(AuditLogger::class);
-        \assert($logger instanceof AuditLogger);
 
         $digest1 = $logger->digest('someone@example.test');
         $digest2 = $logger->digest('someone@example.test');

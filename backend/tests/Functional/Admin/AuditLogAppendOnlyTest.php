@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Admin;
 
 use App\Entity\AuditLogEntry;
+use Doctrine\Persistence\ObjectManager;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /** AC-12.4: an {@see AuditLogEntry} can never be updated or deleted through the ORM. */
@@ -43,7 +44,7 @@ final class AuditLogAppendOnlyTest extends KernelTestCase
         }
     }
 
-    private function persistOneEntry(object $em): AuditLogEntry
+    private function persistOneEntry(ObjectManager $em): AuditLogEntry
     {
         $entry = new AuditLogEntry(
             occurredAt: new \DateTimeImmutable(),

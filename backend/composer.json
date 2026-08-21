@@ -13,6 +13,7 @@
         "doctrine/doctrine-migrations-bundle": "*",
         "doctrine/orm": "*",
         "easycorp/easyadmin-bundle": "^5.5",
+        "endroid/qr-code": "^6.1",
         "lexik/jwt-authentication-bundle": "^3.1",
         "nelmio/cors-bundle": "*",
         "phpdocumentor/reflection-docblock": "^6.0",

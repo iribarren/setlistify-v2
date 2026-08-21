@@ -1,0 +1,23 @@
+# Admin firewall's own auth routes (D-48). Every path is derived from `admin.path_prefix`
+# (ADMIN_PATH_PREFIX) so the whole login/2FA flow lives under the same prefix the firewall
+# matches — access_control (security.yaml) relies on that.
+admin_login:
+    path: '%admin.path_prefix%/login'
+    controller: App\Controller\Admin\SecurityController::login
+
+admin_login_check:
+    path: '%admin.path_prefix%/login_check'
+
+admin_logout:
+    path: '%admin.path_prefix%/logout'
+
+# 2FA enrollment (D-49): reachable only while a partially-authenticated (2FA-in-progress) session
+# has no TOTP secret yet — see App\EventSubscriber\ForceTwoFactorEnrollmentSubscriber.
+admin_2fa_enroll:
+    path: '%admin.path_prefix%/2fa-setup'
+    controller: App\Controller\Admin\TwoFactorEnrollmentController::enroll
+
+admin_2fa_enroll_confirm:
+    path: '%admin.path_prefix%/2fa-setup/confirm'
+    controller: App\Controller\Admin\TwoFactorEnrollmentController::confirm
+    methods: [POST]

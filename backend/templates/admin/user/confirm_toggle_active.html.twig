@@ -1,0 +1,18 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}{{ user.active ? 'Suspend' : 'Unsuspend' }} user{% endblock %}
+
+{% block main %}
+    <p>User <strong>{{ masked_email }}</strong> (id {{ user.id }}) is currently
+        <strong>{{ user.active ? 'active' : 'suspended' }}</strong>.</p>
+
+    {% if user.active %}
+        <p>Suspending also revokes every refresh token this user holds — any already-issued session
+            will stop working immediately.</p>
+    {% endif %}
+
+    <form method="post" action="{{ action_path }}">
+        <button type="submit">{{ user.active ? 'Suspend this user' : 'Unsuspend this user' }}</button>
+        <a href="{{ detail_path }}">Cancel</a>
+    </form>
+{% endblock %}

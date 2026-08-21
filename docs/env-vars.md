@@ -90,9 +90,10 @@ flags — not variables.
 
 | Variable | Secret | Purpose |
 |---|---|---|
-| `ADMIN_PATH_PREFIX` | no | Default `/admin`. Changing it is obscurity, not security — the firewall does the work. |
+| `ADMIN_PATH_PREFIX` | no | Default `/admin`. Changing it is obscurity, not security — the firewall does the work. **Compiled into the container** (D-48): Symfony bakes firewall patterns and admin route paths into the compiled container, so changing this value requires a cache clear/rebuild, not just an env change and a process restart. |
 | `ADMIN_TOTP_ISSUER` | no | Issuer name shown in the operator's authenticator app |
-| `ADMIN_IP_ALLOWLIST` | no | Optional CIDR allowlist, production hardening |
+| `ADMIN_IP_ALLOWLIST` | no | Comma-separated CIDR ranges (e.g. `203.0.113.0/24,198.51.100.7/32`). **Empty means unrestricted** (correct for local dev and CI); **non-empty enforces it** — a request from outside every listed range gets a plain 404 before authentication runs (D-42), not a 403, so an outsider can't confirm the prefix exists. A startup check logs an `error` if `APP_ENV=prod` and this is empty. Populating it is a production deployment requirement. |
+| `ADMIN_TOTP_ENCRYPTION_KEY` | **yes** | Base64-encoded 32-byte libsodium `xchacha20poly1305` key encrypting the admin's TOTP secret at rest (AC-5.3) — same scheme as `TOKEN_ENCRYPTION_KEY` below, generated per environment, never reused across purposes |
 
 ### Frontend (Expo)
 

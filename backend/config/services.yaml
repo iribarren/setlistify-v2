@@ -7,6 +7,11 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # D-48 (docs/specs/2026-08-21-backoffice-foundation.md): the admin firewall's pattern and every
+    # admin route are compiled from this parameter at container-build time — changing
+    # ADMIN_PATH_PREFIX requires a cache clear/rebuild, not just an env change, because Symfony
+    # compiles firewall patterns and route paths into the container.
+    admin.path_prefix: '%env(ADMIN_PATH_PREFIX)%'
 
 services:
     # default configuration for services in *this* file
@@ -33,6 +38,14 @@ services:
             # digest is never exposed and the key never needs independent rotation from the app
             # itself.
             $digestKey: '%env(APP_SECRET)%'
+            # AC-5.3: the admin's TOTP secret is encrypted at rest with libsodium xchacha20poly1305
+            # (App\Security\Admin\TotpSecretEncryptor), same scheme docs/env-vars.md documents for
+            # provider OAuth tokens — a dedicated key, never reused across encryption purposes.
+            $base64Key: '%env(ADMIN_TOTP_ENCRYPTION_KEY)%'
+            $adminPathPrefix: '%admin.path_prefix%'
+            $allowlistCsv: '%env(ADMIN_IP_ALLOWLIST)%'
+            $appEnv: '%env(APP_ENV)%'
+            $totpIssuer: '%env(ADMIN_TOTP_ISSUER)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -97,3 +110,21 @@ services:
         tags:
             - { name: 'doctrine.event_listener', event: 'preUpdate' }
             - { name: 'doctrine.event_listener', event: 'preRemove' }
+
+    # Backs the admin session (D-54, config/packages/framework.yaml) — a raw phpredis connection
+    # built from REDIS_URL via symfony/cache's own DSN parser, so sessions survive a multi-instance
+    # deployment without sticky sessions. Nothing else in the app should depend on this `Redis`
+    # service directly; it exists only to feed RedisSessionHandler.
+    Redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
+
+    Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler:
+        arguments: ['@Redis']
+
+    # AC-4.2: lockout state shares the same Redis-backed pool as the rate limiters (config/packages/
+    # rate_limiter.yaml) rather than a dedicated one — both are ephemeral, both must survive across
+    # app instances, and a second pool buys nothing here.
+    App\Security\Admin\AdminLockoutTracker:
+        arguments: ['@cache.rate_limiter']

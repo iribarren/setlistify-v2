@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Setlistify Admin — Set up two-factor authentication</title>
+    <style>
+        body { font-family: sans-serif; max-width: 480px; margin: 5vh auto; }
+        .error { color: #b00020; }
+        .secret { font-family: monospace; background: #f0f0f0; padding: 0.5em; word-break: break-all; }
+        .codes { font-family: monospace; background: #f0f0f0; padding: 1em; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25em; }
+        img { max-width: 240px; }
+        input[type=text] { width: 100%; padding: 0.5em; box-sizing: border-box; margin-top: 0.5em; }
+        button { margin-top: 1em; padding: 0.6em 1.2em; }
+    </style>
+</head>
+<body>
+    <h1>Set up two-factor authentication</h1>
+    <p>This account cannot be used until enrollment completes (docs/architecture.md §11). Scan the
+        QR code with your authenticator app, then enter the current 6-digit code below.</p>
+
+    {% if error is defined and error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <img src="{{ qr_data_uri }}" alt="TOTP QR code">
+
+    <p>Or enter this secret manually:</p>
+    <p class="secret">{{ secret }}</p>
+
+    <p><strong>Save these backup codes now — they are shown only once.</strong> Each can be used
+        once if you lose access to your authenticator app.</p>
+    <div class="codes">
+        {% for code in backup_codes %}
+            <span>{{ code }}</span>
+        {% endfor %}
+    </div>
+
+    <form method="post" action="{{ confirm_path }}">
+        <label for="code">Code from your authenticator app</label>
+        <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" required autofocus>
+        <button type="submit">Confirm and finish enrollment</button>
+    </form>
+</body>
+</html>

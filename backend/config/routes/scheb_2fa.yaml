@@ -1,7 +1,10 @@
-2fa_login:
-    path: /2fa
+# Overrides the Flex-recipe defaults (/2fa, /2fa_check) so the TOTP check form lives under the
+# admin path prefix too (D-48) — security.yaml's access_control and the admin firewall's pattern
+# both key off that prefix.
+admin_2fa_login:
+    path: '%admin.path_prefix%/2fa'
     defaults:
         _controller: "scheb_two_factor.form_controller::form"
 
-2fa_login_check:
-    path: /2fa_check
+admin_2fa_login_check:
+    path: '%admin.path_prefix%/2fa_check'

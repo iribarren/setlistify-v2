@@ -15,5 +15,9 @@ nelmio_cors:
         # ['*']` (browsers refuse to combine `*` with credentials), which is why origin_regex above
         # matches an exact origin instead.
         allow_credentials: true
+    # Scoped to `/api` only — AC-11.5 (docs/specs/2026-08-21-backoffice-foundation.md) requires the
+    # admin backoffice never gets a cross-origin CORS grant. It previously matched every path
+    # (`^/`), which would have handed `/admin` the same `allow_credentials: true` treatment as the
+    # API the moment the admin firewall started answering requests there.
     paths:
-        '^/': null
+        '^/api': null

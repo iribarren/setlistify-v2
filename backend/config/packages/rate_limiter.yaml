@@ -46,3 +46,28 @@ framework:
             policy: 'sliding_window'
             limit: 60
             interval: '1 hour'
+
+        # Backoffice foundation (docs/specs/2026-08-21-backoffice-foundation.md, AC-4.1): 5 attempts
+        # per 15 min per (IP + email), 20 per 15 min per IP. Consumed by
+        # App\EventSubscriber\AdminAuthRateLimitSubscriber before the credential check runs.
+        admin_login_credentials:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+        admin_login_ip:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '15 minutes'
+
+        # AC-4.3: failed TOTP submissions are limited independently of the password step, per
+        # session.
+        admin_totp_attempts:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
+
+        # AC-9.4: reveal-email is rate-limited per admin session.
+        admin_reveal_email:
+            policy: 'sliding_window'
+            limit: 30
+            interval: '1 hour'
