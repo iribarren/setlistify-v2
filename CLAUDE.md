@@ -57,12 +57,21 @@ that touches an external API.
 - **Playlist generation degrades, it does not fail.** Missing setlists, unmatched songs and
   ambiguous versions are the normal case, not the error case. Always produce the best available
   result plus an honest report of what could not be matched.
+- **A user-scoped resource returns 404, never 403, for another user's data.** `Concert` set the
+  pattern (`docs/specs/2026-08-21-concert-domain-api.md`, D-27; `docs/architecture.md` §11): a query
+  extension filters every read to the current owner *before* a voter ever runs, so a cross-owner
+  request finds nothing and gets the framework's ordinary "not found" — indistinguishable from a
+  genuinely missing id. A 403 would confirm the id exists; that leak is exactly what this rule closes.
+  Every later user-scoped resource (playlists, notes, …) copies this shape.
 
 ### Domain glossary
 
 | Term | Meaning |
 |------|---------|
 | **Concert** | An event the user tracks: one or more bands, a date, optionally a venue and ticket price. Upcoming or past. |
+| **Band** | A performer, shared across every user who recorded a concert with it — one row per real band, deduplicated by a normalized name (case/diacritic/leading-article-insensitive). Not user-scoped. |
+| **Lineup** | The ordered set of bands billed at one concert, headliner first. |
+| **Billing order** | A lineup entry's 0-based position — index 0 is the headliner, and it is what the API preserves, not insertion order. |
 | **Setlist** | The ordered list of songs a band played at *one specific show*, as recorded on setlist.fm. Not ours; cached from them. |
 | **Song** | An entry in a setlist. A name and a band — not yet a playable track. |
 | **Track** | A concrete, playable item in a streaming provider's catalog. Matching turns Songs into Tracks. |

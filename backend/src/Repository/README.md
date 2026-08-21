@@ -5,7 +5,8 @@
 **Rule:** only `Repository/` touches Doctrine's query layer. No other layer (controller, API
 resource, service) builds a `QueryBuilder` or calls the `EntityManager` directly.
 
-This directory is intentionally empty — this feature ships no domain entity to have a repository
-for (D-4). It is filled alongside `Entity/` from prompt 05 onward.
+Filled alongside `Entity/` starting with prompt 04 (`UserRepository`, token repositories) and
+prompt 05 (`ConcertRepository`, `BandRepository`, `ConcertBandRepository`,
+`docs/specs/2026-08-21-concert-domain-api.md`).
 
 See `docs/architecture.md` §3.

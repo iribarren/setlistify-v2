@@ -9,6 +9,58 @@
  * docs/specs/2026-08-21-frontend-skeleton.md, R-1.
  */
 export interface paths {
+    "/api/concerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves the collection of Concert resources.
+         * @description Retrieves the collection of Concert resources.
+         */
+        get: operations["api_concerts_get_collection"];
+        put?: never;
+        /**
+         * Creates a Concert resource.
+         * @description Creates a Concert resource.
+         */
+        post: operations["api_concerts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/concerts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a Concert resource.
+         * @description Retrieves a Concert resource.
+         */
+        get: operations["api_concerts_id_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Removes the Concert resource.
+         * @description Removes the Concert resource.
+         */
+        delete: operations["api_concerts_id_delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Updates the Concert resource.
+         * @description Updates the Concert resource.
+         */
+        patch: operations["api_concerts_id_patch"];
+        trace?: never;
+    };
     "/api/email-verification/confirm": {
         parameters: {
             query?: never;
@@ -213,6 +265,53 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "BandOutput.jsonld": {
+            id?: number;
+            name?: string;
+        };
+        /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
+        "Concert.ConcertInput": {
+            /** @description ISO-8601 calendar date, [1900-01-01, now+5y] (D-31, AC-9.2). */
+            date: string | null;
+            /** @description IANA identifier, e.g. `Europe/Madrid`. A fixed offset like `+02:00` is rejected (D-24, AC-9.3). */
+            timezone: string | null;
+            lineup?: components["schemas"]["LineupEntryInput"][];
+            venue?: components["schemas"]["VenueData"] | null;
+            ticketPrice?: components["schemas"]["MoneyData"] | null;
+            /** @description Local wall-clock `HH:MM` in `$timezone` (AC-2.5). */
+            doorsTime?: string | null;
+            startTime?: string | null;
+            /** @description Plain text, never rendered as HTML/Markdown (D-30). */
+            note?: string | null;
+        };
+        /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
+        "Concert.ConcertOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            id?: number;
+            date?: string;
+            timezone?: string;
+            status?: string;
+            lineup?: components["schemas"]["LineupEntryOutput.jsonld"][];
+            venue?: components["schemas"]["VenueData.jsonld"];
+            ticketPrice?: components["schemas"]["MoneyData.jsonld"] | null;
+            doorsTime?: string | null;
+            startTime?: string | null;
+            note?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
+        "Concert.ConcertPatchInput.jsonMergePatch": {
+            date?: string | null;
+            timezone?: string | null;
+            lineup?: components["schemas"]["LineupEntryInput"][];
+            venue?: components["schemas"]["VenueData"] | null;
+            ticketPrice?: components["schemas"]["MoneyData"] | null;
+            doorsTime?: string | null;
+            startTime?: string | null;
+            note?: string | null;
+        };
         /** @description Unprocessable entity */
         ConstraintViolation: {
             /** @default 422 */
@@ -236,10 +335,23 @@ export interface components {
             readonly title?: string | null;
             readonly instance?: string | null;
         };
+        /**
+         * @description `POST /api/email-verification/confirm` (AC-7.2). A used, expired or unknown token all give one
+         *     indistinguishable 400. Implemented as `POST` only (a body-carrying, non-idempotent action);
+         *     `docs/specs/2026-08-21-auth-and-accounts.md`'s `GET|POST` was written for a click-through email
+         *     link, but a `GET` that mutates state is both a CSRF surface and awkward with a JSON body — the
+         *     frontend's verification screen extracts the token from the deep link and POSTs it instead
+         *     (recorded as a deviation in the implementation report).
+         */
         "EmailVerificationConfirm.EmailVerificationConfirmInput": {
             /** @default  */
             token: string;
         };
+        /**
+         * @description `POST /api/email-verification/resend` (AC-7.3). Requires a bearer JWT (any authenticated user,
+         *     verified or not — this is the endpoint an unverified user calls). Always 202 and never reveals
+         *     whether the account was already verified.
+         */
         "EmailVerificationResend.GenericAck.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             message?: string;
         };
@@ -261,9 +373,51 @@ export interface components {
         };
         /** @description Reports whether the application and its dependencies (database, Redis) are actually usable — not just that the container is up. */
         "Health.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            /** @description Overall status: `ok` when every dependency is healthy, `error` otherwise. */
             status?: string;
+            /** @description `ok` or `error` — a real round-trip result, never a configuration read. */
             database?: string;
+            /** @description `ok` or `error` — a real round-trip result, never a configuration read. */
             redis?: string;
+        };
+        HydraCollectionBaseSchema: components["schemas"]["HydraCollectionBaseSchemaNoPagination"] & {
+            /**
+             * @example {
+             *       "@id": "string",
+             *       "@type": "string",
+             *       "first": "string",
+             *       "last": "string",
+             *       "previous": "string",
+             *       "next": "string"
+             *     }
+             */
+            view?: {
+                /** Format: iri-reference */
+                "@id"?: string;
+                "@type"?: string;
+                /** Format: iri-reference */
+                first?: string | null;
+                /** Format: iri-reference */
+                last?: string | null;
+                /** Format: iri-reference */
+                previous?: string | null;
+                /** Format: iri-reference */
+                next?: string | null;
+            };
+        };
+        HydraCollectionBaseSchemaNoPagination: {
+            totalItems?: number;
+            search?: {
+                "@type"?: string;
+                template?: string;
+                variableRepresentation?: string;
+                mapping?: {
+                    "@type"?: string;
+                    variable?: string;
+                    property?: string | null;
+                    required?: boolean;
+                }[];
+            };
         };
         HydraItemBaseSchema: {
             "@context"?: string | ({
@@ -276,6 +430,20 @@ export interface components {
             "@id": string;
             "@type": string;
         };
+        LineupEntryInput: {
+            /** @description 1–120 characters after trimming (AC-9.4). Skipped when null (a `bandId` entry). */
+            name?: string | null;
+            bandId?: number | null;
+        };
+        "LineupEntryOutput.jsonld": {
+            band?: components["schemas"]["BandOutput.jsonld"];
+            billingOrder?: number;
+        };
+        /**
+         * @description `POST /api/login` (US-2). Wrong password, unknown email, unverified account (when
+         *     `AUTH_REQUIRE_VERIFIED_EMAIL` is on) and a disabled account all fail identically — a generic 401
+         *     with no distinguishing detail (AC-2.4, US-9) — enforced entirely in {@see LoginProcessor}.
+         */
         "Login.LoginInput": {
             /**
              * Format: email
@@ -285,12 +453,27 @@ export interface components {
             /** @default  */
             password: string;
         };
+        /**
+         * @description `POST /api/login` (US-2). Wrong password, unknown email, unverified account (when
+         *     `AUTH_REQUIRE_VERIFIED_EMAIL` is on) and a disabled account all fail identically — a generic 401
+         *     with no distinguishing detail (AC-2.4, US-9) — enforced entirely in {@see LoginProcessor}.
+         */
         "Login.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             accessToken?: string;
             tokenType?: string;
+            /** @description Seconds until the access token expires (AC-2.2). */
             expiresIn?: number;
+            /**
+             * @description Present only for `X-Client-Platform: native` requests (AC-4.6, D-18) — web clients get
+             *     the refresh token exclusively via the httpOnly cookie and this is always `null`.
+             */
             refreshToken?: string | null;
         };
+        /**
+         * @description `POST /api/logout` (US-5). Revokes the presented refresh token's entire family. Always 204, even
+         *     when the presented token is missing or already invalid (AC-5.4) — logging out must never fail
+         *     visibly, since the whole point is to make a device's session unusable.
+         */
         "Logout.LogoutInput": {
             refreshToken?: string | null;
         };
@@ -299,19 +482,46 @@ export interface components {
             id?: number;
             email?: string;
             emailVerified?: boolean;
-            roles?: (string | null)[];
+            roles?: string[];
             /** Format: date-time */
             createdAt?: string;
         };
+        MoneyData: {
+            amount?: number | null;
+            currency?: string | null;
+        };
+        "MoneyData.jsonld": {
+            amount?: number | null;
+            currency?: string | null;
+        };
+        /**
+         * @description `POST /api/password-reset/confirm` (AC-6.3–AC-6.6). An expired, unknown or already-used token
+         *     all produce one indistinguishable 400 (AC-6.5). On success: the token is consumed, every other
+         *     outstanding reset token for the user is invalidated, and every refresh-token family for the user
+         *     is revoked — a password reset logs out every device (AC-6.4).
+         */
         "PasswordResetConfirm.PasswordResetConfirmInput": {
             /** @default  */
             token: string;
-            /** @default  */
+            /**
+             * @description Same policy as registration (AC-1.4, AC-6.3).
+             * @default
+             */
             password: string;
         };
+        /**
+         * @description `POST /api/password-reset/request` (US-6). Always 202 with the same body whether or not the
+         *     address exists (AC-6.1, US-9) — {@see PasswordResetRequestProcessor} never lets a caller
+         *     distinguish the two.
+         */
         "PasswordResetRequest.GenericAck.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             message?: string;
         };
+        /**
+         * @description `POST /api/password-reset/request` (US-6). Always 202 with the same body whether or not the
+         *     address exists (AC-6.1, US-9) — {@see PasswordResetRequestProcessor} never lets a caller
+         *     distinguish the two.
+         */
         "PasswordResetRequest.PasswordResetRequestInput": {
             /**
              * Format: email
@@ -319,13 +529,26 @@ export interface components {
              */
             email: string;
         };
+        /**
+         * @description `POST /api/token/refresh` (US-4). Every call rotates the presented refresh token — it is marked
+         *     used and a new one takes its place, sharing the same family (AC-4.1). Reuse of an
+         *     already-rotated token is treated as theft and kills the family (AC-4.4), subject to the
+         *     grace-window mitigation in {@see \App\Service\Security\RefreshTokenService} (R-3).
+         */
         "Refresh.RefreshInput": {
             refreshToken?: string | null;
         };
+        /**
+         * @description `POST /api/token/refresh` (US-4). Every call rotates the presented refresh token — it is marked
+         *     used and a new one takes its place, sharing the same family (AC-4.1). Reuse of an
+         *     already-rotated token is treated as theft and kills the family (AC-4.4), subject to the
+         *     grace-window mitigation in {@see \App\Service\Security\RefreshTokenService} (R-3).
+         */
         "Refresh.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             accessToken?: string;
             tokenType?: string;
             expiresIn?: number;
+            /** @description Present only for `X-Client-Platform: native` requests — see {@see LoginOutput}. */
             refreshToken?: string | null;
         };
         /** @description Account registration. Roles are always exactly ["ROLE_USER"], assigned server-side — this endpoint has no path to any other role (US-10). */
@@ -335,7 +558,12 @@ export interface components {
              * @default
              */
             email: string;
-            /** @default  */
+            /**
+             * @description Policy (AC-1.4): 12–4096 characters (4096 is the bcrypt/argon input bound), and rejected if
+             *     it appears in Symfony's compromised-password check. Hashed with the auto password hasher
+             *     (AC-1.5) — no algorithm is named here or anywhere in application code.
+             * @default
+             */
             password: string;
         };
         /** @description Account registration. Roles are always exactly ["ROLE_USER"], assigned server-side — this endpoint has no path to any other role (US-10). */
@@ -346,6 +574,16 @@ export interface components {
             /** Format: date-time */
             createdAt?: string;
         };
+        VenueData: {
+            name?: string | null;
+            city?: string | null;
+            countryCode?: string | null;
+        };
+        "VenueData.jsonld": {
+            name?: string | null;
+            city?: string | null;
+            countryCode?: string | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -355,6 +593,256 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    api_concerts_get_collection: {
+        parameters: {
+            query?: {
+                /** @description The collection page number */
+                page?: number;
+                /** @description Filter by upcoming/past (D-24). Omit to return both. An unrecognised value is a 422 (AC-3.3). */
+                status?: "upcoming" | "past";
+                /** @description Filter to concerts whose lineup contains a band matching this normalized substring (US-4, AC-4.2). */
+                band?: string;
+                /** @description Sort by date. Default: ascending for status=upcoming, descending otherwise (AC-3.4). */
+                "order[date]"?: "asc" | "desc";
+                /** @description Page size, capped at 100 (D-31, AC-3.5). */
+                itemsPerPage?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Concert collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["HydraCollectionBaseSchema"] & {
+                        member: components["schemas"]["Concert.ConcertOutput.jsonld"][];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_concerts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The new Concert resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["Concert.ConcertInput"];
+            };
+        };
+        responses: {
+            /** @description Concert resource created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["Concert.ConcertOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_concerts_id_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Concert identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Concert resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["Concert.ConcertOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_concerts_id_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Concert identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Concert resource deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_concerts_id_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Concert identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description The updated Concert resource */
+        requestBody: {
+            content: {
+                "application/merge-patch+json": components["schemas"]["Concert.ConcertPatchInput.jsonMergePatch"];
+            };
+        };
+        responses: {
+            /** @description Concert resource updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["Concert.ConcertOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
     "api_email-verificationconfirm_post": {
         parameters: {
             query?: never;

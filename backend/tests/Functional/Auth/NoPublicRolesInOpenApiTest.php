@@ -44,7 +44,18 @@ final class NoPublicRolesInOpenApiTest extends AuthWebTestCase
 
                 $requestBody = self::asArray($operation['requestBody']);
                 $content = self::asArray($requestBody['content'] ?? null);
-                $mediaType = self::asArray($content['application/ld+json'] ?? $content['application/json'] ?? null);
+                // A PATCH operation using JSON Merge Patch (RFC 7396, docs/specs/2026-08-21-concert-domain-api.md
+                // AC-5.1) declares its schema under this media type instead of the other two.
+                $mediaTypeCandidate = $content['application/ld+json']
+                    ?? $content['application/json']
+                    ?? $content['application/merge-patch+json']
+                    ?? null;
+
+                if (null === $mediaTypeCandidate) {
+                    continue;
+                }
+
+                $mediaType = self::asArray($mediaTypeCandidate);
                 $schema = self::asArray($mediaType['schema'] ?? null);
                 $ref = $schema['$ref'] ?? null;
 
