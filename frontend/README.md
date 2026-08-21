@@ -150,6 +150,44 @@ rather than silently requesting a relative URL.
 On a physical device, `localhost` resolves to the device itself — set `EXPO_PUBLIC_API_URL` in
 `.env.local` to your machine's LAN IP instead.
 
+## Concerts — the app's real home (`feature/concert-tracker-ui`)
+
+`docs/specs/2026-08-21-concert-tracker-ui.md` (D-32–D-41) implements
+`docs/design/canvas/screens/` against `frontend/api/schema.d.ts`'s concert endpoints. The Concerts
+tab (not Account) is the app's real landing route now — `(auth)/_layout.tsx` redirects an
+already-authenticated visitor straight to `/concerts`, and `(app)/index.tsx` does the same for a bare
+`(app)` hit. The old health-screen-shaped `home.tsx` scaffold is now `account.tsx` (identity, email
+verification, log out) — the second of the shell's two destinations.
+
+- **Route tree**: `app/(app)/concerts/index.tsx` (list — Upcoming/Past sections, skeletons, empty/
+  error states, infinite scroll), `concerts/new.tsx` (add), `concerts/[id]/index.tsx` (detail —
+  lineup, venue, price, reserved Playlist/Your-note/Share regions for prompts 19–21),
+  `concerts/[id]/edit.tsx` (edit + delete). `concerts/_layout.tsx` is a nested `Stack` so list →
+  detail → edit push/pop and deep-link normally inside the persistent shell chrome.
+- **`lib/concerts/`**: `queries.ts` (`useConcertsSection`/`useConcert`/`useCreateConcert`/
+  `useUpdateConcert`/`useDeleteConcert`, D-32/D-33/D-41 — all built on `lib/api/`, never `fetch`
+  directly), `mapping.ts` (form model ⇄ generated DTOs; D-38 — the one place money/date conversion
+  happens), `validation.ts` (D-31's bounds mirrored client-side, advisory only per D-36),
+  `violations.ts` (RFC 7807 `propertyPath` → form field, including indexed `lineup[n].*` paths),
+  `errorMessage.ts` (honest, non-enumerating failure copy — D-27's 404-not-403 rule extends here:
+  no "forbidden"/"not yours" wording anywhere).
+- **The one sanctioned platform fork this branch adds** (D-34, alongside `lib/auth/storage.*`):
+  `components/DateField.native.tsx` / `DateField.web.tsx`, behind the shared `DateFieldProps`
+  contract in `components/DateFieldTypes.ts`. Web renders the browser's native
+  `<input type="date">`; native is `YYYY-MM-DD` text entry pending a vetted cross-platform picker
+  dependency clearing the D-15 web-support gate.
+- **Phone/desktop shell** (D-39): `app/(app)/_layout.tsx` reads `useWindowDimensions()` against
+  `components/nav/breakpoint.ts`'s single 900px threshold — `BottomTabBar` below it, `Sidebar` at or
+  above it — never a `Platform.OS` check. Simplified from the canvas's extra collapsed-rail/
+  tablet-drawer bands to this one breakpoint; a recorded simplification, not a missed requirement.
+- **Components added to the inventory** (`frontend/components/`, AC-9.5): `components/concert/`
+  (`ConcertCard`, `SkeletonCard`, `LineupList`, `BandEntryRow`, `DisclosureSection`,
+  `ReservedSection`, `ConcertForm`, `DeleteConfirmation`) and `components/nav/` (`BottomTabBar`,
+  `Sidebar`).
+- **Offline** (D-37): a read falls back to whatever TanStack Query already cached; a write attempted
+  offline fails fast (`lib/concerts/errorMessage.ts`'s `status === 0` case) with the user's input
+  intact — there is no write queue.
+
 ## What's here
 
 ```
@@ -159,21 +197,29 @@ frontend/
 │  ├─ index.tsx        health screen scaffold — unauthenticated, outside (auth)/(app)
 │  ├─ verify-email.tsx  email verification confirm — unauthenticated, outside (auth)/(app)
 │  ├─ (auth)/           login, register, forgot-password, reset-password — redirects in if already signed in
-│  └─ (app)/            home — redirects to login if signed out
+│  └─ (app)/            breakpoint-driven shell (tab bar / sidebar) around:
+│     ├─ index.tsx        redirects to /concerts
+│     ├─ concerts/        list, add, detail, edit — the app's real home (prompt 07)
+│     └─ account.tsx      identity, email verification, log out
 ├─ api/               GENERATED — openapi-typescript output, committed, never hand-edited
 ├─ theme/             colors · typography · spacing · radius · elevation · ThemeProvider
-├─ components/        Button, TextInput, Card, ListRow, Badge, Avatar
-│  └─ state/          LoadingState, EmptyState, DegradedState, ErrorState
+├─ components/        Button, TextInput, Card, ListRow, Badge, Avatar, DateField.native/web
+│  ├─ state/          LoadingState, EmptyState, DegradedState, ErrorState
+│  ├─ concert/         ConcertCard, SkeletonCard, LineupList, BandEntryRow, DisclosureSection,
+│  │                    ReservedSection, ConcertForm, DeleteConfirmation
+│  └─ nav/             BottomTabBar, Sidebar, breakpoint
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
+├─ lib/concerts/      concert query hooks, DTO mapping, client validation, RFC 7807 violation mapping
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```
 
 ## Not built yet, on purpose (D-16)
 
-Tabs, modals/bottom sheets, toasts and date inputs are specified on the canvas but land with their
-first real consumer rather than being built speculatively here. Concert screens, playlist flows,
-and an in-app theme toggle remain out of scope — see `docs/specs/2026-08-21-frontend-skeleton.md`,
-"Out of Scope". Authentication UI shipped in `feature/auth-and-accounts`
-(`docs/specs/2026-08-21-auth-and-accounts.md`).
+Modals/bottom sheets and toasts are still specified on the canvas but not built as generic
+components — the concert feature's delete/discard confirmations and disclosure sections are
+inline, purpose-built pieces rather than a general sheet/toast primitive. Playlist flows, notes UI
+and sharing remain out of scope — see `docs/specs/2026-08-21-concert-tracker-ui.md`, "Out of Scope".
+Tabs and date inputs, previously deferred here, shipped with this branch (D-34/D-39) as their first
+real consumer.

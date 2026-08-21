@@ -8,12 +8,11 @@ import { describeAuthError } from "@/lib/auth/errorMessage";
 import { useTheme } from "@/theme";
 
 /**
- * AC-2.6/AC-5.5 — the authenticated home a login lands on and a logout leaves. This feature ships
- * no product functionality (concert tracking arrives in prompt 07); this screen exists to prove the
- * session end to end and host the AC-7.6 verification banner. Prompt 07 replaces it with the
- * concert list.
+ * AC-2.6/AC-5.5 (frontend skeleton) + US-9 (`NavShell.dc.html`) — the Account destination: identity,
+ * email verification, log out. Concerts (not Account) is the app's real home now that prompt 07 has
+ * shipped the concert list.
  */
-export default function HomeScreen(): React.JSX.Element {
+export default function AccountScreen(): React.JSX.Element {
   const theme = useTheme();
   const session = useSession();
   const [loggingOut, setLoggingOut] = useState(false);
