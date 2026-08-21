@@ -16,6 +16,10 @@ backend/vendor/
 backend/var/
 backend/config/jwt/*.pem
 backend/config/jwt/*.key
+backend/public/bundles/
+backend/.php-cs-fixer.cache
+backend/.phpunit.cache/
+backend/phpunit.xml
 *.p8
 *.key
 
