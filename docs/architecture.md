@@ -107,6 +107,61 @@ Registration against a taken email returns a distinguishable 422, a deliberate t
 would mean accepting every signup and deferring all feedback to email, degrading the primary
 conversion path to close a low-value oracle that's already rate-limited to 5/hour/IP.
 
+**D-24 — A concert is a local calendar date plus an IANA timezone, and stays `upcoming` until the
+end of its own local day** (`docs/specs/2026-08-21-concert-domain-api.md`). `Concert.date` is the
+calendar date as printed on the ticket, in the venue's local time; `Concert.timezone` is that
+venue's IANA identifier — never a fixed offset, which would be wrong twice a year across a DST
+change. Status (`upcoming`/`past`) is never a stored flag: `App\Service\Concert\ConcertScheduler`
+derives a UTC boundary instant, `Concert.pastAfter = (date + 1 day) at 00:00 in timezone`, on every
+write, and status is the single indexed comparison `pastAfter <= now()`. The rule is anchored to the
+concert's own timezone, never the viewer's — the same concert must read the same way in every tab.
+
+**D-25 — Band dedup uses a deliberately simple normalization, and accepts false merges over false
+splits.** `App\Service\Concert\BandResolver::normalize()`: trim → collapse whitespace → Unicode NFKD
+→ strip combining marks → lowercase → strip a leading definite article (`the`, `los`, `las`, `el`,
+`la`) → remove characters that are neither letters/digits nor whitespace. `Sigur Rós` and `AC/DC`
+normalize to `sigur ros` and `acdc`. This will falsely merge distinct bands whose names collapse
+alike and falsely split spellings it can't see through — accepted because a merge is visible and
+fixable, while a split silently duplicates the setlist.fm identity work prompt 09 is about to invest.
+Normalization is a service method, not a database function, so that identity work can replace the
+rule later without touching a query; the same method backs both dedup and the `?band=` search filter
+so the two can never drift apart.
+
+**D-26 — Venue is a Doctrine embeddable value object, not an entity and not loose columns.**
+`Venue { name, city, countryCode }` maps inline onto `concerts` and serializes as a nested `venue`
+object. The API contract is already the shape a promoted `Venue` entity (prompt 24) would want, so
+that promotion is additive (the JSON gains an `id`), not breaking.
+
+**D-27 — Ownership is enforced by a Doctrine query extension first, a voter second — the pattern
+every later user-scoped resource copies.** `App\Security\ConcertOwnerExtension` adds
+`WHERE owner = :current_user` to both collection and item queries, so a cross-owner item lookup
+finds nothing and produces the framework's ordinary 404 — byte-identical to a genuinely missing id.
+A voter alone would return 403, which confirms the id exists; the query extension is what makes
+existence itself unobservable. `App\Security\Voter\ConcertVoter` is the second gate, checked after
+the (already owner-filtered) entity is loaded, so a future code path that reaches a `Concert` outside
+this query still fails closed. See §11's note on this convention.
+
+**D-28 — Money is integer minor units plus an ISO 4217 code, never a float.**
+`{ "amount": 4500, "currency": "EUR" }` is €45.00; the currency's exponent decides the scale, not a
+hardcoded 2. Survives JSON round-trips exactly, needs no arbitrary-precision type client-side, and
+formats correctly per currency via `Intl.NumberFormat` with no server-side formatting logic.
+
+**D-29 — A resource with DTOs never binds request input to the entity, on read or write.**
+`ConcertResource`'s operations declare `input`/`output` DTOs (`ConcertInput`, `ConcertPatchInput`,
+`ConcertOutput`) and a custom state provider/processor per operation, continuing D-22. `status` and
+the ordered lineup exist only as computed `ConcertOutput` values; `owner` is stamped server-side from
+the security token in the processor, never read from the payload.
+
+**D-30 — `note` is a plain-text field with no rendering contract.** One nullable `TEXT` column,
+length-bounded (2000 chars), stored and returned verbatim, never parsed as HTML/Markdown by the API.
+Prompt 20 (notes and reviews) owns rendering and can migrate the column into a richer model without
+an API break, because nothing today depends on its contents being anything but a string.
+
+**D-31 — Concert-domain bounds are set at launch, not retrofitted after abuse:** lineup 1–30 bands,
+band name 1–120 characters, note ≤ 2000 characters, page size ≤ 100, date within
+[1900-01-01, now + 5 years]. Validation constants in one place (`App\ApiResource\ConcertInput` /
+`ConcertPatchInput`, `App\Validator\ConcertDateRange`), easy to raise later.
+
 ## 2. Shape of the system
 
 ```
@@ -296,6 +351,12 @@ can use sessions and 2FA instead of the API's JWTs.
 
 ```
 User ─┬─< Concert ─┬─< ConcertBand >─ Band
+      │      (date, timezone,     (billingOrder)   (name, normalizedName,
+      │       pastAfter [derived],                  setlistfmMbid [null,
+      │       venue [embedded],                      prompt 09])
+      │       priceAmount/Currency,
+      │       doorsTime/startTime,
+      │       note)
       │            └──< Playlist ─── ProviderPlaylistRef (provider, external id)
       ├─< StreamingAccount (provider, encrypted tokens, scopes, expiry)
       └─< AuditLogEntry (as actor, admin only)
@@ -310,6 +371,13 @@ ProviderSetting (provider, enabled, playbackMode, isDefault, notes)
 
 `PlaylistTrack.outcome` is what makes the "what we couldn't match" report possible — every song in
 the source setlist has a row, including the ones that produced no track.
+
+`Concert`, `Band` and `ConcertBand` are built (`docs/specs/2026-08-21-concert-domain-api.md`, D-24–
+D-31) — the sketch above now matches the code: `ConcertBand.billingOrder` keeps a lineup ordered,
+`Concert.pastAfter` is the derived boundary instant `App\Service\Concert\ConcertScheduler` computes
+on every write, and `Band.setlistfmMbid` is the nullable column prompt 09 will populate without a
+migration. Everything else in this sketch (`Playlist`, `StreamingAccount`, `SetlistCacheEntry`,
+`ProviderSetting`, …) is still a later prompt.
 
 ## 11. Security posture
 
@@ -344,3 +412,12 @@ the source setlist has a row, including the ones that produced no track.
 - A Monolog processor redacts credential-shaped values (`password`, `token`, `refresh_token`,
   `authorization`, `set-cookie`, …) from every log record, on every channel, so a password never
   reaches a log aggregator even if a future call site logs its context carelessly.
+- **User-scoped resources return 404, never 403, for another user's data** — `Concert` is the first
+  one (`docs/specs/2026-08-21-concert-domain-api.md`, D-27) and sets the pattern every later
+  user-scoped resource (playlists, notes) is expected to copy: a Doctrine query extension
+  (`App\Security\ConcertOwnerExtension`) filters *every* query — collection and item — to the current
+  owner first, so a cross-owner lookup finds nothing and produces the framework's ordinary "not
+  found" 404, indistinguishable from a genuinely missing id. A voter
+  (`App\Security\Voter\ConcertVoter`) is the second gate, checked after load, for any future code
+  path that reaches the entity outside that filtered query. A 403 here would confirm the id exists —
+  exactly what this rule exists to prevent.

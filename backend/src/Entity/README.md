@@ -2,9 +2,8 @@
 
 > Doctrine entities — the domain, no framework logic.
 
-This directory is intentionally empty. This feature (`docs/specs/2026-08-21-backend-skeleton.md`)
-ships no domain — inventing a throwaway entity here would create code whose only purpose is
-deletion, and would seed a migration for a table nobody wants (D-4). The first real entity
-(`Concert`, `Band`, …) lands in prompt 05.
+Filled starting with prompt 04 (`User` and the token entities,
+`docs/specs/2026-08-21-auth-and-accounts.md`) and prompt 05 (`Concert`, `Band`, `ConcertBand`, plus
+the `Venue` embeddable, `docs/specs/2026-08-21-concert-domain-api.md`).
 
 See `docs/architecture.md` §3 for the full layering rules and §10 for the data model sketch.
