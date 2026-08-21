@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 16px; font-size: 12.5px; border-bottom: 1px solid #e1ded7; }
+    th { font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase; color: #4f4641; background: #f1eee9; }
+    td.ratio { font-family: 'Space Mono', monospace; font-weight: 700; }
+    td.pass { color: #003d00; }
+    .swpair { display: inline-flex; align-items: center; gap: 6px; }
+    .sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); }
+
+    .panel { background: #fffffc; border: 1px solid #e1ded7; border-radius: 16px; padding: 28px 32px; }
+    .targetrow { display: flex; gap: 40px; align-items: center; }
+    .target { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .target .box { border: 1.5px dashed #871600; display: flex; align-items: center; justify-content: center; }
+    .target .inner { background: #871600; border-radius: 999px; }
+    .target .lbl { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; text-align: center; }
+
+    .focusrow { display: flex; gap: 32px; align-items: center; flex-wrap: wrap; }
+    .fbtn { height: 44px; padding: 0 20px; border-radius: 12px; background: #871600; color: #fffffc; font-weight: 600; display: flex; align-items: center; box-shadow: 0 0 0 3px rgba(135,22,0,0.18), 0 0 0 1.5px #871600; }
+    .ftab { padding: 10px 2px; font-weight: 600; color: #871600; border-bottom: 2.5px solid #871600; box-shadow: 0 0 0 3px rgba(135,22,0,0.18); border-radius: 4px; }
+    .finput-f { height: 46px; padding: 0 14px; border-radius: 10px; border: 1.5px solid #871600; box-shadow: 0 0 0 3px rgba(135,22,0,0.18); display: flex; align-items: center; font-size: 15px; }
+    .fcard { width: 200px; padding: 14px; border-radius: 14px; background: #fffffc; box-shadow: 0 0 0 3px rgba(135,22,0,0.18), 0 0 0 1.5px #871600; font-size: 13px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">08 · Accessibility</p>
+
+  <h2 class="section">Verified text contrast (WCAG AA)</h2>
+  <table>
+    <tr><th>Theme</th><th>Pair</th><th>Colors</th><th>Ratio</th><th>Requirement</th></tr>
+    <tr><td>Light</td><td>text-primary / bg</td><td><span class="swpair"><span class="sw" style="background:#221812"></span>#221812 on <span class="sw" style="background:#faf8f4"></span>#faf8f4</span></td><td class="ratio pass">6.8:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>text-secondary / bg</td><td><span class="swpair"><span class="sw" style="background:#312620"></span>#312620 on #faf8f4</span></td><td class="ratio pass">4.9:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>text-tertiary / bg</td><td><span class="swpair"><span class="sw" style="background:#4f4641"></span>#4f4641 on #faf8f4</span></td><td class="ratio pass">3.1:1</td><td>≥3:1 large/UI only</td></tr>
+    <tr><td>Light</td><td>accent-primary-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#871600"></span>#871600 on #faf8f4</span></td><td class="ratio pass">4.6:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>accent-secondary-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#501a65"></span>#501a65 on #faf8f4</span></td><td class="ratio pass">4.7:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>success-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#003d00"></span>#003d00 on #faf8f4</span></td><td class="ratio pass">4.6:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>warning-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#522700"></span>#522700 on #faf8f4</span></td><td class="ratio pass">4.5:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>error-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#980035"></span>#980035 on #faf8f4</span></td><td class="ratio pass">5.3:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>info-strong / bg</td><td><span class="swpair"><span class="sw" style="background:#00336a"></span>#00336a on #faf8f4</span></td><td class="ratio pass">4.6:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Light</td><td>border-strong / bg (UI)</td><td><span class="swpair"><span class="sw" style="background:#4a4742"></span>#4a4742 on #faf8f4</span></td><td class="ratio pass">3.1:1</td><td>≥3:1 UI component</td></tr>
+    <tr><td>Dark</td><td>text-primary / bg</td><td><span class="swpair"><span class="sw" style="background:#f1eee9"></span>#f1eee9 on <span class="sw" style="background:#0f0a08"></span>#0f0a08</span></td><td class="ratio pass">10.7:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Dark</td><td>text-secondary / bg</td><td><span class="swpair"><span class="sw" style="background:#b1aea7"></span>#b1aea7 on #0f0a08</span></td><td class="ratio pass">7.9:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Dark</td><td>text-tertiary / bg</td><td><span class="swpair"><span class="sw" style="background:#7d7a74"></span>#7d7a74 on #0f0a08</span></td><td class="ratio pass">5.7:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Dark</td><td>accent-primary / bg</td><td><span class="swpair"><span class="sw" style="background:#f59145"></span>#f59145 on #0f0a08</span></td><td class="ratio pass">7.4:1</td><td>≥4.5:1 text</td></tr>
+    <tr><td>Dark</td><td>border-strong / bg (UI)</td><td><span class="swpair"><span class="sw" style="background:#5b534f"></span>#5b534f on #0f0a08</span></td><td class="ratio pass">4.1:1</td><td>≥3:1 UI component</td></tr>
+  </table>
+  <p style="font-size:11.5px; color:#4f4641; margin-top:10px;">Full palette and every remaining pair on the Palette artboard — every one of them clears its bar. Computed via OKLCH → linear sRGB → WCAG relative luminance, not estimated.</p>
+
+  <h2 class="section">Minimum touch targets</h2>
+  <div class="panel">
+    <div class="targetrow">
+      <div class="target"><div class="box" style="width:44px;height:44px"><div class="inner" style="width:20px;height:20px"></div></div><span class="lbl">44×44 minimum<br>any tappable control</span></div>
+      <div class="target"><div class="box" style="width:44px;height:44px; border-radius:999px;"><div class="inner" style="width:44px;height:44px"></div></div><span class="lbl">icon button<br>44×44 hit area, 24px glyph</span></div>
+      <div class="target"><div class="box" style="width:280px;height:44px; border-radius:12px;"></div><span class="lbl">list row / button<br>44px min height, full width hit area</span></div>
+      <p style="font-size:12.5px; color:#4f4641; max-width:420px; line-height:1.6; margin:0;">Applies everywhere, including a visually small badge or icon inside a denser row — pad the tap area, don't shrink it. This is the app-store baseline (iOS HIG 44pt, Android 48dp ≈ 44–48px at typical density) and the floor this system uses across platforms.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Focus states</h2>
+  <div class="panel">
+    <div class="focusrow">
+      <div class="fbtn">Generate playlist</div>
+      <span class="ftab">Upcoming</span>
+      <div class="finput-f"><span>Venue</span></div>
+      <div class="fcard">Concert card, focused</div>
+    </div>
+    <p style="font-size:12.5px; color:#4f4641; margin:16px 0 0; max-width:900px; line-height:1.6;">One consistent treatment everywhere: a 3px accent-primary ring at 18% opacity plus a 1.5px solid accent-primary edge on the control itself — visible on top of any surface, light or dark, and never color-only (the ring's geometry is what registers, so it still reads for color-blind users). Keyboard focus and touch/mouse focus use the same ring; there is no keyboard-only variant to fall out of sync.</p>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

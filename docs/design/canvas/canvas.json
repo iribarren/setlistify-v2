@@ -1,0 +1,21 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Foundations" },
+    { "id": "page-2", "name": "Components & states" },
+    { "id": "page-3", "name": "Signature & a11y" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1580, "h": 1160, "page": "page-1" },
+    { "file": "Typography.dc.html", "x": 1660, "y": 0, "w": 1580, "h": 1120, "page": "page-1" },
+    { "file": "SpacingElevation.dc.html", "x": 3320, "y": 0, "w": 1580, "h": 900, "page": "page-1" },
+
+    { "file": "Components.dc.html", "x": 0, "y": 0, "w": 1580, "h": 1620, "page": "page-2" },
+    { "file": "Cards.dc.html", "x": 1660, "y": 0, "w": 1580, "h": 900, "page": "page-2" },
+    { "file": "States.dc.html", "x": 3320, "y": 0, "w": 1580, "h": 620, "page": "page-2" },
+
+    { "file": "ConcertCard.dc.html", "x": 0, "y": 0, "w": 1580, "h": 1360, "page": "page-3" },
+    { "file": "Accessibility.dc.html", "x": 1660, "y": 0, "w": 1580, "h": 900, "page": "page-3" },
+    { "file": "Icons.dc.html", "x": 3320, "y": 0, "w": 1300, "h": 760, "page": "page-3" }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

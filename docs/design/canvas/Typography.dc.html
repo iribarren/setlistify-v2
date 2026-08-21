@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    a { color: #871600; } a:hover { color: #521000; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .families { display: flex; gap: 20px; margin-bottom: 44px; }
+    .fam { flex: 1; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; padding: 24px 28px; }
+    .fam .role { font-family: 'Space Mono', monospace; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #4f4641; margin: 0 0 10px; }
+    .fam .sample { font-size: 34px; margin: 0 0 8px; }
+    .fam.display .sample { font-family: Petrona, ui-serif, Georgia, 'Times New Roman', serif; font-weight: 600; }
+    .fam.body .sample { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 600; }
+    .fam.mono .sample { font-family: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace; font-weight: 700; }
+    .fam .stack { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; line-height: 1.5; }
+    .fam .use { font-size: 12.5px; color: #312620; margin-top: 10px; line-height: 1.5; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 0 0 16px; }
+    .scale-row { display: flex; align-items: baseline; gap: 20px; padding: 14px 0; border-bottom: 1px solid #e1ded7; }
+    .scale-row .tok { font-family: 'Space Mono', monospace; font-size: 11px; color: #871600; width: 130px; flex-shrink: 0; }
+    .scale-row .spec { font-family: 'Space Mono', monospace; font-size: 10.5px; color: #4f4641; width: 190px; flex-shrink: 0; }
+    .scale-row .sample { flex: 1; font-family: Petrona, serif; font-weight: 600; color: #221812; }
+    .scale-row .use { width: 220px; flex-shrink: 0; font-size: 12px; color: #4f4641; text-align: right; }
+    .weights { display: flex; gap: 32px; margin: 28px 0 44px; }
+    .wgroup { flex: 1; }
+    .wgroup .fname { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; color: #4f4641; margin-bottom: 10px; }
+    .wsample { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e1ded7; font-size: 16px; }
+    .wsample .wname { font-family: 'Space Mono', monospace; font-size: 11px; color: #871600; }
+    .stub-demo { margin-top: 44px; background: #fffffc; border: 1px solid #e1ded7; border-radius: 14px; padding: 28px 32px; display: flex; gap: 28px; align-items: baseline; }
+    .stub-demo .band { font-family: Petrona, serif; font-weight: 600; font-size: 30px; }
+    .stub-demo .date { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 15px; color: #871600; }
+    .stub-demo .venue { font-size: 14px; color: #4f4641; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">02 · Typography</p>
+
+  <div class="families">
+    <div class="fam display">
+      <p class="role">Display / headings — Petrona</p>
+      <p class="sample">Camden, 14 Sep</p>
+      <p class="stack">Petrona, ui-serif, Georgia, 'Times New Roman', serif</p>
+      <p class="use">A warm literary serif for concert names, section headers and the hero moment on a concert page — reads like a printed program, not a dashboard title.</p>
+    </div>
+    <div class="fam body">
+      <p class="role">UI / body — Manrope</p>
+      <p class="sample">19 songs matched</p>
+      <p class="stack">Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif</p>
+      <p class="use">Everything functional: buttons, labels, list rows, form fields, body copy. Geometric-humanist, high legibility at small sizes on all three platforms.</p>
+    </div>
+    <div class="fam mono">
+      <p class="role">Ticket data — Space Mono</p>
+      <p class="sample">GA · £38.50</p>
+      <p class="stack">'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace</p>
+      <p class="use">Dates, prices, timestamps, match-count badges — the stamped, tabular feel of a real ticket stub. Used sparingly, never for body copy.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Type scale</h2>
+  <div class="scale">
+    <div class="scale-row"><span class="tok">display</span><span class="spec">44 / 52 · 600</span><span class="sample" style="font-size:44px">Radiohead</span><span class="use">Concert page hero title</span></div>
+    <div class="scale-row"><span class="tok">3xl</span><span class="spec">32 / 40 · 600</span><span class="sample" style="font-size:32px">Upcoming shows</span><span class="use">Screen titles</span></div>
+    <div class="scale-row"><span class="tok">2xl</span><span class="spec">26 / 34 · 600</span><span class="sample" style="font-size:26px">Fri, 14 September</span><span class="use">Section headers, card dates</span></div>
+    <div class="scale-row"><span class="tok">xl</span><span class="spec">21 / 28 · 600</span><span class="sample" style="font-size:21px">The National</span><span class="use">Concert card band name</span></div>
+    <div class="scale-row"><span class="tok">lg</span><span class="spec">18 / 26 · 500</span><span class="sample" style="font-size:18px">O2 Academy Brixton</span><span class="use">List row primary text</span></div>
+    <div class="scale-row"><span class="tok">base</span><span class="spec">16 / 24 · 400</span><span class="sample" style="font-size:16px">14 of 19 songs matched to Spotify</span><span class="use">Body copy, inputs</span></div>
+    <div class="scale-row"><span class="tok">sm</span><span class="spec">14 / 20 · 400</span><span class="sample" style="font-size:14px">Setlist from setlist.fm, cached 2h ago</span><span class="use">Secondary text, captions</span></div>
+    <div class="scale-row"><span class="tok">xs</span><span class="spec">12 / 16 · 600</span><span class="sample" style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em">Fast mode</span><span class="use">Eyebrow labels, badges</span></div>
+  </div>
+
+  <div class="weights">
+    <div class="wgroup">
+      <p class="fname">Manrope weights in use</p>
+      <div class="wsample" style="font-weight:400">Body copy <span class="wname">400</span></div>
+      <div class="wsample" style="font-weight:500">Row labels <span class="wname">500</span></div>
+      <div class="wsample" style="font-weight:600">Buttons, subheads <span class="wname">600</span></div>
+      <div class="wsample" style="font-weight:700">Nav active, emphasis <span class="wname">700</span></div>
+      <div class="wsample" style="font-weight:800">Stat numbers <span class="wname">800</span></div>
+    </div>
+    <div class="wgroup">
+      <p class="fname">Petrona weights in use</p>
+      <div class="wsample" style="font-family:Petrona,serif; font-weight:400">Body quotes <span class="wname">400</span></div>
+      <div class="wsample" style="font-family:Petrona,serif; font-style:italic; font-weight:400">Diary entries <span class="wname">400 italic</span></div>
+      <div class="wsample" style="font-family:Petrona,serif; font-weight:600">Headings, titles <span class="wname">600</span></div>
+    </div>
+    <div class="wgroup">
+      <p class="fname">Space Mono weights in use</p>
+      <div class="wsample" style="font-family:'Space Mono',monospace; font-weight:400">Timestamps, IDs <span class="wname">400</span></div>
+      <div class="wsample" style="font-family:'Space Mono',monospace; font-weight:700">Prices, counts <span class="wname">700</span></div>
+    </div>
+  </div>
+
+  <div class="stub-demo">
+    <span class="band">Fontaines D.C.</span>
+    <span class="date">14 SEP 2026</span>
+    <span class="venue">Brixton Academy, London</span>
+  </div>
+
+  <p style="font-size:12.5px; color:#4f4641; margin-top:16px; max-width:900px; line-height:1.6;">Licensing: Petrona, Manrope and Space Mono are all SIL Open Font License — free to embed in the compiled app on iOS, Android and web, not just serve from a webpage. On native, bundle static weight files instead of the Google Fonts &lt;link&gt; (web-only); react-native-web keeps the same family names across all three targets so the scale above needs no per-platform overrides.</p>
+</div>
+</x-dc>
+</body>
+</html>

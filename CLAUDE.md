@@ -145,7 +145,7 @@ When the user requests a new feature or enhancement, ALWAYS follow this sequence
 3. **Create feature branch**: `feature/<short-name>` from `master`.
 4. **Implement**: Use the appropriate agent(s). Writing the tests that cover the change is part of
    this step, done by the same agent — not a separate hand-off.
-5. **Commit on the feature branch**: Never directly on `master`.
+5. **Commit on the feature branch**: Never directly on `master`. Keep commit messages concise, no more than 2 or 3 lines.
 
 The ordered backlog lives in `docs/prompts/`. Each file there is a ready-to-run prompt; start with
 the lowest-numbered one that is not yet done.

@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc {
+      font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #faf8f4;
+      background-image: radial-gradient(circle, rgba(34,24,18,0.05) 1px, transparent 1px);
+      background-size: 14px 14px;
+      padding: 56px;
+      width: 1480px;
+    }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; color: #221812; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .panels { display: flex; gap: 40px; align-items: flex-start; }
+    .panel { flex: 1; border-radius: 14px; padding: 32px; border: 1px solid #e1ded7; }
+    .panel.light { background: #fffffc; }
+    .panel.dark { background: #0f0a08; border-color: #2e2724; }
+    .panel h2 { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 22px; margin: 0 0 4px; }
+    .panel.light h2 { color: #221812; }
+    .panel.dark h2 { color: #f1eee9; }
+    .panel .theme-note { font-size: 12px; margin: 0 0 24px; }
+    .panel.light .theme-note { color: #312620; }
+    .panel.dark .theme-note { color: #b1aea7; }
+    .group { margin-bottom: 26px; }
+    .group-label { font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }
+    .panel.light .group-label { color: #4f4641; }
+    .panel.dark .group-label { color: #7d7a74; }
+    .swatchrow { display: flex; flex-wrap: wrap; gap: 10px; }
+    .swatch { width: 138px; border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }
+    .swatch .chip { height: 56px; display: flex; align-items: flex-end; padding: 6px 8px; }
+    .swatch .meta { padding: 7px 8px 9px; }
+    .swatch .name { font-size: 11px; font-weight: 700; display: block; }
+    .swatch .hex { font-family: 'Space Mono', monospace; font-size: 10px; display: block; margin-top: 2px; }
+    .swatch .ratio { font-family: 'Space Mono', monospace; font-size: 9.5px; display: block; margin-top: 3px; padding: 1px 5px; border-radius: 4px; width: fit-content; }
+    .panel.light .swatch .meta { background: #f1eee9; }
+    .panel.light .swatch .name { color: #221812; }
+    .panel.light .swatch .hex { color: #4f4641; }
+    .panel.dark .swatch .meta { background: #1b1511; }
+    .panel.dark .swatch .name { color: #f1eee9; }
+    .panel.dark .swatch .hex { color: #7d7a74; }
+    .ratio.pass { background: #d7ecd9; color: #003d00; }
+    .ratio.passd { background: #234023; color: #5bb661; }
+    .ratio.ui { background: #eee6d4; color: #522700; }
+    .ratio.uid { background: #3a3120; color: #e0af3b; }
+    .onwhite { color: #fffffc; text-shadow: 0 1px 1px rgba(0,0,0,0.15); font-family: 'Space Mono', monospace; font-size: 10px; }
+    .onlight { color: #221812; font-family: 'Space Mono', monospace; font-size: 10px; }
+    .foot { margin-top: 36px; font-size: 12.5px; line-height: 1.6; max-width: 1000px; }
+    .foot b { font-family: Petrona, serif; font-weight: 600; }
+    .foot.light { color: #312620; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">01 · Palette — light &amp; dark</p>
+
+  <div class="panels">
+    <div class="panel light">
+      <h2>Light</h2>
+      <p class="theme-note">Daylight, browsing at home — warm paper, not clinical white.</p>
+
+      <div class="group">
+        <p class="group-label">Surfaces</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#faf8f4"></div><div class="meta"><span class="name">bg</span><span class="hex">#faf8f4</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#fffffc"></div><div class="meta"><span class="name">surface-raised</span><span class="hex">#fffffc</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#f1eee9"></div><div class="meta"><span class="name">surface-sunken</span><span class="hex">#f1eee9</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#e1ded7"></div><div class="meta"><span class="name">border-subtle</span><span class="hex">#e1ded7</span><span class="ratio ui">decorative</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#4a4742"></div><div class="meta"><span class="name">border-strong</span><span class="hex">#4a4742</span><span class="ratio ui">3.1:1 UI</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Text</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#221812"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">text-primary</span><span class="hex">#221812</span><span class="ratio pass">6.8:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#312620"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">text-secondary</span><span class="hex">#312620</span><span class="ratio pass">4.9:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#4f4641"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">text-tertiary</span><span class="hex">#4f4641</span><span class="ratio ui">3.1:1 — large/meta only</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Accent — amber (primary)</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#871600"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">accent-primary-strong</span><span class="hex">#871600</span><span class="ratio pass">4.6:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#d16022"><span class="onlight">Aa</span></div><div class="meta"><span class="name">accent-primary-bright</span><span class="hex">#d16022</span><span class="ratio ui">fills, icons only</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Accent — violet (secondary / stage light)</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#501a65"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">accent-secondary-strong</span><span class="hex">#501a65</span><span class="ratio pass">4.7:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#9760af"><span class="onlight">Aa</span></div><div class="meta"><span class="name">accent-secondary-bright</span><span class="hex">#9760af</span><span class="ratio ui">fills, icons only</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Semantic</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#003d00"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">success-strong</span><span class="hex">#003d00</span><span class="ratio pass">4.6:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#308639"><span class="onlight">Aa</span></div><div class="meta"><span class="name">success-bright</span><span class="hex">#308639</span><span class="ratio ui">fills only</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#522700"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">warning-strong</span><span class="hex">#522700</span><span class="ratio pass">4.5:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#a97600"><span class="onlight">Aa</span></div><div class="meta"><span class="name">warning-bright</span><span class="hex">#a97600</span><span class="ratio ui">fills only</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#980035"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">error-strong</span><span class="hex">#980035</span><span class="ratio pass">5.3:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#db4b6d"><span class="onlight">Aa</span></div><div class="meta"><span class="name">error-bright</span><span class="hex">#db4b6d</span><span class="ratio ui">fills only</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#00336a"><span class="onwhite">Aa</span></div><div class="meta"><span class="name">info-strong</span><span class="hex">#00336a</span><span class="ratio pass">4.6:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#2382ba"><span class="onlight">Aa</span></div><div class="meta"><span class="name">info-bright</span><span class="hex">#2382ba</span><span class="ratio ui">fills only</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel dark">
+      <h2>Dark</h2>
+      <p class="theme-note">The venue. Near-black with a warm ember undertone, never pure #000.</p>
+
+      <div class="group">
+        <p class="group-label">Surfaces</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#0f0a08"></div><div class="meta"><span class="name">bg</span><span class="hex">#0f0a08</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#1b1511"></div><div class="meta"><span class="name">surface-raised</span><span class="hex">#1b1511</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#080503"></div><div class="meta"><span class="name">surface-sunken</span><span class="hex">#080503</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#2e2724"></div><div class="meta"><span class="name">border-subtle</span><span class="hex">#2e2724</span><span class="ratio uid">decorative</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#5b534f"></div><div class="meta"><span class="name">border-strong</span><span class="hex">#5b534f</span><span class="ratio uid">4.1:1 UI</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Text</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#f1eee9"><span class="onlight">Aa</span></div><div class="meta"><span class="name">text-primary</span><span class="hex">#f1eee9</span><span class="ratio passd">10.7:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#b1aea7"><span class="onlight">Aa</span></div><div class="meta"><span class="name">text-secondary</span><span class="hex">#b1aea7</span><span class="ratio passd">7.9:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#7d7a74"><span class="onlight">Aa</span></div><div class="meta"><span class="name">text-tertiary</span><span class="hex">#7d7a74</span><span class="ratio passd">5.7:1 AA</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Accent — amber (primary)</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#f59145"><span class="onlight">Aa</span></div><div class="meta"><span class="name">accent-primary</span><span class="hex">#f59145</span><span class="ratio passd">7.4:1 AA</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Accent — violet (secondary / stage light)</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#c38adc"><span class="onlight">Aa</span></div><div class="meta"><span class="name">accent-secondary</span><span class="hex">#c38adc</span><span class="ratio passd">7.2:1 AA</span></div></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <p class="group-label">Semantic</p>
+        <div class="swatchrow">
+          <div class="swatch"><div class="chip" style="background:#5bb661"><span class="onlight">Aa</span></div><div class="meta"><span class="name">success</span><span class="hex">#5bb661</span><span class="ratio passd">7.2:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#e0af3b"><span class="onlight">Aa</span></div><div class="meta"><span class="name">warning</span><span class="hex">#e0af3b</span><span class="ratio passd">8.1:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#f26074"><span class="onlight">Aa</span></div><div class="meta"><span class="name">error</span><span class="hex">#f26074</span><span class="ratio passd">6.0:1 AA</span></div></div>
+          <div class="swatch"><div class="chip" style="background:#4fa8e1"><span class="onlight">Aa</span></div><div class="meta"><span class="name">info</span><span class="hex">#4fa8e1</span><span class="ratio passd">7.0:1 AA</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="foot light"><b>How to read this page.</b> Every ratio was computed against the surface it is meant to sit on (OKLCH → sRGB → WCAG relative luminance), not eyeballed. "-strong" tokens are the only ones cleared for body text; "-bright" tokens are fills, icons and large decorative marks only — never small text on their own. "AA" here always means ≥4.5:1 for text, ≥3:1 for the UI-component pairs (borders, focus rings). accent-primary reads amber/rust — a stamped ticket-ink color, not a bright CTA orange — chosen deliberately over a louder hue so it still passes AA as running text, not just as a button fill.</p>
+</div>
+</x-dc>
+</body>
+</html>

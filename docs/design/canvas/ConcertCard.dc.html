@@ -1,0 +1,195 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1480px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    h2.section { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 44px 0 16px; }
+    h2.section:first-of-type { margin-top: 0; }
+
+    .cc { position: relative; display: flex; background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; box-shadow: 0 1px 2px rgba(34,24,18,0.08), 0 1px 1px rgba(34,24,18,0.05); overflow: visible; width: 420px; }
+    .cc.hover { box-shadow: 0 4px 10px rgba(34,24,18,0.12), 0 1px 2px rgba(34,24,18,0.06); transform: translateY(-1px); }
+    .cc-main { flex: 1; padding: 20px 18px 20px 22px; min-width: 0; }
+    .cc-bands { font-family: Petrona, serif; font-weight: 600; font-size: 19px; line-height: 1.25; margin-bottom: 6px; }
+    .cc-venue { font-size: 13px; color: #4f4641; margin-bottom: 14px; }
+    .cc-date { font-family: 'Space Mono', monospace; font-size: 11.5px; color: #871600; }
+    .cc-stub { width: 92px; flex-shrink: 0; position: relative; padding: 16px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+    .cc-stub::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px dashed #e1ded7; }
+    .cc-notch { position: absolute; left: -9px; width: 18px; height: 18px; border-radius: 999px; background: #faf8f4; border: 1px solid #e1ded7; }
+    .cc-notch.top { top: -10px; } .cc-notch.bottom { bottom: -10px; }
+    .cc-status-icon { width: 26px; height: 26px; }
+    .cc-status-label { font-size: 10.5px; font-weight: 700; line-height: 1.3; }
+    .row-flex { display: flex; gap: 26px; flex-wrap: wrap; }
+    .capt { font-family: 'Space Mono', monospace; font-size: 9.5px; color: #4f4641; margin-top: 8px; text-align: center; }
+
+    .darkpanel { background: #0f0a08; border-radius: 18px; padding: 40px; margin-top: 8px; }
+    .cc.dk { background: #1b1511; border: 1px solid #2e2724; }
+    .cc.dk .cc-venue { color: #b1aea7; }
+    .cc.dk .cc-bands { color: #f1eee9; }
+    .cc.dk .cc-date { color: #f59145; }
+    .cc.dk .cc-stub::before { border-color: #2e2724; }
+    .cc.dk .cc-notch { background: #0f0a08; border-color: #2e2724; }
+
+    .phoneframe { width: 390px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 28px; padding: 20px 16px; }
+    .phoneframe .screentitle { font-family: Petrona, serif; font-weight: 600; font-size: 22px; margin: 4px 4px 14px; }
+    .phoneframe .cc { width: 100%; margin-bottom: 12px; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Setlistify — Design System</h1>
+  <p class="subtitle">07 · The concert card — signature component</p>
+
+  <h2 class="section">Status variants — desktop</h2>
+  <div class="row-flex">
+    <div>
+      <div class="cc">
+        <div class="cc-main">
+          <div class="cc-bands">Fontaines D.C.</div>
+          <div class="cc-venue">Brixton Academy, London</div>
+          <div class="cc-date">14 SEP 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#308639" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="cc-status-label" style="color:#003d00">Playlist ready</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt">playlist generated</p>
+    </div>
+
+    <div>
+      <div class="cc">
+        <div class="cc-main">
+          <div class="cc-bands">Bloc Party + Interpol</div>
+          <div class="cc-venue">O2 Academy, Leeds</div>
+          <div class="cc-date">2 OCT 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#2382ba" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="34 14"/></svg>
+          <span class="cc-status-label" style="color:#00336a">14 of 19 matched</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt">degraded — partial match</p>
+    </div>
+
+    <div>
+      <div class="cc">
+        <div class="cc-main">
+          <div class="cc-bands">Iceage</div>
+          <div class="cc-venue">The Garage, Glasgow</div>
+          <div class="cc-date">19 NOV 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#a97600" stroke-width="2"><path d="M12 8v5M12 16h.01" stroke-linecap="round"/><circle cx="12" cy="12" r="9"/></svg>
+          <span class="cc-status-label" style="color:#522700">No setlist yet</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt">show happened, setlist.fm has nothing</p>
+    </div>
+
+    <div>
+      <div class="cc">
+        <div class="cc-main">
+          <div class="cc-bands">Fontaines D.C.</div>
+          <div class="cc-venue">Brixton Academy, London</div>
+          <div class="cc-date">14 SEP 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#7d7a74" stroke-width="2"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16" stroke-linecap="round"/></svg>
+          <span class="cc-status-label" style="color:#4f4641">Upcoming</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt">before the show — nothing to match yet</p>
+    </div>
+  </div>
+
+  <h2 class="section">Interaction &amp; dark theme</h2>
+  <div class="row-flex">
+    <div>
+      <div class="cc hover">
+        <div class="cc-main">
+          <div class="cc-bands">Fontaines D.C.</div>
+          <div class="cc-venue">Brixton Academy, London</div>
+          <div class="cc-date">14 SEP 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#308639" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="cc-status-label" style="color:#003d00">Playlist ready</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt">hover/pressed — lift only, no color shift</p>
+    </div>
+
+    <div class="darkpanel">
+      <div class="cc dk">
+        <div class="cc-main">
+          <div class="cc-bands">Fontaines D.C.</div>
+          <div class="cc-venue">Brixton Academy, London</div>
+          <div class="cc-date">14 SEP 2026</div>
+        </div>
+        <div class="cc-stub">
+          <span class="cc-notch top"></span>
+          <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#5bb661" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="cc-status-label" style="color:#5bb661">Playlist ready</span>
+          <span class="cc-notch bottom"></span>
+        </div>
+      </div>
+      <p class="capt" style="color:#7d7a74">dark theme — same structure</p>
+    </div>
+  </div>
+
+  <h2 class="section">At phone width</h2>
+  <div class="phoneframe">
+    <div class="screentitle">Upcoming</div>
+    <div class="cc">
+      <div class="cc-main">
+        <div class="cc-bands">Fontaines D.C.</div>
+        <div class="cc-venue">Brixton Academy, London</div>
+        <div class="cc-date">14 SEP 2026</div>
+      </div>
+      <div class="cc-stub">
+        <span class="cc-notch top"></span>
+        <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#308639" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="cc-status-label" style="color:#003d00">Ready</span>
+        <span class="cc-notch bottom"></span>
+      </div>
+    </div>
+    <div class="cc">
+      <div class="cc-main">
+        <div class="cc-bands">Bloc Party + Interpol</div>
+        <div class="cc-venue">O2 Academy, Leeds</div>
+        <div class="cc-date">2 OCT 2026</div>
+      </div>
+      <div class="cc-stub">
+        <span class="cc-notch top"></span>
+        <svg class="cc-status-icon" viewBox="0 0 24 24" fill="none" stroke="#2382ba" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="34 14"/></svg>
+        <span class="cc-status-label" style="color:#00336a">14/19</span>
+        <span class="cc-notch bottom"></span>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:12.5px; color:#4f4641; line-height:1.6; max-width:900px; margin-top:24px;">The stub column is a fixed 92px on any width down to phone — never a bottom strip — because the perforation-and-notch motif is what makes this read as a ticket rather than a generic card, and it survives width changes better than a rounded-corner-plus-left-border treatment would. Multi-band shows join with "+", not a comma list, to keep the co-headline reading distinct from a supporting-act list.</p>
+</div>
+</x-dc>
+</body>
+</html>
