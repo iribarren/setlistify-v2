@@ -4,8 +4,11 @@ import * as SplashScreen from "expo-splash-screen";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { View } from "react-native";
 
+import { LoadingState } from "@/components/state";
 import { createAppQueryClient } from "@/lib/api";
+import { SessionProvider, useSession } from "@/lib/auth";
 import { ThemeProvider, fontsToLoad, useTheme } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -41,14 +44,32 @@ export default function RootLayout(): React.JSX.Element | null {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemedStack />
+        <SessionProvider>
+          <ThemedStack />
+        </SessionProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
 }
 
+/**
+ * AC-3.1: renders the canvas loading state while session restore is in flight, so the app never
+ * flashes the login screen (or a protected one) before restore has settled — no group's redirect
+ * guard (`(auth)/_layout.tsx`, `(app)/_layout.tsx`) evaluates until `status` has left `"restoring"`.
+ */
 function ThemedStack(): React.JSX.Element {
   const { colors, scheme } = useTheme();
+  const { status } = useSession();
+
+  if (status === "restoring") {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors["bg"], justifyContent: "center" }}>
+        <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+        <LoadingState title="Loading Setlistify…" />
+      </View>
+    );
+  }
+
   return (
     <>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />

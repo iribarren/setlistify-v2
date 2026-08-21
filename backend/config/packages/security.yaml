@@ -1,0 +1,50 @@
+security:
+    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    #
+    # Loads a User by numeric id (App\Service\Security\UserIdProvider), matching the `sub` claim
+    # LexikJWT puts in the token (AC-2.3) — not by email, which never appears in a JWT. Login itself
+    # looks the user up by email directly; this provider only resolves an already-issued token.
+    providers:
+        app_user_provider:
+            id: App\Service\Security\UserIdProvider
+
+    firewalls:
+        dev:
+            # Ensure dev tools and static assets are always allowed
+            pattern: ^/(_profiler|_wdt|assets|build)/
+            security: false
+
+        # Every public credential action (register, login, refresh, logout, password reset, email
+        # verification) is a custom API Platform state processor, not a firewall-authenticated
+        # action — see docs/specs/2026-08-21-auth-and-accounts.md's "Technical Approach". This
+        # firewall's only job is to authenticate the bearer JWT on the handful of routes that need
+        # one (`/api/me`, verification resend); those routes carry their own `security:` expression
+        # on the API Platform operation (AC-8.1) rather than a blanket `access_control` rule here.
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
+
+        # Admin backoffice firewall (prompt 08) is not built yet. `/admin` therefore falls through
+        # to this default firewall and 404s — a valid API JWT authenticates nothing here (AC-10.5).
+        main:
+            lazy: true
+            provider: app_user_provider
+
+    access_control: []
+
+when@test:
+    security:
+        password_hashers:
+            # Password hashers are resource-intensive by design to ensure security.
+            # In tests, it's safe to reduce their cost to improve performance.
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4 # Lowest possible value for bcrypt
+                time_cost: 3 # Lowest possible value for argon
+                memory_cost: 10 # Lowest possible value for argon

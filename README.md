@@ -36,9 +36,15 @@ cp frontend/.env.example frontend/.env.local
 export APP_UID=$(id -u)
 export APP_GID=$(id -g)
 
+# Generate a local JWT signing keypair for auth (gitignored, never committed — docs/env-vars.md).
+# Passphrase must match JWT_PASSPHRASE in backend/.env.local.
+mkdir -p backend/config/jwt
+openssl genpkey -algorithm RSA -out backend/config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096 -aes256
+openssl pkey -in backend/config/jwt/private.pem -pubout -out backend/config/jwt/public.pem
+
 # Bring the stack up
 docker compose up -d
-docker compose ps   # postgres, redis and backend should all report "healthy" within ~90s
+docker compose ps   # postgres, redis, mailpit and backend should all report "healthy" within ~90s
 
 # Install backend dependencies (with dev tools) and apply migrations — see backend/README.md
 docker compose exec backend composer install
@@ -61,6 +67,7 @@ git config core.hooksPath .githooks
 | OpenAPI docs (UI) | <http://localhost:8000/api/docs> |
 | OpenAPI document (JSON) | <http://localhost:8000/api/docs.jsonopenapi> |
 | Frontend (web) | <http://localhost:8081> |
+| Mailpit (dev mail sink — verification/reset emails) | <http://localhost:8025> |
 | PostgreSQL | internal only — `docker compose exec postgres psql -U setlistify -d setlistify` |
 | Redis | internal only — `docker compose exec redis redis-cli` |
 

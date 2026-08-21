@@ -13,6 +13,21 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            # Auth and accounts (docs/specs/2026-08-21-auth-and-accounts.md) — scalar env values,
+            # bound globally by constructor-parameter name so any service can just ask for them.
+            $jwtTtl: '%env(JWT_TTL)%'
+            $refreshTokenTtl: '%env(REFRESH_TOKEN_TTL)%'
+            $requireVerifiedEmail: '%env(bool:AUTH_REQUIRE_VERIFIED_EMAIL)%'
+            $mailFromAddress: '%env(MAILER_FROM_ADDRESS)%'
+            $webAppUrl: '%env(WEB_APP_URL)%'
+            $verificationTokenTtl: '%env(EMAIL_VERIFICATION_TOKEN_TTL)%'
+            $resetTokenTtl: '%env(PASSWORD_RESET_TOKEN_TTL)%'
+            $secure: '%env(bool:AUTH_COOKIE_SECURE)%'
+            # Dedicated "security" Monolog channel for reuse-detection and rate-limiter
+            # fail-closed events (config/packages/monolog.yaml), findable without scraping the
+            # whole app log.
+            $securityLogger: '@monolog.logger.security'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -46,3 +61,18 @@ services:
         decorates: 'api_platform.openapi.factory'
         arguments:
             $decorated: '@.inner'
+
+    # App\Service\Security\EmailVerificationService and App\Service\Security\PasswordResetService
+    # each want a `$tokenTtl` with a different value, so — unlike everything else in this feature —
+    # they can't use the global bind above; wired explicitly here instead.
+    App\Service\Security\EmailVerificationService:
+        arguments:
+            $tokenTtl: '%env(EMAIL_VERIFICATION_TOKEN_TTL)%'
+
+    App\Service\Security\PasswordResetService:
+        arguments:
+            $tokenTtl: '%env(PASSWORD_RESET_TOKEN_TTL)%'
+
+    # Redacts credentials/tokens from every log record, everywhere (AC-11.2).
+    App\Service\Logging\SensitiveDataProcessor:
+        tags: ['monolog.processor']

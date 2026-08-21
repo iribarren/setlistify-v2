@@ -3,8 +3,17 @@ nelmio_cors:
         origin_regex: true
         allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
         allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
-        allow_headers: ['Content-Type', 'Authorization']
+        # X-Client-Platform (D-18 deviation): the frontend's one request-header seam
+        # (frontend/lib/auth/authMiddleware.ts) sends this on every request so the backend knows
+        # whether to return the refresh token in the body (native) or the httpOnly cookie only
+        # (web) — it must be preflight-allowed or every credentialed browser request 4xx's.
+        allow_headers: ['Content-Type', 'Authorization', 'X-Client-Platform']
         expose_headers: ['Link']
         max_age: 3600
+        # D-18: the refresh-token cookie is httpOnly + SameSite=Strict; the browser only sends it,
+        # and only exposes the response, on a credentialed CORS request — never with `allow_origin:
+        # ['*']` (browsers refuse to combine `*` with credentials), which is why origin_regex above
+        # matches an exact origin instead.
+        allow_credentials: true
     paths:
         '^/': null
