@@ -1,0 +1,13 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-doctrine/extension.neon
+
+parameters:
+    # Level 9, empty baseline (D-8, docs/specs/2026-08-21-backend-skeleton.md). Never lowered
+    # silently — any reduction must be recorded in that spec with its reason.
+    level: 9
+    paths:
+        - src
+        - tests
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

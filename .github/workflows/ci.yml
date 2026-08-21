@@ -35,9 +35,43 @@ jobs:
   backend:
     name: backend
     runs-on: ubuntu-latest
-    # Stub job: backend/ has no application code yet (prompt 01). Wired so that adding
-    # `composer install` / `composer lint` / `composer test` later is a one-line change (AC-6.2).
-    # No real external API is ever called here — see D-2 in docs/architecture.md.
+    # D-7 (docs/specs/2026-08-21-backend-skeleton.md): runs on the runner itself, with GitHub
+    # Actions `services:` containers for PostgreSQL and Redis pinned to the same versions as
+    # `compose.yaml`, and PHP set up via setup-php with the same extensions as
+    # docker/backend/Dockerfile (D-9) — so the two environments are declared independently but
+    # stay in lockstep (R-6: revisit if they drift). No real external API is ever called here —
+    # see D-2 in docs/architecture.md.
+    services:
+      postgres:
+        image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+        env:
+          POSTGRES_USER: setlistify
+          POSTGRES_PASSWORD: changeme
+          POSTGRES_DB: setlistify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U setlistify -d setlistify"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7.4-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # CI-only, obviously-fake values — the same shape as backend/.env.example, never a real
+      # secret (docs/env-vars.md rule zero; D-2).
+      APP_ENV: dev
+      APP_SECRET: ci-only-dummy-secret-never-a-real-value
+      DATABASE_URL: postgresql://setlistify:changeme@127.0.0.1:5432/setlistify?serverVersion=17&charset=utf8
+      REDIS_URL: redis://127.0.0.1:6379
+      CORS_ALLOW_ORIGIN: ^https?://localhost(:[0-9]+)?$
     steps:
       - uses: actions/checkout@v4
 
@@ -45,33 +79,43 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.4"
+          # Same extension set as docker/backend/Dockerfile's base stage (D-9) — pdo_pgsql for
+          # Doctrine, intl for the validator/translation components, opcache, zip for Composer,
+          # redis for the health check's PING and the future Messenger transport.
+          extensions: pdo_pgsql, intl, opcache, zip, redis
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
 
       - name: Install dependencies
         working-directory: backend
-        run: |
-          if [ -f composer.json ]; then
-            composer install --no-interaction --prefer-dist
-          else
-            echo "No composer.json yet (prompt 01) — nothing to install."
-          fi
+        run: composer install --no-interaction --prefer-dist
 
-      - name: Lint
+      - name: Warm the dev container (needed by phpstan-symfony)
         working-directory: backend
-        run: |
-          if [ -f composer.json ]; then
-            composer lint
-          else
-            echo "No composer.json yet (prompt 01) — lint stub."
-          fi
+        run: bin/console cache:warmup --env=dev --no-debug
+
+      - name: Lint (CS-Fixer + PHPStan)
+        working-directory: backend
+        run: composer lint
+
+      - name: Run migrations against the real PostgreSQL service (AC-8.4)
+        working-directory: backend
+        run: bin/console --env=dev doctrine:migrations:migrate --no-interaction
+
+      - name: Create and migrate the test database
+        working-directory: backend
+        run: composer test:db
 
       - name: Test
         working-directory: backend
-        run: |
-          if [ -f composer.json ]; then
-            composer test
-          else
-            echo "No composer.json yet (prompt 01) — test stub."
-          fi
+        run: composer test
 
   frontend:
     name: frontend
@@ -155,7 +199,7 @@ jobs:
 
       - name: Probe backend health endpoint
         run: |
-          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/api/health
 
       - name: Tear down
         if: always()

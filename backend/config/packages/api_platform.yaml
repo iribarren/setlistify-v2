@@ -1,0 +1,17 @@
+api_platform:
+    title: Setlistify API
+    description: 'Concerts you attended, turned into the playlist the band actually played.'
+    version: 1.0.0
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+    # Every error, on every route — matched or not — comes back as RFC 7807
+    # application/problem+json (AC-6.1, US-6). No html fallback: this is a JSON-only API, so a 404
+    # for an unmatched route must never render Symfony's default HTML error page.
+    error_formats:
+        jsonproblem: ['application/problem+json']
+    # Without this, only requests that matched an API Platform resource get the problem+json
+    # treatment; a 404 for a route API Platform never heard of (e.g. a typo'd path) would fall
+    # through to Symfony's own HTML error page instead (AC-6.2).
+    handle_symfony_errors: true

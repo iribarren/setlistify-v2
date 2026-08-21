@@ -17,6 +17,15 @@ Status: **decided** (2026-08-21). Changes to anything in this document need a sp
 Version floor: PHP ≥ 8.4 (Symfony 8.1 requires it), EasyAdmin ≥ 5.5 (first release supporting
 Symfony 8). Symfony 8.4 will be the next LTS — plan the upgrade path, do not pin to 8.1 forever.
 
+**Symfony 8.1 → 8.4 LTS upgrade path** (R-3, `docs/specs/2026-08-21-backend-skeleton.md`): 8.1
+carries security support only until its own end of life; 8.4, when released, becomes the long-term
+support line. The backend-skeleton feature verified that Symfony 8.1, API Platform 4.3 and Doctrine
+resolve cleanly together on PHP 8.4 (R-1) — the same version floor 8.4-LTS will ship on, so the
+upgrade is expected to be a `composer require symfony/symfony:8.4.*`-shaped version bump rather than
+a platform migration. No entity or provider-adapter code exists yet to be broken by it; the earlier
+this upgrade happens after 8.4 ships, the smaller that surface stays. Treat it as routine maintenance
+to schedule, not a redesign.
+
 ### Decisions
 
 **D-1 — PHP runtime: FrankenPHP.**

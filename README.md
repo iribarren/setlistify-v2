@@ -39,6 +39,10 @@ export APP_GID=$(id -g)
 # Bring the stack up
 docker compose up -d
 docker compose ps   # postgres, redis and backend should all report "healthy" within ~90s
+
+# Install backend dependencies (with dev tools) and apply migrations — see backend/README.md
+docker compose exec backend composer install
+docker compose exec backend bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 Install the pre-commit secret-scan hook once per clone (see
@@ -52,7 +56,10 @@ git config core.hooksPath .githooks
 
 | Service | URL |
 |---|---|
-| Backend API (health probe today; API Platform lands in a later prompt) | <http://localhost:8000> |
+| Backend API | <http://localhost:8000/api> |
+| Health check | <http://localhost:8000/api/health> |
+| OpenAPI docs (UI) | <http://localhost:8000/api/docs> |
+| OpenAPI document (JSON) | <http://localhost:8000/api/docs.jsonopenapi> |
 | PostgreSQL | internal only — `docker compose exec postgres psql -U setlistify -d setlistify` |
 | Redis | internal only — `docker compose exec redis redis-cli` |
 
@@ -60,9 +67,9 @@ git config core.hooksPath .githooks
 them through `docker compose exec`, or add a port mapping in a local, gitignored
 `compose.override.yaml` if you need a GUI client.
 
-The OpenAPI spec (once the backend exists) is generated from the API Platform resources — it is the
-single source of truth for endpoints. This README intentionally lists none; see `CLAUDE.md`, API
-Contract.
+The OpenAPI document, generated from the API Platform resources, is the single source of truth for
+endpoints — this README intentionally lists none beyond the URLs above; see `CLAUDE.md`, API
+Contract, and `backend/README.md` for the backend command set.
 
 ## Frontend (runs on the host)
 
