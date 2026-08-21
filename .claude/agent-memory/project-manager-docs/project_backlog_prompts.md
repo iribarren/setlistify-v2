@@ -17,3 +17,8 @@ approves before any branch is created (mandatory workflow in `CLAUDE.md`).
 docs it names, then write to `docs/specs/`. Resolve open questions the prompt raises into named
 decisions with rationale rather than leaving them open, and surface them at the end for approval.
 See [[spec-00-monorepo-decisions]].
+
+**Decision IDs are project-global, not per-spec.** `docs/architecture.md` owns D-1..D-3; each new
+spec continues the sequence (spec 01 introduced D-4..D-9) so a decision can be cited by ID across
+documents without ambiguity. Check the highest existing D-number before numbering a new spec's
+decisions.
