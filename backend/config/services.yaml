@@ -28,6 +28,11 @@ services:
             # fail-closed events (config/packages/monolog.yaml), findable without scraping the
             # whole app log.
             $securityLogger: '@monolog.logger.security'
+            # AuditLogEntry.actorLabel / personal-data oldValue-newValue digests (D-43) — a keyed
+            # HMAC, not the audit-specific secret family; reusing APP_SECRET is fine since the
+            # digest is never exposed and the key never needs independent rotation from the app
+            # itself.
+            $digestKey: '%env(APP_SECRET)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -76,3 +81,19 @@ services:
     # Redacts credentials/tokens from every log record, everywhere (AC-11.2).
     App\Service\Logging\SensitiveDataProcessor:
         tags: ['monolog.processor']
+
+    # Backoffice foundation (docs/specs/2026-08-21-backoffice-foundation.md). Kept `public: true`
+    # so `AuditLoggerTest` can exercise it directly before the first real caller (suspend/delete/
+    # reveal-email controllers, added later in this feature) exists to pull it in via autowiring —
+    # without this, Symfony's container compiler prunes an unreferenced private service.
+    App\Service\Admin\AuditLogger:
+        public: true
+
+    # doctrine/doctrine-bundle 3.x dropped `doctrine.event_subscriber` entirely — even though this
+    # class implements Doctrine\Common\EventSubscriber, each Doctrine event must be tagged
+    # individually as `doctrine.event_listener` or it is never registered on the EventManager
+    # (AC-12.4 would silently not hold without this).
+    App\EventSubscriber\AuditLogAppendOnlySubscriber:
+        tags:
+            - { name: 'doctrine.event_listener', event: 'preUpdate' }
+            - { name: 'doctrine.event_listener', event: 'preRemove' }
