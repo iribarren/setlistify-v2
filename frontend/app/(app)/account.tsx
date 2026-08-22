@@ -3,6 +3,7 @@ import { ScrollView, Text, View } from "react-native";
 
 import { Badge, Button, Card } from "@/components";
 import { ErrorState, LoadingState } from "@/components/state";
+import { ConnectionsSection } from "@/components/streaming";
 import { useSession } from "@/lib/auth";
 import { describeAuthError } from "@/lib/auth/errorMessage";
 import { useTheme } from "@/theme";
@@ -135,6 +136,8 @@ export default function AccountScreen(): React.JSX.Element {
             action={{ label: "Try again", onPress: () => void handleResendVerification() }}
           />
         ) : null}
+
+        <ConnectionsSection />
 
         <Button testID="logout-button" label="Log out" variant="destructive" onPress={() => void handleLogout()} />
       </View>
