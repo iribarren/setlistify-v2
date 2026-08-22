@@ -58,7 +58,9 @@ not take the other down. Redirect URIs are registered per environment.
 | `MAILER_DSN` | **yes** | Symfony Mailer DSN. `smtp://mailpit:1025` in dev (D-20); a real provider DSN in production. No provider SDK in application code |
 | `MAILER_FROM_ADDRESS` | no | `From:` address on verification/reset emails |
 | `WEB_APP_URL` | no | Base URL of the web app — used to build the links inside verification/reset emails (AC-6.8) |
-| `TOKEN_ENCRYPTION_KEY` | **yes** | libsodium key encrypting **users' provider OAuth tokens** at rest. See below. |
+| `TOKEN_ENCRYPTION_KEY` | **yes** | libsodium key encrypting **users' provider OAuth tokens** at rest — the **active** key. See below. |
+| `TOKEN_ENCRYPTION_KEY_ID` | no | The key id stamped into every **new** ciphertext. Default `v1`. |
+| `TOKEN_ENCRYPTION_KEYS_RETIRED` | **yes** | Comma-separated `id:base64key` pairs — retired keys still valid for **decryption only**. Empty by default. See below. |
 
 ### setlist.fm
 
@@ -82,7 +84,14 @@ flags — not variables.
 |---|---|---|
 | `SPOTIFY_CLIENT_ID` | no (but do not publish) | OAuth client id |
 | `SPOTIFY_CLIENT_SECRET` | **yes** | OAuth client secret |
-| `SPOTIFY_REDIRECT_URI` | no | Per-environment, must match the registered app exactly |
+| `SPOTIFY_REDIRECT_URI` | no | Per-environment, must match the registered app exactly (AC-1.9 — exactly one, the backend's own callback) |
+| `SPOTIFY_API_BASE_URL` | no | Default `https://api.spotify.com/v1`. Overridden in `test` and by the `@group live` smoke test so neither needs a code change to point elsewhere |
+| `SPOTIFY_ACCOUNTS_BASE_URL` | no | Default `https://accounts.spotify.com` — the OAuth endpoints, same reason as above |
+| `STREAMING_HTTP_TIMEOUT` | no | Provider-agnostic outbound request timeout, seconds. Default `5` |
+| `STREAMING_TOKEN_REFRESH_SKEW` | no | Refresh a token this many seconds before it expires. Default `60` |
+| `STREAMING_LINK_STATE_TTL` | no | Pending-link `state` lifetime in Redis, seconds. Default `600` |
+| `STREAMING_LINK_RETURN_URL_WEB` | no | Web return route after the OAuth callback completes |
+| `STREAMING_LINK_RETURN_URL_NATIVE` | no | Native deep link after the OAuth callback completes |
 | `YOUTUBE_CLIENT_ID` | no | Google OAuth client id |
 | `YOUTUBE_CLIENT_SECRET` | **yes** | Google OAuth client secret |
 | `YOUTUBE_REDIRECT_URI` | no | Per-environment |
@@ -118,12 +127,19 @@ app-store release.
 A user's Spotify or YouTube OAuth tokens are live credentials to *their* account. A database dump
 must not be a set of usable streaming credentials.
 
-- Encrypted at rest with libsodium `xchacha20poly1305`, applied through a custom Doctrine type so
-  encryption is not something a developer can forget to call.
+- Encrypted at rest with libsodium `xchacha20poly1305`, applied through a custom Doctrine type
+  (`App\Doctrine\Type\EncryptedStringType`) so encryption is not something a developer can forget
+  to call — persisting a `StreamingAccount`'s token columns any other way isn't possible.
 - `TOKEN_ENCRYPTION_KEY` is 32 bytes, base64-encoded, generated per environment, and stored only in
   the secret store.
-- Key rotation must be supported from the start: store a key id alongside each ciphertext so old
-  records stay readable while new ones use the current key.
+- Key rotation is supported from the start (`docs/specs/2026-08-22-streaming-port-and-account-linking.md`,
+  D-78): the envelope is `v1:<keyId>:<base64(nonce‖ciphertext)>`. `TOKEN_ENCRYPTION_KEY_ID` names
+  the **active** key every new write uses; `TOKEN_ENCRYPTION_KEYS_RETIRED` (`id:base64key` pairs,
+  comma-separated) holds predecessors still valid for **decryption only**. To rotate: move the
+  outgoing key into `TOKEN_ENCRYPTION_KEYS_RETIRED`, set a new `TOKEN_ENCRYPTION_KEY`/
+  `TOKEN_ENCRYPTION_KEY_ID` pair, deploy — no downtime, no migration. Decrypting a ciphertext whose
+  key id is in neither set fails loudly (`App\Service\Security\UnknownEncryptionKeyException`),
+  never silently as a missing/empty token.
 - Tokens are never logged, never returned by any API endpoint, and never rendered in the backoffice.
 
 ## Handling a leak

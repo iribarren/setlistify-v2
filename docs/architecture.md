@@ -453,7 +453,9 @@ Rules that hold across the layers:
 ## 4. The streaming port
 
 The single most important abstraction in the codebase. Every provider is reached through it, and
-every provider difference dies behind it.
+every provider difference dies behind it. Shipped in
+`docs/specs/2026-08-22-streaming-port-and-account-linking.md` (D-71–D-88); `App\Service\Streaming\
+Spotify\` is the reference adapter.
 
 ```php
 interface StreamingProviderInterface
@@ -461,8 +463,8 @@ interface StreamingProviderInterface
     public function key(): string;                 // 'spotify' | 'youtube' | 'apple'
 
     // OAuth
-    public function authorizationUrl(string $state, string $redirectUri): string;
-    public function exchangeCode(string $code, string $redirectUri): ProviderTokens;
+    public function authorizationUrl(string $state, string $redirectUri, ?string $codeChallenge = null): string;
+    public function exchangeCode(string $code, string $redirectUri, ?string $codeVerifier = null): ProviderTokens;
     public function refreshToken(ProviderTokens $tokens): ProviderTokens;
 
     // Catalog
@@ -479,13 +481,39 @@ interface StreamingProviderInterface
 }
 ```
 
-`TrackCandidate` carries the provider's track id, title, artist, album, duration, whether it is a
-live recording, and a normalized confidence score. That last field is what lets Fast mode pick
-automatically and Normal mode present a ranked choice — the same data, two behaviours.
+Frozen at exactly these nine methods (D-71) — `authorizationUrl()`/`exchangeCode()` carry one extra
+optional, nullable parameter each (`$codeChallenge`/`$codeVerifier`) beyond the originally sketched
+two-argument signatures, added to give PKCE (AC-1.2, provider-agnostic, not a Spotify concern) a
+channel through the frozen interface without adding a tenth method. `ProviderTokens` similarly
+carries the provider's account id/display name (nullable, populated by `exchangeCode()`, unused by
+`refreshToken()`) so identity fetched as part of the OAuth exchange doesn't need its own port
+method. Full rationale in `StreamingProviderInterface`'s own docblock.
 
-**Adding a provider** means: one directory under `Service/Streaming/`, one `ProviderSetting` row, one
-entry in the OAuth redirect configuration, and its credentials in the secret store. Nothing else in
-the codebase changes. This is the property that makes the Spotify user-cap survivable.
+`App\Service\Streaming\StreamingProviderLocator` resolves an adapter by `key()` from a
+`!tagged_iterator app.streaming_provider` — no consumer ever names an adapter class (D-72); an
+unknown key raises `UnknownProviderException`. `TrackCandidate` carries the provider's track id,
+title, artist, album, duration, whether it is a live recording, and a normalized confidence score —
+that score is deliberately naive and provisional (D-83; prompt 12 designs the real one). Every
+provider failure arrives as one of `TokenExpiredException`, `RateLimitedException`,
+`QuotaExhaustedException`, `NotFoundException`, `RegionRestrictedException`,
+`ProviderUnavailableException` (`App\Service\Streaming\Exception\`) — never a raw HTTP status or
+provider-shaped error (D-73).
+
+**Adding a provider** means: one directory under `Service/Streaming/`, one `ProviderSetting` row (§6,
+prompt 11), one entry in the OAuth redirect configuration, and its credentials in the secret store.
+Nothing else in the codebase changes — `App\Tests\Unit\Service\Streaming\
+SpotifySymbolIsolationTest` enforces the isolation structurally (D-82) and
+`TestDoubleProviderIsDiscoverableTest` proves a second adapter needs zero consumer changes (AC-9.5).
+This is the property that makes the Spotify user-cap survivable.
+
+Linking, refresh and the token store live in `App\Service\Streaming\Link\`:
+`LinkFlowService` owns the PKCE + single-use `state` lifecycle (Redis-backed, D-76), and
+`StreamingTokenManager` is the only thing that ever calls `refreshToken()` — proactive
+(`STREAMING_TOKEN_REFRESH_SKEW`), single-flight per account via `symfony/lock` (D-79), and the
+only place a `StreamingAccount` moves to `needs_reauth` (D-80). Provider availability is consumed
+through `App\Service\Provider\ProviderAvailability` (D-86) — this branch's implementation
+(`StaticProviderAvailability`) answers "every registered adapter is available"; prompt 11 replaces
+it with the real `ProviderSetting`-backed one and changes no caller.
 
 ## 5. setlist.fm integration and the cache
 
@@ -641,7 +669,9 @@ User ─┬─< Concert ─┬─< ConcertBand >─ Band
       │       doorsTime/startTime,
       │       note)
       │            └──< Playlist ─── ProviderPlaylistRef (provider, external id)
-      ├─< StreamingAccount (provider, encrypted tokens, scopes, expiry)
+      ├─< StreamingAccount (provider, encrypted accessToken/refreshToken, expiresAt,
+      │       scopes, providerAccountId, providerDisplayName, status, linkedAt/updatedAt —
+      │       UNIQUE(user, provider))
       └─< AuditLogEntry (as actor, admin only)
 
 Band (setlistfmMbid, setlistfmName, setlistfmResolutionState, setlistfmCheckedAt, setlistfmResolvedAt)
@@ -663,13 +693,27 @@ the source setlist has a row, including the ones that produced no track.
 D-31) — `ConcertBand.billingOrder` keeps a lineup ordered, `Concert.pastAfter` is the derived
 boundary instant `App\Service\Concert\ConcertScheduler` computes on every write. `Band`'s five
 `setlistfm*` columns, `Setlist`, `Song` and `SetlistCacheEntry` are built
-(`docs/specs/2026-08-22-setlistfm-integration.md`, D-56–D-70) — see §5. Everything else in this
-sketch (`Playlist`, `StreamingAccount`, `ProviderSetting`, `PlaylistTrack`) is still a later prompt.
+(`docs/specs/2026-08-22-setlistfm-integration.md`, D-56–D-70) — see §5. `StreamingAccount` is built
+(`docs/specs/2026-08-22-streaming-port-and-account-linking.md`, D-77/D-78) — see §4 and §11.
+Everything else in this sketch (`Playlist`, `ProviderSetting`, `PlaylistTrack`) is still a later
+prompt.
 
 ## 11. Security posture
 
 - Per-user provider OAuth tokens are **encrypted at rest** (libsodium `xchacha20poly1305`) through a
-  custom Doctrine type, so a database dump is not a set of live streaming credentials.
+  custom Doctrine type (`App\Doctrine\Type\EncryptedStringType`), so a database dump is not a set of
+  live streaming credentials. The envelope carries a key id (`v1:<keyId>:<base64(nonce‖ciphertext)>`)
+  so `TOKEN_ENCRYPTION_KEY` rotates without downtime — see `docs/env-vars.md`.
+- **Linking a streaming account** (`docs/specs/2026-08-22-streaming-port-and-account-linking.md`,
+  D-74–D-81): OAuth 2.0 Authorization Code with PKCE, exchanged entirely server-side — the client
+  never holds a code, verifier or token. `state` is a server-generated, single-use Redis record
+  (`STREAMING_LINK_STATE_TTL`, D-76) bound to the user id, provider key, client platform and PKCE
+  verifier; consumed atomically on first use, so a replayed callback is rejected. The onward
+  redirect (web route or `setlistify://` deep link) carries only a one-time opaque reference, never
+  a secret. `StreamingAccount` copies `Concert`'s cross-owner 404 shape exactly (D-27/D-77). An
+  unrecoverable refresh failure clears the stored tokens and flips the account to `needs_reauth`
+  without deleting the row (D-80); refresh itself is centralised and single-flight per account via
+  `symfony/lock` (D-79) — no consumer of the port ever calls `refreshToken()` directly.
 - App secrets live in Symfony's secrets vault locally and the PaaS secret store in production. Never
   in the repo; `.env.example` holds names and dummy values only.
 - Separate OAuth app registrations for dev and prod, so a leaked development key cannot reach
