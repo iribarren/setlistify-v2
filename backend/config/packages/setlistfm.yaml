@@ -1,0 +1,14 @@
+# setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md, D-58). This scoped HTTP
+# client is consumed by exactly one service — App\Service\Setlist\SetlistFmClient, wired explicitly
+# in config/services.yaml — never autowired by type elsewhere. AC-6.5's container test asserts that
+# nothing outside App\Service\Setlist\ depends on it.
+framework:
+    http_client:
+        scoped_clients:
+            setlistfm.client:
+                base_uri: '%env(SETLISTFM_BASE_URL)%'
+                headers:
+                    Accept: 'application/json'
+                    x-api-key: '%env(SETLISTFM_API_KEY)%'
+                timeout: '%env(float:SETLISTFM_HTTP_TIMEOUT)%'
+                max_duration: '%env(float:SETLISTFM_HTTP_TIMEOUT)%'

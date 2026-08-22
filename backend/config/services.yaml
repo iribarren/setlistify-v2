@@ -46,6 +46,16 @@ services:
             $allowlistCsv: '%env(ADMIN_IP_ALLOWLIST)%'
             $appEnv: '%env(APP_ENV)%'
             $totpIssuer: '%env(ADMIN_TOTP_ISSUER)%'
+            # setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md). Scalar
+            # config only — the API key itself is bound explicitly, once, on SetlistFmClient below
+            # (D-58/US-12), never through this global bind, so it can never be pulled in by a
+            # constructor parameter named `$apiKey` anywhere else in the app.
+            $ratePerSecond: '%env(int:SETLISTFM_RATE_PER_SECOND)%'
+            $dailyBudget: '%env(int:SETLISTFM_DAILY_BUDGET)%'
+            $cacheTtl: '%env(int:SETLISTFM_CACHE_TTL)%'
+            $tokenWaitSeconds: '%env(float:SETLISTFM_TOKEN_WAIT)%'
+            $refreshBudgetShare: '%env(float:SETLISTFM_REFRESH_BUDGET_SHARE)%'
+            $setlistfmLogger: '@monolog.logger.setlistfm'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -128,3 +138,46 @@ services:
     # app instances, and a second pool buys nothing here.
     App\Security\Admin\AdminLockoutTracker:
         arguments: ['@cache.rate_limiter']
+
+    # setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md, D-61). A dedicated
+    # phpredis connection, separate from the `Redis` service above (which exists only to feed
+    # RedisSessionHandler) — the budget gate's keys (rate bucket, daily counter, breaker) have
+    # nothing to do with sessions and shouldn't share a service whose contract says "nothing else
+    # depends on this".
+    setlistfm.redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
+
+    # Kept public so tests can drive the budget gate directly (AC-7.4's concurrency test, AC-7.6's
+    # fail-closed test) without needing a real HTTP call through the full gateway — same rationale
+    # as AuditLogger's public:true above.
+    App\Service\Setlist\SetlistFmBudget:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
+    App\Service\Setlist\SetlistCacheMetrics:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
+    App\Service\Setlist\SetlistRefreshRunLog:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
+    App\Service\Setlist\SetlistCache:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
+    # setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md, D-58/US-12). The ONLY
+    # place `SETLISTFM_API_KEY` and the scoped `setlistfm.client` HTTP client are wired in. No other
+    # service in the app may declare a constructor argument that resolves to either — AC-6.5 and
+    # AC-12.1 are enforced by App\Tests\Unit\Service\Setlist\SetlistGatewayIsOnlyDoorTest, a static
+    # scan of src/ outside this directory.
+    App\Service\Setlist\SetlistFmClient:
+        arguments:
+            $httpClient: '@setlistfm.client'
+            $apiKeyForRedactionCheck: '%env(SETLISTFM_API_KEY)%'

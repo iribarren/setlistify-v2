@@ -2,6 +2,7 @@ monolog:
     channels:
         - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
         - security    # Reuse detection, rate-limiter fail-closed events (AC-4.4, AC-9.6)
+        - setlistfm   # Budget/breaker/degradation events (docs/specs/2026-08-22-setlistfm-integration.md, AC-8.7)
 
 when@dev:
     monolog:
