@@ -9,7 +9,7 @@
 | **Type** | **SPIKE — a recommendation, not an implementation.** No branch, no code, no migration |
 | **Depends on** | `09` — setlist.fm integration (merged) · `10` — streaming port and account linking (merged) · `11` — backoffice provider configuration (merged) |
 | **Implemented by** | `14` — playlist fast mode backend · `17` — normal mode · `18` — YouTube adapter |
-| **Status** | **Draft — awaiting approval** |
+| **Status** | **Approved** |
 
 ---
 
