@@ -130,7 +130,9 @@ a platform-forked file (`*.ios.tsx` etc., forbidden by AC-1.8) — stop and reco
 Currently approved, all gate-checked: `expo-router`, `expo-font` (+ `@expo-google-fonts/*` for the
 bundled OFL weight files, D-13), `@tanstack/react-query`, `openapi-fetch`, `lucide-react-native` +
 `react-native-svg`, `expo-secure-store` (D-18 — a documented exception: it is genuinely a no-op on
-web, which is why the storage adapter branches instead of this dependency being used directly).
+web, which is why the storage adapter branches instead of this dependency being used directly),
+`expo-web-browser` (native-only auth session for account linking, D-74 — a no-op import on web,
+which is why `linkAccount.web.ts`/`linkAccount.native.ts` branch instead of calling it directly).
 
 ## Testing
 
@@ -188,6 +190,40 @@ verification, log out) — the second of the shell's two destinations.
   offline fails fast (`lib/concerts/errorMessage.ts`'s `status === 0` case) with the user's input
   intact — there is no write queue.
 
+## Streaming accounts — Connections (`feature/streaming-port-and-account-linking`)
+
+`docs/specs/2026-08-22-streaming-port-and-account-linking.md` (US-1, US-2, US-3, US-5) adds a
+**Connections** section to `app/(app)/account.tsx`, listing linked streaming accounts and driving
+the OAuth round trip against `frontend/api/schema.d.ts`'s `/api/streaming/*` endpoints. The client
+never sees a provider token, authorization code or PKCE verifier at any point (D-74) — it only opens
+a URL the backend produced and later resolves the opaque, one-time reference the backend hands back.
+
+- **`components/streaming/`**: `ConnectionsSection` (the section itself — owns the whole round trip:
+  start the link, open it, resolve the reference, list/reconnect/disconnect), `StreamingAccountRow`
+  (one linked account, its status badge, and its actions — AC-2.5's 44×44 targets), and
+  `DisconnectConfirmation` (mirrors `components/concert/DeleteConfirmation.tsx`'s shape).
+- **`lib/streaming/`**: `queries.ts` (`useStreamingAccounts`/`useStartStreamingLink`/
+  `useResolveStreamingLink`/`useUnlinkStreamingAccount` — the last one optimistic, with
+  snapshot/rollback reconciliation, mirroring `useCreateConcert`'s onMutate/onError/onSuccess shape),
+  `errorMessage.ts` (`describeStreamingError`, `providerDisplayName`, and `revocationFollowUp` — the
+  honest, provider-specific copy for D-81's "Spotify has no revocation endpoint" gap).
+- **Another sanctioned platform fork** (alongside `lib/auth/storage.*` and `components/DateField.*`):
+  `lib/streaming/linkAccount.web.ts` (a full-page redirect to the backend-produced authorization URL)
+  / `linkAccount.native.ts` (`expo-web-browser`'s `openAuthSessionAsync`), behind the shared
+  `LinkAccount` contract in `linkAccountTypes.ts`. A screen imports the platform-forked module by a
+  **relative** path, not the `@/` alias — the eslint import resolver only follows the
+  `.native`/`.web` suffix convention through a relative specifier (see `ConnectionsSection.tsx`'s
+  import comment).
+- **The web return leg** reads the opaque `ref` off the account route's own query params
+  (`useLocalSearchParams`, same pattern as `app/verify-email.tsx`'s token) after the backend's
+  full-page redirect back to `STREAMING_LINK_RETURN_URL_WEB`, resolves it once, then strips it via
+  `router.replace("/account")` so a page refresh can't try to resolve an already-consumed,
+  single-use reference again (AC-8.7). The native leg gets the same reference directly from
+  `openAuthSessionAsync`'s result URL — no route/query-param involvement.
+- **Out of scope here** (later prompts): which providers are enabled and playback mode (prompt 11 —
+  this branch hardcodes Spotify as the one connectable provider, `SUPPORTED_PROVIDERS` in
+  `lib/streaming/index.ts`), track matching, playlist generation, and the concert page player embed.
+
 ## What's here
 
 ```
@@ -200,17 +236,19 @@ frontend/
 │  └─ (app)/            breakpoint-driven shell (tab bar / sidebar) around:
 │     ├─ index.tsx        redirects to /concerts
 │     ├─ concerts/        list, add, detail, edit — the app's real home (prompt 07)
-│     └─ account.tsx      identity, email verification, log out
+│     └─ account.tsx      identity, email verification, log out, Connections (prompt 10)
 ├─ api/               GENERATED — openapi-typescript output, committed, never hand-edited
 ├─ theme/             colors · typography · spacing · radius · elevation · ThemeProvider
 ├─ components/        Button, TextInput, Card, ListRow, Badge, Avatar, DateField.native/web
 │  ├─ state/          LoadingState, EmptyState, DegradedState, ErrorState
 │  ├─ concert/         ConcertCard, SkeletonCard, LineupList, BandEntryRow, DisclosureSection,
 │  │                    ReservedSection, ConcertForm, DeleteConfirmation
+│  ├─ streaming/       ConnectionsSection, StreamingAccountRow, DisconnectConfirmation
 │  └─ nav/             BottomTabBar, Sidebar, breakpoint
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
 ├─ lib/concerts/      concert query hooks, DTO mapping, client validation, RFC 7807 violation mapping
+├─ lib/streaming/     account-linking query hooks, linkAccount.native/web, error copy
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```
