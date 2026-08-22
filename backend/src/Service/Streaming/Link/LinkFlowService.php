@@ -7,6 +7,8 @@ namespace App\Service\Streaming\Link;
 use App\Entity\StreamingAccount;
 use App\Entity\User;
 use App\Repository\StreamingAccountRepository;
+use App\Service\Provider\ProviderAvailability;
+use App\Service\Provider\ProviderDisabledException;
 use App\Service\Security\RateLimiterGuard;
 use App\Service\Streaming\Exception\StreamingException;
 use App\Service\Streaming\StreamingProviderLocator;
@@ -38,6 +40,7 @@ final readonly class LinkFlowService
 {
     public function __construct(
         private StreamingProviderLocator $locator,
+        private ProviderAvailability $providerAvailability,
         private PendingLinkStore $pendingLinkStore,
         private LinkResultStore $linkResultStore,
         private StreamingAccountRepository $accountRepository,
@@ -57,8 +60,23 @@ final readonly class LinkFlowService
      * `'native'`/`'web'` (`App\Service\Security\ClientPlatform`), recorded in the pending link so
      * the callback knows which return leg to use (D-75).
      */
+    /**
+     * @throws UnknownProviderException  no adapter or settings row recognizes this key — 404 (D-94)
+     * @throws ProviderDisabledException the provider is currently disabled — 503 (D-94, AC-4.2)
+     */
     public function start(int $userId, string $providerKey, string $platform): string
     {
+        // AC-4.2: refused before the rate limiter or the locator is touched — no OAuth URL
+        // generated, no `state` written, no rate-limit token spent on a request that could never
+        // have worked. Unknown-key (404) is checked first so it stays distinguishable from
+        // disabled (503, D-94) — ProviderAvailability alone can't tell the two apart.
+        if (!$this->locator->has($providerKey)) {
+            throw new UnknownProviderException($providerKey);
+        }
+        if (!$this->providerAvailability->isAvailable($providerKey)) {
+            throw new ProviderDisabledException($providerKey);
+        }
+
         // AC-8.6: fails closed if Redis (the limiter's storage) is unreachable.
         $this->rateLimiterGuard->consume($this->streamingLinkStartLimiter, (string) $userId);
 

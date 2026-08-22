@@ -6,6 +6,8 @@ namespace App\Service\Streaming\Link;
 
 use App\Entity\StreamingAccount;
 use App\Repository\StreamingAccountRepository;
+use App\Service\Provider\ProviderAvailability;
+use App\Service\Provider\ProviderDisabledException;
 use App\Service\Streaming\Exception\StreamingException;
 use App\Service\Streaming\Exception\TokenExpiredException;
 use App\Service\Streaming\Model\ProviderTokens;
@@ -38,6 +40,7 @@ final readonly class StreamingTokenManager
 
     public function __construct(
         private StreamingProviderLocator $locator,
+        private ProviderAvailability $providerAvailability,
         private StreamingAccountRepository $repository,
         private EntityManagerInterface $entityManager,
         private LockFactory $lockFactory,
@@ -47,8 +50,12 @@ final readonly class StreamingTokenManager
     }
 
     /**
-     * @throws TokenExpiredException the account needs reconnecting; status is already updated
-     * @throws StreamingException    a transient provider failure — the account is untouched
+     * @throws TokenExpiredException     the account needs reconnecting; status is already updated
+     * @throws StreamingException        a transient provider failure — the account is untouched
+     * @throws ProviderDisabledException AC-4.6: the provider is currently disabled — refresh is not
+     *                                   attempted at all, and the account's status is left exactly
+     *                                   as it was (a disabled provider is an operator state, not a
+     *                                   broken grant, D-80)
      */
     public function usableTokens(StreamingAccount $account): ProviderTokens
     {
@@ -79,6 +86,13 @@ final readonly class StreamingTokenManager
 
     private function refreshAndPersist(StreamingAccount $account, \DateTimeImmutable $now): ProviderTokens
     {
+        // AC-4.6: a disabled provider never reaches the adapter, and never changes the account's
+        // status — refusing here is the only place this check needs to live, since `usableTokens()`
+        // routes every refresh through this method.
+        if (!$this->providerAvailability->isAvailable($account->getProvider())) {
+            throw new ProviderDisabledException($account->getProvider());
+        }
+
         $provider = $this->locator->get($account->getProvider());
 
         try {
