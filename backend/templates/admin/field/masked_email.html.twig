@@ -1,0 +1,4 @@
+{# D-51/AC-9.1: deliberately does NOT set a `title="{{ field.value }}"` attribute the way
+   EasyAdmin's stock text.html.twig does — that attribute carries the field's raw, pre-mask value
+   and would leak the real email into the rendered HTML regardless of formatValue() (R-2). #}
+<span>{{ field.formattedValue }}</span>

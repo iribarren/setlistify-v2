@@ -12,11 +12,50 @@ security:
         app_user_provider:
             id: App\Service\Security\UserIdProvider
 
+        # Admin firewall provider (D-47): loads by email, requires ROLE_ADMIN, and wraps the User
+        # in App\Security\Admin\AdminUser — a separate model object that implements scheb/2fa's
+        # TwoFactorInterface/BackupCodeInterface. User itself never implements them, which is what
+        # keeps 2FA scoped to this firewall alone (AC-5.1): the `api` firewall's provider resolves
+        # plain User entities, and scheb only intercepts a token whose user implements those
+        # interfaces.
+        app_admin_provider:
+            id: App\Security\Admin\AdminUserProvider
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+
+        # Admin backoffice firewall (docs/specs/2026-08-21-backoffice-foundation.md). Declared
+        # BEFORE `api` — firewall matching is first-match-wins (D-48), so this MUST stay above it;
+        # AdminFirewallTest/ApiFirewallDoesNotAuthenticateAdminTest pin this ordering with a test in
+        # both directions (AC-3.2, AC-3.3). Session-based (not stateless), mandatory TOTP 2FA
+        # (US-5), separate cookie from the API's refresh cookie (D-54, see config/packages/
+        # framework.yaml's `when@!test` session block).
+        admin:
+            pattern: ^%env(ADMIN_PATH_PREFIX)%
+            provider: app_admin_provider
+            user_checker: App\Security\Admin\AdminUserChecker
+            entry_point: form_login
+            form_login:
+                login_path: admin_login
+                check_path: admin_login_check
+                default_target_path: admin_dashboard
+                enable_csrf: true
+            logout:
+                path: admin_logout
+                target: admin_login
+            two_factor:
+                auth_form_path: admin_2fa_login
+                check_path: admin_2fa_login_check
+                default_target_path: admin_dashboard
+                enable_csrf: true
+                # D-49: sends a 2FA-pending session with no TOTP secret to enrollment instead of
+                # scheb's normal (structurally-unusable-without-a-secret) check form. See
+                # App\Security\Admin\ForceEnrollmentAuthenticationRequiredHandler's docblock for why
+                # this must be a handler override rather than a kernel.request listener.
+                authentication_required_handler: App\Security\Admin\ForceEnrollmentAuthenticationRequiredHandler
 
         # Every public credential action (register, login, refresh, logout, password reset, email
         # verification) is a custom API Platform state processor, not a firewall-authenticated
@@ -30,13 +69,21 @@ security:
             provider: app_user_provider
             jwt: ~
 
-        # Admin backoffice firewall (prompt 08) is not built yet. `/admin` therefore falls through
-        # to this default firewall and 404s — a valid API JWT authenticates nothing here (AC-10.5).
+        # A valid API JWT authenticates nothing here (AC-10.5) — the admin firewall above already
+        # claims every request under the prefix, so `main` never even sees an `/admin` request.
         main:
             lazy: true
             provider: app_user_provider
 
-    access_control: []
+    # Every route under the prefix requires ROLE_ADMIN (AC-1.3) by *this* rule, not a per-controller
+    # annotation a new controller could forget (D-46's same structural-enforcement principle). The
+    # three exceptions above it are the minimum needed to let an unauthenticated operator reach the
+    # login form and to let a partially-authenticated (2FA-in-progress) session reach the 2FA form —
+    # nothing else is public.
+    access_control:
+        - { path: ^%env(ADMIN_PATH_PREFIX)%/(login|login_check|logout)$, roles: PUBLIC_ACCESS }
+        - { path: ^%env(ADMIN_PATH_PREFIX)%/2fa, roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
+        - { path: ^%env(ADMIN_PATH_PREFIX)%, roles: ROLE_ADMIN }
 
 when@test:
     security:

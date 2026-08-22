@@ -63,6 +63,12 @@ that touches an external API.
   request finds nothing and gets the framework's ordinary "not found" — indistinguishable from a
   genuinely missing id. A 403 would confirm the id exists; that leak is exactly what this rule closes.
   Every later user-scoped resource (playlists, notes, …) copies this shape.
+  **The backoffice is a separate channel and never weakens this gate** (D-47,
+  `docs/specs/2026-08-21-backoffice-foundation.md`): the admin's EasyAdmin controllers read across
+  owners through Doctrine directly, inside an audited, 2FA-gated session — `ConcertOwnerExtension`
+  is never modified, never made role-aware, and never given a `ROLE_ADMIN` bypass branch. If a future
+  feature needs the admin to see across owners, it queries Doctrine itself; it does not add a
+  conditional to the class that guards every user's data on the public API.
 
 ### Domain glossary
 

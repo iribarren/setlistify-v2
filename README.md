@@ -66,6 +66,7 @@ git config core.hooksPath .githooks
 | Health check | <http://localhost:8000/api/health> |
 | OpenAPI docs (UI) | <http://localhost:8000/api/docs> |
 | OpenAPI document (JSON) | <http://localhost:8000/api/docs.jsonopenapi> |
+| Backoffice (operator only — see [Backoffice](#backoffice)) | <http://localhost:8000/admin> |
 | Frontend (web) | <http://localhost:8081> |
 | Mailpit (dev mail sink — verification/reset emails) | <http://localhost:8025> |
 | PostgreSQL | internal only — `docker compose exec postgres psql -U setlistify -d setlistify` |
@@ -78,6 +79,33 @@ them through `docker compose exec`, or add a port mapping in a local, gitignored
 The OpenAPI document, generated from the API Platform resources, is the single source of truth for
 endpoints — this README intentionally lists none beyond the URLs above; see `CLAUDE.md`, API
 Contract, and `backend/README.md` for the backend command set.
+
+## Backoffice
+
+Server-rendered inside the Symfony app (`docs/architecture.md` §9, §11) — never in the Expo client,
+never in the OpenAPI document. Every route requires `ROLE_ADMIN` and a completed TOTP enrollment;
+there is no self-service signup or promotion path.
+
+First run:
+
+```bash
+docker compose exec backend bin/console app:admin:create you@example.test 'a-strong-password'
+```
+
+Then open <http://localhost:8000/admin/login> and sign in with that password — an account with no
+TOTP secret yet is redirected straight to enrollment (scan the QR code or enter the secret manually,
+save the ten backup codes shown, confirm with the current 6-digit code). After that, the account is
+fully usable.
+
+**Lost your authenticator app or backup codes?** There is no web-based recovery flow by design
+(`docs/architecture.md` D-49) — only shell access can reset 2FA:
+
+```bash
+docker compose exec backend bin/console app:admin:2fa:reset you@example.test
+```
+
+This clears the TOTP secret and every backup code; the next login re-enrolls with a brand new
+secret and a brand new set of codes.
 
 ## Frontend (runs on the host)
 

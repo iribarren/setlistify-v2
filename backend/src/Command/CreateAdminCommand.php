@@ -32,6 +32,7 @@ final class CreateAdminCommand extends Command
         private readonly UserRepository $userRepository,
         private readonly EmailNormalizer $emailNormalizer,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly string $adminPathPrefix,
     ) {
         parent::__construct();
     }
@@ -60,6 +61,7 @@ final class CreateAdminCommand extends Command
             $roles = $user->getRoles();
             if (\in_array('ROLE_ADMIN', $roles, true)) {
                 $io->success(\sprintf('%s already has ROLE_ADMIN.', $email));
+                $this->reportEnrollmentStatus($io, $user);
 
                 return Command::SUCCESS;
             }
@@ -69,6 +71,7 @@ final class CreateAdminCommand extends Command
             $this->userRepository->save($user);
 
             $io->success(\sprintf('%s promoted to ROLE_ADMIN.', $email));
+            $this->reportEnrollmentStatus($io, $user);
 
             return Command::SUCCESS;
         }
@@ -92,7 +95,28 @@ final class CreateAdminCommand extends Command
         }
 
         $io->success(\sprintf('Created %s with ROLE_ADMIN.', $email));
+        $this->reportEnrollmentStatus($io, $user);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * AC-2.2: reports whether 2FA enrollment is still needed and prints the URL to do it —
+     * **never** a TOTP secret or a backup code (those are generated and shown once, at enrollment
+     * time only, by `App\Controller\Admin\TwoFactorEnrollmentController`).
+     */
+    private function reportEnrollmentStatus(SymfonyStyle $io, User $user): void
+    {
+        if (null !== $user->getTotpSecretCipher()) {
+            $io->note('Two-factor authentication is already enrolled for this account.');
+
+            return;
+        }
+
+        $io->warning('This account has NOT completed two-factor enrollment yet — it is not usable until it does (D-49).');
+        $io->text(\sprintf(
+            'Log in at %s/login with this account\'s password; you will be redirected to the enrollment page automatically.',
+            $this->adminPathPrefix,
+        ));
     }
 }

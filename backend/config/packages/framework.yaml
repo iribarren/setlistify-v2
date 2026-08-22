@@ -2,8 +2,25 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # Note that the session will be started ONLY if you read or write from it — in practice, only
+    # the admin firewall ever touches it (`api` is stateless, `main` is lazy and unused today).
+    #
+    # D-54 (docs/specs/2026-08-21-backoffice-foundation.md): a distinct name and path from the
+    # API's refresh-token cookie (`refresh_token` at `/api`, RefreshCookieFactory), so neither
+    # cookie is ever sent where the other is expected (AC-1.6, AC-3.3). `cookie_secure` reuses the
+    # same "secure outside dev" env var as the API cookie. `gc_maxlifetime` is the 30-minute idle
+    # timeout (AC-1.6) — Redis-backed storage means it's enforced server-side, not just by the
+    # cookie's own lifetime. The 8-hour *absolute* lifetime (independent of activity) is enforced
+    # separately by App\EventSubscriber\AdminSessionLifetimeSubscriber, since Symfony's session
+    # component has no native "absolute" expiry distinct from idle expiry.
+    session:
+        name: admin_session
+        cookie_path: '%admin.path_prefix%'
+        cookie_secure: '%env(bool:AUTH_COOKIE_SECURE)%'
+        cookie_httponly: true
+        cookie_samesite: lax
+        gc_maxlifetime: 1800
+        handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
 
     #esi: true
     #fragments: true

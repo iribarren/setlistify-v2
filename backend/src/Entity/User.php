@@ -57,6 +57,35 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    /**
+     * The TOTP secret, encrypted at rest (AC-5.3, docs/specs/2026-08-21-backoffice-foundation.md)
+     * via `App\Security\Admin\TotpSecretEncryptor` — never plaintext in the database, never read by
+     * this class itself (decryption happens only in `App\Security\Admin\AdminUser`, which the admin
+     * firewall's provider constructs). Excluded from every serialization group and every EasyAdmin
+     * field list (D-46) — nothing here is public API surface.
+     */
+    #[ORM\Column(name: 'totp_secret_cipher', type: 'text', nullable: true)]
+    private ?string $totpSecretCipher = null;
+
+    /**
+     * Ten single-use backup codes (AC-5.4), hashed with the same auto-hasher configuration as
+     * `$password` — never plaintext, never logged. Consumption removes an entry (D-49's console-only
+     * reset regenerates the whole set).
+     *
+     * @var list<string>
+     */
+    #[ORM\Column(name: 'backup_codes_hashed', type: 'json')]
+    private array $backupCodesHashed = [];
+
+    /**
+     * NOT a mapped column — a transient, admin-list-only aggregate (AC-6.1, AC-6.2). Populated by
+     * `App\Controller\Admin\UserCrudController::createIndexQueryBuilder()`'s single `COUNT`
+     * subquery, aliased `AS HIDDEN concertCount` so Doctrine's hydrator assigns it onto this
+     * property without treating the row as a mixed entity/scalar result. Never persisted, never
+     * touched outside the admin list query.
+     */
+    private int $concertCount = 0;
+
     public function __construct(string $email, string $hashedPassword)
     {
         $this->email = $email;
@@ -150,6 +179,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->isActive;
     }
 
+    /**
+     * Admin-only (D-44, docs/specs/2026-08-21-backoffice-foundation.md) — suspend/unsuspend, called
+     * exclusively from `App\Controller\Admin\UserCrudController`. No public API input ever reaches
+     * this: registration always creates an active user, and nothing in `App\ApiResource` exposes an
+     * `isActive` field.
+     */
+    public function setActive(bool $active): void
+    {
+        $this->isActive = $active;
+        $this->touch();
+    }
+
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
@@ -163,6 +204,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function getTotpSecretCipher(): ?string
+    {
+        return $this->totpSecretCipher;
+    }
+
+    /** Server-side only, called from App\Security\Admin\AdminUser / the enrollment controller. */
+    public function setTotpSecretCipher(?string $cipher): void
+    {
+        $this->totpSecretCipher = $cipher;
+        $this->touch();
+    }
+
+    /** @return list<string> */
+    public function getBackupCodesHashed(): array
+    {
+        return $this->backupCodesHashed;
+    }
+
+    /** @param list<string> $hashedCodes */
+    public function setBackupCodesHashed(array $hashedCodes): void
+    {
+        $this->backupCodesHashed = $hashedCodes;
+        $this->touch();
+    }
+
+    /** See {@see self::$concertCount} — only meaningful after the admin list query. */
+    public function getConcertCount(): int
+    {
+        return $this->concertCount;
     }
 
     /** No sensitive temporary data is ever stored on the user (e.g. plain password). Nothing to erase. */
