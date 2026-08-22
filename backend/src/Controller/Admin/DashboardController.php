@@ -88,6 +88,7 @@ final class DashboardController extends AbstractDashboardController
         yield MenuItem::linkTo(BandCrudController::class, 'Bands', 'fa fa-guitar');
         yield MenuItem::linkTo(SetlistCacheEntryCrudController::class, 'Setlist cache', 'fa fa-database');
         yield MenuItem::linkTo(StreamingAccountCrudController::class, 'Streaming accounts', 'fa fa-plug');
+        yield MenuItem::linkTo(ProviderSettingCrudController::class, 'Providers', 'fa fa-toggle-on');
         yield MenuItem::linkTo(AuditLogEntryCrudController::class, 'Audit log', 'fa fa-list');
     }
 
