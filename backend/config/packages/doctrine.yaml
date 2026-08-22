@@ -12,6 +12,13 @@ doctrine:
             2: 2
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        # D-78/US-6: the streaming-account token columns' custom type. Encryption/decryption is
+        # transparent to every consumer that just reads/writes the entity's properties — see
+        # App\Doctrine\Type\EncryptedStringType's docblock for why it configures its cipher from
+        # the real process environment rather than through this bundle's DI.
+        types:
+            encrypted_string: App\Doctrine\Type\EncryptedStringType
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore

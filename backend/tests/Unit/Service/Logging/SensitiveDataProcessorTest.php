@@ -33,6 +33,34 @@ final class SensitiveDataProcessorTest extends TestCase
         self::assertSame('kept@example.com', $result->context['email'], 'non-sensitive fields are left alone');
     }
 
+    /**
+     * Streaming port and account linking (docs/specs/2026-08-22-streaming-port-and-account-linking.md,
+     * AC-7.2): `access_token`, `refresh_token`, `code`, `code_verifier`, `client_secret` all
+     * redacted, on top of `token` already covered above.
+     */
+    public function testRedactsProviderOAuthShapes(): void
+    {
+        $processor = new SensitiveDataProcessor();
+
+        $record = $this->record(context: [
+            'access_token' => 'BQD1abc...',
+            'code' => 'AQD9xyz...',
+            'code_verifier' => 'randomly-generated-verifier',
+            'client_secret' => 'super-secret-client-secret',
+            'statusCode' => 429,
+            'postalCode' => '28001',
+        ]);
+
+        $result = ($processor)($record);
+
+        self::assertSame('[REDACTED]', $result->context['access_token']);
+        self::assertSame('[REDACTED]', $result->context['code']);
+        self::assertSame('[REDACTED]', $result->context['code_verifier']);
+        self::assertSame('[REDACTED]', $result->context['client_secret']);
+        self::assertSame(429, $result->context['statusCode'], '"code" is exact-match only — unrelated *Code fields are kept');
+        self::assertSame('28001', $result->context['postalCode']);
+    }
+
     public function testRedactsNestedSensitiveKeys(): void
     {
         $processor = new SensitiveDataProcessor();

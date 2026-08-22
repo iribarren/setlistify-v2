@@ -181,3 +181,70 @@ services:
         arguments:
             $httpClient: '@setlistfm.client'
             $apiKeyForRedactionCheck: '%env(SETLISTFM_API_KEY)%'
+
+    # --- Streaming port and account linking -----------------------------------------------------
+    # (docs/specs/2026-08-22-streaming-port-and-account-linking.md, D-72/D-82/AC-9.6)
+
+    # D-72: every adapter is collected here via its tag and indexed by key() — nothing names an
+    # adapter class. TestDoubleStreamingProvider (tests/Support/Streaming/) joins this same
+    # iterator purely by carrying the tag, in the when@test block below (AC-9.5).
+    App\Service\Streaming\StreamingProviderLocator:
+        arguments:
+            $providers: !tagged_iterator app.streaming_provider
+
+    App\Service\Provider\StaticProviderAvailability: ~
+
+    App\Service\Provider\ProviderAvailability:
+        alias: App\Service\Provider\StaticProviderAvailability
+
+    # Dedicated Redis connection for pending-link/link-result state (D-76) — same rationale as
+    # setlistfm.redis above: ephemeral keys unrelated to sessions, so not shared with the `Redis`
+    # service that only feeds RedisSessionHandler.
+    streaming.redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
+
+    App\Service\Streaming\Link\PendingLinkStore:
+        arguments:
+            $redis: '@streaming.redis'
+            $ttlSeconds: '%env(int:STREAMING_LINK_STATE_TTL)%'
+
+    App\Service\Streaming\Link\LinkResultStore:
+        arguments:
+            $redis: '@streaming.redis'
+
+    App\Service\Streaming\Link\LinkFlowService:
+        arguments:
+            $redirectUrisByProvider:
+                spotify: '%env(SPOTIFY_REDIRECT_URI)%'
+            $webReturnUrl: '%env(STREAMING_LINK_RETURN_URL_WEB)%'
+            $nativeReturnUrl: '%env(STREAMING_LINK_RETURN_URL_NATIVE)%'
+            $streamingLinkStartLimiter: '@limiter.streaming_link_start'
+
+    App\Service\Streaming\Link\StreamingTokenManager:
+        arguments:
+            $refreshSkewSeconds: '%env(int:STREAMING_TOKEN_REFRESH_SKEW)%'
+
+    # The ONLY place `SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET`/`SPOTIFY_ACCOUNTS_BASE_URL` and the
+    # scoped `spotify.*.client` HTTP clients are wired in (D-82/AC-9.6) — everything else in
+    # src/Service/Streaming/Spotify/ receives them only through this adapter's own dependents.
+    App\Service\Streaming\Spotify\SpotifyHttpClient:
+        arguments:
+            $accountsClient: '@spotify.accounts.client'
+            $apiClient: '@spotify.api.client'
+            $streamingLogger: '@monolog.logger.streaming'
+
+    App\Service\Streaming\Spotify\SpotifyProvider:
+        arguments:
+            $clientId: '%env(SPOTIFY_CLIENT_ID)%'
+            $clientSecret: '%env(SPOTIFY_CLIENT_SECRET)%'
+            $accountsBaseUrl: '%env(SPOTIFY_ACCOUNTS_BASE_URL)%'
+        tags: ['app.streaming_provider']
+
+when@test:
+    services:
+        # AC-9.5's proof: registered ONLY by this tag, discovered by StreamingProviderLocator with
+        # zero changes to any consuming class.
+        App\Tests\Support\Streaming\TestDoubleStreamingProvider:
+            tags: ['app.streaming_provider']

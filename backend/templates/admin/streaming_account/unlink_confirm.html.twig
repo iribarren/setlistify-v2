@@ -1,0 +1,22 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Unlink streaming account{% endblock %}
+
+{% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p>This deletes account <strong>{{ account.provider }}</strong> (id {{ account.id }}) and both of
+        its stored token columns entirely — no soft delete, no archived copy.</p>
+
+    <p>Setlistify's own copy is removed immediately. If the provider exposes no revocation endpoint
+        (as is currently the case for Spotify), the user must also remove Setlistify from their own
+        provider account settings to fully revoke access on that side.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_streaming_account_action') }}">
+        <button type="submit">Unlink</button>
+        <a href="{{ index_path }}">Cancel</a>
+    </form>
+{% endblock %}

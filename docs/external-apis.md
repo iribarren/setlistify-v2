@@ -106,6 +106,22 @@ playback, because Spotify serves the audio itself. Ask Spotify directly whether 
 widget classifies an app as a Streaming SDA. That answer decides whether `playbackMode` can stay on
 `embed` after monetization.
 
+### Token revocation
+
+**Spotify's Web API exposes no token revocation endpoint.** Deleting a linked account locally
+(`docs/specs/2026-08-22-streaming-port-and-account-linking.md`, D-81) is authoritative on
+Setlistify's side — both encrypted token columns are hard-deleted, no soft delete — but Spotify
+access is not revoked on their side by that alone. The user must remove Setlistify from their
+Spotify account's Apps page to revoke it there too; the unlink UI says this plainly rather than
+implying a "revoke" it cannot perform (AC-3.3).
+
+### Confirmed minimal scope set
+
+The linking flow requests exactly `user-read-private` (identity) and `playlist-modify-private`
+(creating/editing the user's own private playlists) — nothing broader, and specifically not
+`playlist-modify-public` (D-87: playlists created by the port are private by default). Declared in
+one place, `App\Service\Streaming\Spotify\SpotifyScopes` (D-88).
+
 ### Advertising data restrictions
 
 Independent of the SDA question: Spotify Content and Spotify data **may not be used to target
@@ -207,3 +223,4 @@ advertising and subscriptions count as commercial use; neither escapes any of it
 |------|--------|
 | 2026-08-21 | Initial research. Verified Spotify quota modes and SDA policy, setlist.fm rate limits and non-commercial terms, YouTube quota and ad-enabled client policy, Apple MusicKit advertising prohibition, TIDAL non-commercial restriction. |
 | 2026-08-22 | setlist.fm's daily budget and rate limit are now enforced in-application (`docs/specs/2026-08-22-setlistfm-integration.md`), not just documented — see the updated setlist.fm section above. No terms change; the higher-tier application and commercial-use conversation remain outstanding. |
+| 2026-08-22 | Streaming port and account linking shipped (`docs/specs/2026-08-22-streaming-port-and-account-linking.md`). Confirmed Spotify exposes no token revocation endpoint (§Spotify, new "Token revocation" subsection) and recorded the confirmed minimal scope set (`user-read-private`, `playlist-modify-private`). No change to the SDA/quota-mode position above. |

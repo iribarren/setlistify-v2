@@ -9,6 +9,46 @@
  * docs/specs/2026-08-21-frontend-skeleton.md, R-1.
  */
 export interface paths {
+    "/api/band-searches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a BandSearch resource.
+         * @description Retrieves a BandSearch resource.
+         */
+        get: operations["api_band-searches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bands/{bandId}/setlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a BandSetlists resource.
+         * @description Retrieves a BandSetlists resource.
+         */
+        get: operations["api_bands_bandIdsetlists_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/concerts": {
         parameters: {
             query?: never;
@@ -241,6 +281,106 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setlists/{setlistfmId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a Setlist resource.
+         * @description Retrieves a Setlist resource.
+         */
+        get: operations["api_setlists_setlistfmId_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streaming/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves the collection of StreamingAccount resources.
+         * @description Retrieves the collection of StreamingAccount resources.
+         */
+        get: operations["api_streamingaccounts_get_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streaming/accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Removes the StreamingAccount resource.
+         * @description Removes the StreamingAccount resource.
+         */
+        delete: operations["api_streamingaccounts_id_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streaming/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a StreamingLink resource.
+         * @description Creates a StreamingLink resource.
+         */
+        post: operations["api_streaminglink_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/streaming/link-results/{ref}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a StreamingLinkResult resource.
+         * @description Retrieves a StreamingLinkResult resource.
+         */
+        get: operations["api_streaminglink-results_ref_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -268,6 +408,28 @@ export interface components {
         "BandOutput.jsonld": {
             id?: number;
             name?: string;
+        };
+        /** @description Search setlist.fm's artist index by free-text name (US-1). Cached (AC-1.7) — searching the same string twice makes one outbound call. */
+        "BandSearch.BandSearchOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            candidates?: components["schemas"]["BandSearchCandidateOutput.jsonld"][];
+            freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
+        };
+        "BandSearchCandidateOutput.jsonld": {
+            mbid?: string;
+            name?: string;
+            sortName?: string | null;
+            disambiguation?: string | null;
+        };
+        /** @description A band's past setlists, newest first (US-3). */
+        "BandSetlists.BandSetlistsOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            /** @description One of 'resolved'|'ambiguous'|'no_presence'|'unresolved' (mirrors `Band::RESOLUTION_*`). */
+            state?: string;
+            candidates?: components["schemas"]["BandSearchCandidateOutput.jsonld"][];
+            setlists?: components["schemas"]["SetlistSummaryOutput.jsonld"][];
+            totalItems?: number;
+            page?: number;
+            itemsPerPage?: number;
+            freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
         };
         /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
         "Concert.ConcertInput": {
@@ -370,6 +532,18 @@ export interface components {
             readonly instance?: string | null;
             /** @description A URI reference that identifies the problem type */
             readonly type?: string;
+        };
+        "FreshnessEnvelope.jsonld": {
+            source?: string;
+            /** Format: date-time */
+            fetchedAt?: string | null;
+            stale?: boolean;
+            reason?: string | null;
+            /**
+             * Format: date-time
+             * @description AC-8.4: when the daily budget resets, so the client can say "tomorrow at …".
+             */
+            budgetResetAt?: string | null;
         };
         /** @description Reports whether the application and its dependencies (database, Redis) are actually usable — not just that the container is up. */
         "Health.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
@@ -551,6 +725,63 @@ export interface components {
             /** @description Present only for `X-Client-Platform: native` requests — see {@see LoginOutput}. */
             refreshToken?: string | null;
         };
+        /** @description One show's full song list, in playing order (US-4). */
+        "Setlist.SetlistDetailOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            state?: string;
+            setlistfmId?: string | null;
+            eventDate?: string | null;
+            venueName?: string | null;
+            venueCity?: string | null;
+            venueCountry?: string | null;
+            tourName?: string | null;
+            isEmpty?: boolean;
+            songs?: components["schemas"]["SongOutput.jsonld"][];
+            freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
+        };
+        "SetlistSummaryOutput.jsonld": {
+            setlistfmId?: string;
+            eventDate?: string;
+            venueName?: string | null;
+            venueCity?: string | null;
+            venueCountry?: string | null;
+            tourName?: string | null;
+            songCount?: number;
+        };
+        "SongOutput.jsonld": {
+            position?: number;
+            setLabel?: string | null;
+            title?: string;
+            coverOfName?: string | null;
+            coverOfMbid?: string | null;
+            withName?: string | null;
+            info?: string | null;
+            isTape?: boolean;
+        };
+        /** @description A user's link to one streaming provider — status, scopes and identity, never a token (US-2, US-3). */
+        "StreamingAccount.StreamingAccountOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            id?: number;
+            provider?: string;
+            providerDisplayName?: string | null;
+            providerAccountId?: string;
+            scopes?: string[];
+            /** Format: date-time */
+            linkedAt?: string;
+            status?: string;
+        };
+        /** @description `POST /api/streaming/link` (US-1, AC-1.1). Starts the OAuth round trip for a given provider key. */
+        "StreamingLink.StreamingLinkStartInput": {
+            provider: string;
+        };
+        /** @description `POST /api/streaming/link` (US-1, AC-1.1). Starts the OAuth round trip for a given provider key. */
+        "StreamingLink.StreamingLinkStartOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            authorizationUrl?: string;
+        };
+        /** @description `GET /api/streaming/link-results/{ref}` (AC-1.7, AC-1.8, AC-8.7). */
+        "StreamingLinkResult.StreamingLinkResultOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            provider?: string;
+            success?: boolean;
+            reason?: string | null;
+        };
         /** @description Account registration. Roles are always exactly ["ROLE_USER"], assigned server-side — this endpoint has no path to any other role (US-10). */
         "User.RegisterUserInput": {
             /**
@@ -593,6 +824,97 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "api_band-searches_get": {
+        parameters: {
+            query: {
+                /** @description Free-text band name to search for on setlist.fm. */
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description BandSearch resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["BandSearch.BandSearchOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_bands_bandIdsetlists_get: {
+        parameters: {
+            query?: {
+                /** @description Page number, over the cached index (D-31, AC-3.5). */
+                page?: number;
+                /** @description Page size, capped at 100 (D-31). */
+                itemsPerPage?: number;
+            };
+            header?: never;
+            path: {
+                /** @description BandSetlists identifier */
+                bandId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description BandSetlists resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["BandSetlists.BandSetlistsOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     api_concerts_get_collection: {
         parameters: {
             query?: {
@@ -1232,6 +1554,223 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ConstraintViolation"];
                     "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_setlists_setlistfmId_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Setlist identifier */
+                setlistfmId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Setlist resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["Setlist.SetlistDetailOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_streamingaccounts_get_collection: {
+        parameters: {
+            query?: {
+                /** @description The collection page number */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description StreamingAccount collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["HydraCollectionBaseSchema"] & {
+                        member: components["schemas"]["StreamingAccount.StreamingAccountOutput.jsonld"][];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_streamingaccounts_id_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description StreamingAccount identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description StreamingAccount resource deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_streaminglink_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The new StreamingLink resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["StreamingLink.StreamingLinkStartInput"];
+            };
+        };
+        responses: {
+            /** @description StreamingLink resource created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["StreamingLink.StreamingLinkStartOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_streaminglink-results_ref_get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description StreamingLinkResult identifier */
+                ref: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description StreamingLinkResult resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["StreamingLinkResult.StreamingLinkResultOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

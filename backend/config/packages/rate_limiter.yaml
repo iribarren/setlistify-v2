@@ -71,3 +71,11 @@ framework:
             policy: 'sliding_window'
             limit: 30
             interval: '1 hour'
+
+        # Streaming port and account linking (docs/specs/2026-08-22-streaming-port-and-account-linking.md,
+        # AC-8.6): the link-start operation, per user. Fails closed via App\Service\Security\
+        # RateLimiterGuard like every other limiter here.
+        streaming_link_start:
+            policy: 'sliding_window'
+            limit: 10
+            interval: '15 minutes'
