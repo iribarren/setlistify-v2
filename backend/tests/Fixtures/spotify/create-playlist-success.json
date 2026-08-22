@@ -1,0 +1,8 @@
+{
+    "id": "scrubbed-playlist-id-0001",
+    "name": "Test Concert Setlist",
+    "public": false,
+    "external_urls": {
+        "spotify": "https://open.spotify.com/playlist/scrubbed-playlist-id-0001"
+    }
+}

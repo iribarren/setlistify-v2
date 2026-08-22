@@ -1,0 +1,20 @@
+{
+    "tracks": {
+        "items": [
+            {
+                "id": "scrubbed-track-id-0001",
+                "name": "Master of Puppets",
+                "duration_ms": 515384,
+                "artists": [{ "name": "Metallica" }],
+                "album": { "name": "Master of Puppets" }
+            },
+            {
+                "id": "scrubbed-track-id-0002",
+                "name": "Master of Puppets - Live",
+                "duration_ms": 520000,
+                "artists": [{ "name": "Metallica" }],
+                "album": { "name": "S&M" }
+            }
+        ]
+    }
+}

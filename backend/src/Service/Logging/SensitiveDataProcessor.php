@@ -37,6 +37,21 @@ final class SensitiveDataProcessor implements ProcessorInterface
         'x-api-key',
         'apikey',
         'api_key',
+        // Streaming port and account linking (docs/specs/2026-08-22-streaming-port-and-account-linking.md,
+        // AC-7.2): provider OAuth token/credential shapes, in any casing/nesting.
+        'code_verifier',
+        'codeverifier',
+        'client_secret',
+        'clientsecret',
+    ];
+
+    /**
+     * Exact-match only (never substring) — unlike the credential-shaped keys above, "code" alone is
+     * common enough as an unrelated field name (`postalCode`, `statusCode`, `countryCode`, …) that
+     * substring matching would over-redact. AC-7.2 only requires the literal OAuth `code` param.
+     */
+    private const array EXACT_MATCH_SENSITIVE_KEYS = [
+        'code',
     ];
 
     public function __invoke(LogRecord $record): LogRecord
@@ -69,6 +84,10 @@ final class SensitiveDataProcessor implements ProcessorInterface
     private function isSensitiveKey(string $key): bool
     {
         $normalized = strtolower($key);
+
+        if (\in_array($normalized, self::EXACT_MATCH_SENSITIVE_KEYS, true)) {
+            return true;
+        }
 
         foreach (self::SENSITIVE_KEYS as $sensitive) {
             if ($normalized === $sensitive || str_contains($normalized, $sensitive)) {
