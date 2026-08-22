@@ -43,3 +43,9 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
   real usage: the 7-day post-concert refresh window and the 25% nightly-job budget share
   (AC-10.1, AC-10.3). Both are guesses made without data, both are env-configurable, and the
   backoffice dashboard (US-11) exists partly to tell you if they need adjusting.
+- **Manually click through `/admin`'s new Providers screen** before merging prompt 11
+  (`docs/specs/2026-08-22-backoffice-provider-configuration.md`). Implementation was verified by
+  automated tests only (functional tests + a rendered-HTML crawl for the SDA help text, AC-3.5),
+  not by a human looking at the real form — worth doing given the screen's whole purpose is that
+  an operator understands the legal consequence of `playbackMode` at the moment of the click
+  (R-4). The stack (`docker compose`) is already up and ready for this.
