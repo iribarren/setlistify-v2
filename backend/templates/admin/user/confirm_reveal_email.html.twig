@@ -1,0 +1,18 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Reveal email — user {{ user.id }}{% endblock %}
+
+{% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p>Reveal the full email address for user <strong>{{ masked_email }}</strong> (id {{ user.id }})?
+        This is recorded in the audit log and rate-limited.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_action') }}">
+        <button type="submit">Reveal email</button>
+        <a href="{{ detail_path }}">Cancel</a>
+    </form>
+{% endblock %}

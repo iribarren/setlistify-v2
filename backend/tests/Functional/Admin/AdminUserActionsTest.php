@@ -51,7 +51,12 @@ final class AdminUserActionsTest extends AdminWebTestCase
 
         $subjectId = $subject->getId();
 
-        $client->request('POST', '/admin/user/'.$subjectId.'/toggle-active', server: ['HTTP_ORIGIN' => self::ORIGIN]);
+        $client->request(
+            'POST',
+            '/admin/user/'.$subjectId.'/toggle-active',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
         self::assertResponseRedirects();
 
         // The kernel reboots between KernelBrowser requests, so the entity manager (and any entity
@@ -111,7 +116,7 @@ final class AdminUserActionsTest extends AdminWebTestCase
         $client->request(
             'POST',
             '/admin/user/'.$subjectId.'/delete/perform',
-            parameters: ['confirm_id' => (string) $subjectId],
+            parameters: ['confirm_id' => (string) $subjectId, '_csrf_token' => self::CSRF_TOKEN],
             server: ['HTTP_ORIGIN' => self::ORIGIN],
         );
         self::assertResponseRedirects();
@@ -143,7 +148,7 @@ final class AdminUserActionsTest extends AdminWebTestCase
         $client->request(
             'POST',
             '/admin/user/'.$target->getId().'/delete/perform',
-            parameters: ['confirm_id' => 'not-the-id'],
+            parameters: ['confirm_id' => 'not-the-id', '_csrf_token' => self::CSRF_TOKEN],
             server: ['HTTP_ORIGIN' => self::ORIGIN],
         );
         self::assertResponseStatusCodeSame(422);
@@ -162,7 +167,12 @@ final class AdminUserActionsTest extends AdminWebTestCase
         $em->persist($subject);
         $em->flush();
 
-        $client->request('GET', '/admin/user/'.$subject->getId().'/reveal-email');
+        $client->request(
+            'POST',
+            '/admin/user/'.$subject->getId().'/reveal-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
         self::assertResponseIsSuccessful();
         self::assertStringContainsString($subject->getEmail(), (string) $client->getResponse()->getContent());
         self::assertStringContainsString('no-store', (string) $client->getResponse()->headers->get('Cache-Control'));
@@ -179,7 +189,45 @@ final class AdminUserActionsTest extends AdminWebTestCase
             $limiter->create($adminActorId)->consume();
         }
 
-        $client->request('GET', '/admin/user/'.$subject->getId().'/reveal-email');
+        $client->request(
+            'POST',
+            '/admin/user/'.$subject->getId().'/reveal-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
         self::assertResponseStatusCodeSame(429);
+    }
+
+    /**
+     * CSRF/method regression (devops-security-engineer review, 2026-08-21): reveal-email was
+     * originally a plain GET route with no CSRF check — a sensitive, audited action triggerable by a
+     * simple link click, including a cross-site one (a top-level GET navigation still carries the
+     * `SameSite=Lax` admin cookie). It is now POST + CSRF-protected exactly like suspend/delete.
+     */
+    public function testRevealEmailRejectsGetAndCrossOriginPost(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->createAdmin()['user'];
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $em->persist($subject);
+        $em->flush();
+
+        $client->request('GET', '/admin/user/'.$subject->getId().'/reveal-email');
+        self::assertResponseStatusCodeSame(405);
+
+        $client->request(
+            'POST',
+            '/admin/user/'.$subject->getId().'/reveal-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => 'https://evil.example', 'HTTP_REFERER' => 'https://evil.example/attack'],
+        );
+        self::assertResponseStatusCodeSame(422);
+
+        $em->clear();
+        $entries = $em->getRepository(AuditLogEntry::class)->findBy(['subjectId' => (string) $subject->getId(), 'action' => 'reveal_email']);
+        self::assertCount(0, $entries);
     }
 }

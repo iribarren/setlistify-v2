@@ -85,11 +85,52 @@ final class AdminTwoFactorTest extends AdminWebTestCase
         $client->request(
             'POST',
             '/admin/2fa-setup/confirm',
-            parameters: ['code' => $wrongCode],
+            parameters: ['code' => $wrongCode, '_csrf_token' => self::CSRF_TOKEN],
             server: ['HTTP_ORIGIN' => self::ORIGIN],
         );
         self::assertResponseStatusCodeSame(422);
 
+        $client->request('GET', '/admin');
+        self::assertNotSame(200, $client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * CSRF regression (devops-security-engineer review, 2026-08-21): this bespoke, non-form_login
+     * POST route previously had no CSRF check at all — a cross-origin POST with a valid TOTP code
+     * completed enrollment. Verified live against a running stack before this fix landed.
+     */
+    public function testCrossOriginConfirmIsRejected(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+
+        $this->postAdminLogin($client, $admin['email'], $admin['password']);
+
+        $client->request('GET', '/admin/2fa-setup');
+        $html = (string) $client->getResponse()->getContent();
+        \preg_match('/<p class="secret">([A-Z2-7]+)<\/p>/', $html, $matches);
+        self::assertArrayHasKey(1, $matches);
+        $secret = $matches[1] ?? throw new \LogicException('unreachable — asserted above');
+        $code = TOTP::createFromSecret($secret)->now();
+
+        // Symfony's SameOriginCsrfTokenManager accepts the request if EITHER Origin OR Referer
+        // reflects the app's own host (OWASP's documented fallback for browsers that omit Origin
+        // on same-origin requests). BrowserKit's client auto-fills HTTP_REFERER from its own
+        // request history when it isn't set explicitly (see AbstractBrowser::doRequest) — so
+        // leaving it unset here would silently backfill the *previous, same-origin* GET's URL as
+        // Referer and validate the request regardless of the (correctly rejected) Origin, making
+        // this test pass for the wrong reason. A genuine cross-origin attacker's browser sends
+        // Referer pointing at the attacker's own page, never at this app, so both headers must be
+        // forged here to model that.
+        $client->request(
+            'POST',
+            '/admin/2fa-setup/confirm',
+            parameters: ['code' => $code, '_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => 'https://evil.example', 'HTTP_REFERER' => 'https://evil.example/attack'],
+        );
+        self::assertResponseStatusCodeSame(422);
+
+        // Still not enrolled/authenticated — the (valid) code was never even evaluated.
         $client->request('GET', '/admin');
         self::assertNotSame(200, $client->getResponse()->getStatusCode());
     }

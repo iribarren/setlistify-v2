@@ -108,7 +108,7 @@ final class UserCrudController extends AbstractAdminCrudController
         $toggleActive = Action::new('toggleActive', 'Suspend / Unsuspend')
             ->linkToCrudAction('confirmToggleActive');
         $revealEmail = Action::new('revealEmail', 'Reveal email')
-            ->linkToCrudAction('revealEmail');
+            ->linkToCrudAction('confirmRevealEmail');
         $deleteUser = Action::new('eraseUser', 'Delete (irreversible)')
             ->linkToCrudAction('confirmDelete');
 
@@ -140,6 +140,18 @@ final class UserCrudController extends AbstractAdminCrudController
     {
         $user = $this->requireUser($context);
         $actor = $this->requireActor();
+
+        // Not a form_login/scheb-managed route, so it isn't covered by their CSRF handling —
+        // validated explicitly (devops-security-engineer review, 2026-08-21).
+        if (!$this->isCsrfTokenValid('admin_user_action', (string) $request->request->get('_csrf_token', ''))) {
+            return $this->render('admin/user/confirm_toggle_active.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('performToggleActive')->setEntityId($user->getId())->generateUrl(),
+                'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
 
         $oldValue = $user->isActive() ? 'true' : 'false';
         $newActive = !$user->isActive();
@@ -189,6 +201,18 @@ final class UserCrudController extends AbstractAdminCrudController
         $user = $this->requireUser($context);
         $actor = $this->requireActor();
 
+        // Not a form_login/scheb-managed route, so it isn't covered by their CSRF handling —
+        // validated explicitly (devops-security-engineer review, 2026-08-21).
+        if (!$this->isCsrfTokenValid('admin_user_action', (string) $request->request->get('_csrf_token', ''))) {
+            return $this->render('admin/user/confirm_delete.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('performDelete')->setEntityId($user->getId())->generateUrl(),
+                'index_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_INDEX)->generateUrl(),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
+
         $confirmedId = (string) $request->request->get('confirm_id', '');
         if ($confirmedId !== (string) $user->getId()) {
             return $this->render('admin/user/confirm_delete.html.twig', [
@@ -206,18 +230,50 @@ final class UserCrudController extends AbstractAdminCrudController
     }
 
     /**
-     * AC-9.2–AC-9.6: an explicit per-row action, never a hover/tooltip/query-param. Audited,
-     * rate-limited (30/hr per admin session), the response carries `Cache-Control: no-store`
-     * (`App\EventSubscriber\AdminCacheControlSubscriber` applies that to every admin response), and
-     * the revealed value is returned in this response only — never stored or cached.
+     * AC-9.2: the reveal itself is a POST, CSRF-protected exactly like suspend/delete (devops-
+     * security-engineer review, 2026-08-21: the previous single GET route made a sensitive, audited,
+     * rate-limited action triggerable by a plain link — including a cross-site one, since a top-level
+     * GET navigation still carries a `SameSite=Lax` cookie). This confirmation step performs no
+     * side effect: nothing is revealed, audited or rate-limited until the POST below succeeds.
      *
      * @param AdminContext<User> $context
      */
-    #[AdminRoute(path: '/{entityId}/reveal-email', name: '_reveal_email')]
-    public function revealEmail(AdminContext $context): Response
+    #[AdminRoute(path: '/{entityId}/reveal-email/confirm', name: '_reveal_email_confirm')]
+    public function confirmRevealEmail(AdminContext $context, AdminUrlGenerator $urlGenerator): Response
+    {
+        $user = $this->requireUser($context);
+
+        return $this->render('admin/user/confirm_reveal_email.html.twig', [
+            'user' => $user,
+            'masked_email' => EmailMasker::mask($user->getEmail()),
+            'action_path' => $urlGenerator->setController(self::class)->setAction('revealEmail')->setEntityId($user->getId())->generateUrl(),
+            'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+        ]);
+    }
+
+    /**
+     * AC-9.2–AC-9.6: audited, rate-limited (30/hr per admin session), the response carries
+     * `Cache-Control: no-store` (`App\EventSubscriber\AdminCacheControlSubscriber` applies that to
+     * every admin response), and the revealed value is returned in this response only — never stored
+     * or cached.
+     *
+     * @param AdminContext<User> $context
+     */
+    #[AdminRoute(path: '/{entityId}/reveal-email', name: '_reveal_email', options: ['methods' => ['POST']])]
+    public function revealEmail(Request $request, AdminContext $context, AdminUrlGenerator $urlGenerator): Response
     {
         $user = $this->requireUser($context);
         $actor = $this->requireActor();
+
+        if (!$this->isCsrfTokenValid('admin_user_action', (string) $request->request->get('_csrf_token', ''))) {
+            return $this->render('admin/user/confirm_reveal_email.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('revealEmail')->setEntityId($user->getId())->generateUrl(),
+                'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
 
         $this->rateLimiterGuard->consume($this->revealEmailLimiter, (string) ($actor->getId() ?? 'unknown'));
 

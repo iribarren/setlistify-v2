@@ -89,6 +89,26 @@ final class TwoFactorEnrollmentController extends AbstractController
             return $this->redirectToRoute('admin_2fa_enroll');
         }
 
+        // This action completes admin authentication and persists the TOTP secret + backup codes —
+        // the single most sensitive write in the whole feature. It is a bespoke controller action,
+        // not routed through form_login/scheb's own CSRF-protected listeners, so it must validate
+        // explicitly (devops-security-engineer review, 2026-08-21: a cross-origin POST here
+        // previously succeeded unconditionally).
+        if (!$this->isCsrfTokenValid('admin_2fa_confirm', (string) $request->request->get('_csrf_token', ''))) {
+            $csrfFailTotp = TOTP::createFromSecret($secret);
+            $csrfFailTotp->setLabel($adminUser->getUserIdentifier());
+            \assert('' !== $this->totpIssuer, 'ADMIN_TOTP_ISSUER must not be empty');
+            $csrfFailTotp->setIssuer($this->totpIssuer);
+
+            return $this->render('admin/2fa/enroll.html.twig', [
+                'secret' => $secret,
+                'qr_data_uri' => $this->buildQrDataUri($csrfFailTotp->getProvisioningUri()),
+                'backup_codes' => $backupCodes,
+                'confirm_path' => $this->generateUrl('admin_2fa_enroll_confirm'),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
+
         $submittedCode = (string) $request->request->get('code', '');
         if ('' === $submittedCode) {
             $submittedCode = '000000';

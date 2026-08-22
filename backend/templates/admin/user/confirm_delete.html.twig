@@ -16,6 +16,7 @@
 
     <form method="post" action="{{ action_path }}">
         <input type="text" name="confirm_id" placeholder="{{ user.id }}" required autofocus>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_action') }}">
         <button type="submit">Permanently delete this user</button>
         <a href="{{ index_path }}">Cancel</a>
     </form>

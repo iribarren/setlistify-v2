@@ -117,7 +117,7 @@ abstract class AdminWebTestCase extends WebTestCase
         $client->request(
             'POST',
             '/admin/2fa-setup/confirm',
-            parameters: ['code' => $code],
+            parameters: ['code' => $code, '_csrf_token' => self::CSRF_TOKEN],
             server: ['HTTP_ORIGIN' => self::ORIGIN],
         );
         self::assertResponseRedirects('/admin');

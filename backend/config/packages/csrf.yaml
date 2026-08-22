@@ -9,3 +9,13 @@ framework:
             - submit
             - authenticate
             - logout
+            # Backoffice foundation (docs/specs/2026-08-21-backoffice-foundation.md): the two bespoke,
+            # non-form_login POST actions on the admin firewall — 2FA-enrollment confirmation (which
+            # completes admin authentication and persists the TOTP secret + backup codes) and the
+            # user suspend/unsuspend/delete actions — validated the same same-origin way as the login
+            # form itself (`security.csrf.same_origin_token_manager`), rather than left unprotected.
+            # A devops-security-engineer review (2026-08-21) found these POSTs had no CSRF check at
+            # all and verified a cross-origin POST succeeded against `/admin/2fa-setup/confirm`
+            # before this fix.
+            - admin_2fa_confirm
+            - admin_user_action

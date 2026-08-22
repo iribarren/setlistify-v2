@@ -38,6 +38,7 @@
     <form method="post" action="{{ confirm_path }}">
         <label for="code">Code from your authenticator app</label>
         <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" required autofocus>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_2fa_confirm') }}">
         <button type="submit">Confirm and finish enrollment</button>
     </form>
 </body>

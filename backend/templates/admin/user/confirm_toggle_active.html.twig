@@ -3,6 +3,10 @@
 {% block content_title %}{{ user.active ? 'Suspend' : 'Unsuspend' }} user{% endblock %}
 
 {% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
     <p>User <strong>{{ masked_email }}</strong> (id {{ user.id }}) is currently
         <strong>{{ user.active ? 'active' : 'suspended' }}</strong>.</p>
 
@@ -12,6 +16,7 @@
     {% endif %}
 
     <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_action') }}">
         <button type="submit">{{ user.active ? 'Suspend this user' : 'Unsuspend this user' }}</button>
         <a href="{{ detail_path }}">Cancel</a>
     </form>
