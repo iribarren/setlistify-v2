@@ -1,23 +1,34 @@
 nelmio_cors:
+    # `defaults` is what NelmioCorsBundle applies to *every* path that doesn't match an entry in
+    # `paths` below (`Nelmio\CorsBundle\Options\ConfigProvider::getOptions()` falls back to
+    # `$this->defaults` unconditionally for an unmatched URI — verified against the bundle source,
+    # 2026-08-22). A `paths: { '^/api': null }` entry does NOT exclude `/api` from CORS or scope
+    # CORS *to* `/api`: a null/empty per-path override is merged onto `defaults`
+    # (`array_merge($this->defaults, $options)`), so it resolves to exactly the same permissive
+    # config an unmatched path already gets. The previous version of this file had exactly that
+    # shape and, verified live against a running stack (devops-security-engineer review,
+    # 2026-08-22), still returned `Access-Control-Allow-Credentials: true` and a matching
+    # `Access-Control-Allow-Origin` for a preflight `OPTIONS /admin` — AC-11.5 was violated despite
+    # the comment claiming it was fixed. `defaults` must therefore be the *restrictive* baseline,
+    # and the permissive policy opted in only for the one path pattern that needs it.
     defaults:
-        origin_regex: true
-        allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
-        allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
-        # X-Client-Platform (D-18 deviation): the frontend's one request-header seam
-        # (frontend/lib/auth/authMiddleware.ts) sends this on every request so the backend knows
-        # whether to return the refresh token in the body (native) or the httpOnly cookie only
-        # (web) — it must be preflight-allowed or every credentialed browser request 4xx's.
-        allow_headers: ['Content-Type', 'Authorization', 'X-Client-Platform']
-        expose_headers: ['Link']
-        max_age: 3600
-        # D-18: the refresh-token cookie is httpOnly + SameSite=Strict; the browser only sends it,
-        # and only exposes the response, on a credentialed CORS request — never with `allow_origin:
-        # ['*']` (browsers refuse to combine `*` with credentials), which is why origin_regex above
-        # matches an exact origin instead.
-        allow_credentials: true
-    # Scoped to `/api` only — AC-11.5 (docs/specs/2026-08-21-backoffice-foundation.md) requires the
-    # admin backoffice never gets a cross-origin CORS grant. It previously matched every path
-    # (`^/`), which would have handed `/admin` the same `allow_credentials: true` treatment as the
-    # API the moment the admin firewall started answering requests there.
+        allow_origin: []
+        allow_credentials: false
     paths:
-        '^/api': null
+        '^/api':
+            origin_regex: true
+            allow_origin: ['%env(CORS_ALLOW_ORIGIN)%']
+            allow_methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE']
+            # X-Client-Platform (D-18 deviation): the frontend's one request-header seam
+            # (frontend/lib/auth/authMiddleware.ts) sends this on every request so the backend
+            # knows whether to return the refresh token in the body (native) or the httpOnly
+            # cookie only (web) — it must be preflight-allowed or every credentialed browser
+            # request 4xx's.
+            allow_headers: ['Content-Type', 'Authorization', 'X-Client-Platform']
+            expose_headers: ['Link']
+            max_age: 3600
+            # D-18: the refresh-token cookie is httpOnly + SameSite=Strict; the browser only sends
+            # it, and only exposes the response, on a credentialed CORS request — never with
+            # `allow_origin: ['*']` (browsers refuse to combine `*` with credentials), which is why
+            # origin_regex above matches an exact origin instead.
+            allow_credentials: true
