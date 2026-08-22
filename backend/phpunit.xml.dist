@@ -91,6 +91,26 @@
         <env name="SETLISTFM_HTTP_TIMEOUT" value="5" force="true"/>
         <env name="SETLISTFM_TOKEN_WAIT" value="1" force="true"/>
         <env name="SETLISTFM_REFRESH_BUDGET_SHARE" value="0.25" force="true"/>
+
+        <!-- Streaming port and account linking (docs/specs/2026-08-22-streaming-port-and-account-linking.md)
+             — force="true" for the same reason as every block above: the default suite must never
+             depend on .env.local, and D-2/AC-12.1 require zero network calls to a real provider
+             regardless. Every test in the default suite mocks HttpClientInterface or uses the
+             test-double adapter, so SPOTIFY_API_BASE_URL/SPOTIFY_ACCOUNTS_BASE_URL are never
+             actually dialled. The key/secret below are deliberately not real-looking. -->
+        <env name="SPOTIFY_CLIENT_ID" value="test-fixture-client-id" force="true"/>
+        <env name="SPOTIFY_CLIENT_SECRET" value="test-fixture-client-secret-not-a-real-credential" force="true"/>
+        <env name="SPOTIFY_REDIRECT_URI" value="https://backend.test/api/streaming/spotify/callback" force="true"/>
+        <env name="SPOTIFY_API_BASE_URL" value="https://spotify-api.invalid/v1" force="true"/>
+        <env name="SPOTIFY_ACCOUNTS_BASE_URL" value="https://spotify-accounts.invalid" force="true"/>
+        <env name="TOKEN_ENCRYPTION_KEY" value="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=" force="true"/>
+        <env name="TOKEN_ENCRYPTION_KEY_ID" value="v1" force="true"/>
+        <env name="TOKEN_ENCRYPTION_KEYS_RETIRED" value="" force="true"/>
+        <env name="STREAMING_HTTP_TIMEOUT" value="5" force="true"/>
+        <env name="STREAMING_TOKEN_REFRESH_SKEW" value="60" force="true"/>
+        <env name="STREAMING_LINK_STATE_TTL" value="600" force="true"/>
+        <env name="STREAMING_LINK_RETURN_URL_WEB" value="https://web.test/account" force="true"/>
+        <env name="STREAMING_LINK_RETURN_URL_NATIVE" value="setlistify://account" force="true"/>
     </php>
 
     <testsuites>
