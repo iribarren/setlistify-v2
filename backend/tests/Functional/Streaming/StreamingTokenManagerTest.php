@@ -7,6 +7,8 @@ namespace App\Tests\Functional\Streaming;
 use App\Entity\StreamingAccount;
 use App\Entity\User;
 use App\Repository\StreamingAccountRepository;
+use App\Service\Provider\ProviderAvailability;
+use App\Service\Provider\ProviderDisabledException;
 use App\Service\Streaming\Exception\TokenExpiredException;
 use App\Service\Streaming\Link\StreamingTokenManager;
 use App\Service\Streaming\StreamingProviderLocator;
@@ -125,6 +127,7 @@ final class StreamingTokenManagerTest extends KernelTestCase
                     return '';
                 }
             }]),
+            providerAvailability: $this->alwaysAvailable(),
             repository: $container->get(StreamingAccountRepository::class),
             entityManager: $container->get(EntityManagerInterface::class),
             lockFactory: new LockFactory(new FlockStore()),
@@ -142,18 +145,71 @@ final class StreamingTokenManagerTest extends KernelTestCase
         }
     }
 
-    private function makeManager(): StreamingTokenManager
+    /**
+     * AC-4.6 (docs/specs/2026-08-22-backoffice-provider-configuration.md): a disabled provider
+     * refuses refresh outright — the adapter is never called, and critically, the account's status
+     * is left exactly as it was (a disabled provider is an operator state, not a broken grant,
+     * D-80) — never `needs_reauth`.
+     */
+    public function testADisabledProviderRefusesRefreshWithoutChangingStatus(): void
     {
+        self::bootKernel();
+        $account = $this->persistAccount(expiresAt: new \DateTimeImmutable('-1 minute'));
         $container = static::getContainer();
 
-        return new StreamingTokenManager(
+        $manager = new StreamingTokenManager(
             locator: $container->get(StreamingProviderLocator::class),
+            providerAvailability: $this->neverAvailable(),
             repository: $container->get(StreamingAccountRepository::class),
             entityManager: $container->get(EntityManagerInterface::class),
             lockFactory: new LockFactory(new FlockStore()),
             clock: new MockClock(),
             refreshSkewSeconds: 60,
         );
+
+        $this->expectException(ProviderDisabledException::class);
+        try {
+            $manager->usableTokens($account);
+        } finally {
+            self::assertSame(StreamingAccount::STATUS_CONNECTED, $account->getStatus(), 'AC-4.6: status must never flip to needs_reauth for a disabled provider.');
+            self::assertNotNull($account->getAccessToken(), 'AC-4.6: tokens are left untouched.');
+        }
+    }
+
+    private function neverAvailable(): ProviderAvailability
+    {
+        return new class implements ProviderAvailability {
+            public function isAvailable(string $providerKey): bool
+            {
+                return false;
+            }
+        };
+    }
+
+    private function makeManager(): StreamingTokenManager
+    {
+        $container = static::getContainer();
+
+        return new StreamingTokenManager(
+            locator: $container->get(StreamingProviderLocator::class),
+            providerAvailability: $this->alwaysAvailable(),
+            repository: $container->get(StreamingAccountRepository::class),
+            entityManager: $container->get(EntityManagerInterface::class),
+            lockFactory: new LockFactory(new FlockStore()),
+            clock: new MockClock(),
+            refreshSkewSeconds: 60,
+        );
+    }
+
+    /** This suite exercises the manager's own refresh/lock/status logic, not provider availability (covered separately, AC-4.6). */
+    private function alwaysAvailable(): ProviderAvailability
+    {
+        return new class implements ProviderAvailability {
+            public function isAvailable(string $providerKey): bool
+            {
+                return true;
+            }
+        };
     }
 
     private function persistAccount(\DateTimeImmutable $expiresAt, string $provider = TestDoubleStreamingProvider::KEY): StreamingAccount
