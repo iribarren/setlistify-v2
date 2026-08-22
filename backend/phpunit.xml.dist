@@ -111,6 +111,9 @@
         <env name="STREAMING_LINK_STATE_TTL" value="600" force="true"/>
         <env name="STREAMING_LINK_RETURN_URL_WEB" value="https://web.test/account" force="true"/>
         <env name="STREAMING_LINK_RETURN_URL_NATIVE" value="setlistify://account" force="true"/>
+
+        <!-- Backoffice provider configuration (docs/specs/2026-08-22-backoffice-provider-configuration.md). -->
+        <env name="PROVIDER_SETTINGS_CACHE_TTL" value="300" force="true"/>
     </php>
 
     <testsuites>
