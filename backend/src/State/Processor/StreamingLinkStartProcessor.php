@@ -19,8 +19,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * `POST /api/streaming/link` (AC-1.1, AC-8.6). An unknown provider key is a 404 — it reveals
- * nothing about which providers exist beyond what `GET /api/config/providers` (prompt 11) will
- * already publish.
+ * nothing about which providers exist beyond what `GET /api/config/providers` already publishes.
+ *
+ * D-94: a *disabled* provider (`App\Service\Provider\ProviderDisabledException`, thrown by
+ * `LinkFlowService::start()`) is deliberately **not** caught here — it implements API Platform's
+ * `ProblemExceptionInterface` and maps itself to `503` with `type: /errors/provider-unavailable`
+ * when left to propagate, the same mechanism `ApiPlatform\State\Exception\
+ * ParameterNotSupportedException` uses. Catching and re-throwing it here would be a no-op.
  *
  * @implements ProcessorInterface<StreamingLinkStartInput, StreamingLinkStartOutput>
  */

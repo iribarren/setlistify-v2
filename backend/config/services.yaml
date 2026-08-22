@@ -192,10 +192,28 @@ services:
         arguments:
             $providers: !tagged_iterator app.streaming_provider
 
-    App\Service\Provider\StaticProviderAvailability: ~
+    # Backoffice provider configuration (docs/specs/2026-08-22-backoffice-provider-configuration.md,
+    # D-89). Dedicated Redis connection, same rationale as streaming.redis/setlistfm.redis above —
+    # the settings snapshot has nothing to do with sessions or those features' own ephemeral keys.
+    provider.redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
 
+    App\Service\Provider\ProviderRegistry:
+        arguments:
+            $redis: '@provider.redis'
+            $cacheTtlSeconds: '%env(int:PROVIDER_SETTINGS_CACHE_TTL)%'
+
+    App\Service\Provider\ProviderSettingWriter:
+        arguments:
+            $redis: '@provider.redis'
+
+    # D-89/AC-10.2: ProviderRegistry is the only implementation registered for this alias —
+    # StaticProviderAvailability (prompt 10's placeholder) is deleted, not just unregistered, so
+    # "which one is wired?" is never a live question.
     App\Service\Provider\ProviderAvailability:
-        alias: App\Service\Provider\StaticProviderAvailability
+        alias: App\Service\Provider\ProviderRegistry
 
     # Dedicated Redis connection for pending-link/link-result state (D-76) — same rationale as
     # setlistfm.redis above: ephemeral keys unrelated to sessions, so not shared with the `Redis`

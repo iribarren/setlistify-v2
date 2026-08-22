@@ -7,6 +7,7 @@ namespace App\Tests\Functional\Streaming;
 use App\Entity\StreamingAccount;
 use App\Entity\User;
 use App\Repository\StreamingAccountRepository;
+use App\Service\Provider\ProviderAvailability;
 use App\Service\Security\RateLimiterGuard;
 use App\Service\Streaming\Link\LinkFlowService;
 use App\Service\Streaming\Link\LinkResultStore;
@@ -155,6 +156,54 @@ final class LinkFlowServiceTest extends KernelTestCase
         self::assertNull($service->resolveResult($intruder->getId() ?? 0, $ref), 'AC-8.7: not resolvable by another user.');
     }
 
+    /**
+     * AC-4.2 (docs/specs/2026-08-22-backoffice-provider-configuration.md): a disabled provider is
+     * refused before the rate limiter or the locator is touched — no `state` written to Redis for a
+     * request that could never have worked.
+     */
+    public function testADisabledProviderRefusesStartBeforeWritingAnyPendingLinkState(): void
+    {
+        self::bootKernel();
+        $user = $this->persistUser();
+        $container = static::getContainer();
+
+        $redis = new \Redis();
+        $redis->connect('redis', 6379);
+        $redis->del($redis->keys('streaming:link:*'));
+
+        $rateLimiterFactory = new RateLimiterFactory(
+            ['id' => 'streaming_link_start_test', 'policy' => 'sliding_window', 'limit' => 1000, 'interval' => '15 minutes'],
+            new InMemoryStorage(),
+        );
+
+        $service = new LinkFlowService(
+            locator: $container->get(StreamingProviderLocator::class),
+            providerAvailability: new class implements ProviderAvailability {
+                public function isAvailable(string $providerKey): bool
+                {
+                    return false;
+                }
+            },
+            pendingLinkStore: new PendingLinkStore($redis, ttlSeconds: 600),
+            linkResultStore: new LinkResultStore($redis, ttlSeconds: 300),
+            accountRepository: $this->accountRepository(),
+            entityManager: $container->get(EntityManagerInterface::class),
+            rateLimiterGuard: new RateLimiterGuard(new NullLogger()),
+            streamingLinkStartLimiter: $rateLimiterFactory,
+            clock: new MockClock(),
+            redirectUrisByProvider: [self::PROVIDER => 'https://backend.test/streaming/'.self::PROVIDER.'/callback'],
+            webReturnUrl: 'https://web.test/account',
+            nativeReturnUrl: 'setlistify://account',
+        );
+
+        $this->expectException(\App\Service\Provider\ProviderDisabledException::class);
+        try {
+            $service->start($user->getId() ?? 0, self::PROVIDER, 'web');
+        } finally {
+            self::assertSame([], $redis->keys('streaming:link:*'), 'No pending-link state must be written for a disabled provider.');
+        }
+    }
+
     private function persistUser(): User
     {
         $container = static::getContainer();
@@ -187,6 +236,7 @@ final class LinkFlowServiceTest extends KernelTestCase
 
         return new LinkFlowService(
             locator: $container->get(StreamingProviderLocator::class),
+            providerAvailability: $this->alwaysAvailable(),
             pendingLinkStore: new PendingLinkStore($redis, ttlSeconds: 600),
             linkResultStore: new LinkResultStore($redis, ttlSeconds: 300),
             accountRepository: $this->accountRepository(),
@@ -198,6 +248,17 @@ final class LinkFlowServiceTest extends KernelTestCase
             webReturnUrl: 'https://web.test/account',
             nativeReturnUrl: 'setlistify://account',
         );
+    }
+
+    /** This suite exercises the link/state/PKCE lifecycle, not provider availability (covered separately). */
+    private function alwaysAvailable(): ProviderAvailability
+    {
+        return new class implements ProviderAvailability {
+            public function isAvailable(string $providerKey): bool
+            {
+                return true;
+            }
+        };
     }
 
     private function extractQueryParam(string $url, string $name): string

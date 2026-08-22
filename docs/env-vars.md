@@ -99,6 +99,17 @@ flags — not variables.
 | `APPLE_TEAM_ID` / `APPLE_KEY_ID` | no | MusicKit, future |
 | `APPLE_PRIVATE_KEY` | **yes** | MusicKit ES256 signing key, future |
 
+### Backoffice provider configuration
+
+Whether a provider is **enabled**, and how playback is rendered, are backoffice flags
+(`ProviderSetting` — `docs/specs/2026-08-22-backoffice-provider-configuration.md`), never variables.
+No credential is ever configurable from `/admin` — this table has exactly one row because credentials
+stay entirely in the "Streaming providers" table above.
+
+| Variable | Secret | Purpose |
+|---|---|---|
+| `PROVIDER_SETTINGS_CACHE_TTL` | no | Backstop TTL (seconds) on the Redis-cached provider settings snapshot. Default `300`. Correctness comes from explicit invalidation on every write (D-92) — this exists only to bound the damage of a hypothetical invalidation bug, not to make a stale read tolerable by design. |
+
 ### Backoffice
 
 | Variable | Secret | Purpose |
