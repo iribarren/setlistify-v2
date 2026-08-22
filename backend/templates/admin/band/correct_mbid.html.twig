@@ -1,0 +1,25 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Correct MBID{% endblock %}
+
+{% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p>Band <strong>{{ band.name }}</strong> (id {{ band.id }}) currently has MBID
+        <strong>{{ band.setlistfmMbid ?? '(none)' }}</strong> — resolution state
+        <strong>{{ band.setlistfmResolutionState }}</strong>.</p>
+
+    <p>Correcting the MBID re-resolves the band immediately (state becomes <code>resolved</code>) and
+        is audited. It does <strong>not</strong> clear any setlists already cached under the old
+        MBID — use "Clear setlist cache" separately if the old data is now wrong.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_band_action') }}">
+        <label for="mbid">New setlist.fm MBID</label>
+        <input type="text" id="mbid" name="mbid" value="{{ band.setlistfmMbid }}" required>
+        <button type="submit">Save correction</button>
+        <a href="{{ detail_path }}">Cancel</a>
+    </form>
+{% endblock %}

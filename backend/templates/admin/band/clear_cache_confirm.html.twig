@@ -1,0 +1,22 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Clear setlist cache{% endblock %}
+
+{% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p>Band <strong>{{ band.name }}</strong> (id {{ band.id }}) has <strong>{{ setlist_count }}</strong>
+        cached setlist(s).</p>
+
+    <p>This removes the band's cached setlist associations only — the raw setlist.fm responses in
+        the durable cache tier are untouched, and the next read repopulates from setlist.fm using
+        the band's current MBID. Use this after correcting a wrong MBID.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_band_action') }}">
+        <button type="submit">Clear cached setlists</button>
+        <a href="{{ detail_path }}">Cancel</a>
+    </form>
+{% endblock %}
