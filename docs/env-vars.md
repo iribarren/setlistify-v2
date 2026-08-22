@@ -65,9 +65,13 @@ not take the other down. Redirect URIs are registered per environment.
 | Variable | Secret | Purpose |
 |---|---|---|
 | `SETLISTFM_API_KEY` | **yes** | API key |
-| `SETLISTFM_DAILY_BUDGET` | no | Daily request ceiling enforced locally. Default `1440`; raise only after setlist.fm grants a higher tier. |
+| `SETLISTFM_DAILY_BUDGET` | no | Daily request ceiling enforced locally. Default `1440`; raise only after setlist.fm grants a higher tier (`docs/specs/2026-08-22-setlistfm-integration.md` D-69). |
 | `SETLISTFM_RATE_PER_SECOND` | no | Token-bucket rate, default `2` |
-| `SETLISTFM_CACHE_TTL` | no | Redis tier TTL, seconds |
+| `SETLISTFM_CACHE_TTL` | no | Redis tier TTL, seconds. Default `300` |
+| `SETLISTFM_BASE_URL` | no | Default `https://api.setlist.fm/rest/1.0`. Overridden in `test` and by the `@group live` smoke test so neither needs a code change to point elsewhere |
+| `SETLISTFM_HTTP_TIMEOUT` | no | Total request timeout, seconds. Default `5` (AC-9.1) |
+| `SETLISTFM_TOKEN_WAIT` | no | Max seconds a request waits for a rate-limit token before degrading to cache with `rate_limited` (AC-7.5). Default `1` |
+| `SETLISTFM_REFRESH_BUDGET_SHARE` | no | Share of the daily budget the nightly `app:setlist:refresh` job may spend. Default `0.25` (AC-10.3) |
 
 ### Streaming providers
 

@@ -306,6 +306,102 @@ component has no native concept of "session started at".
 `StreamingAccount` doesn't exist until prompt 10; a column that always reads `0` would teach the
 operator to ignore it.
 
+**D-56 — MBID is the band's identity everywhere; the typed name is only ever a lookup hint**
+(`docs/specs/2026-08-22-setlistfm-integration.md`). Once a `Band` carries an MBID, no code path may
+re-derive identity from `normalizedName`; every setlist.fm call is by MBID. `normalizedName` (D-25)
+keeps its job of deduplicating rows *before* setlist.fm has been consulted, and nothing more. A
+partial unique index on `bands.setlistfm_mbid` (`WHERE setlistfm_mbid IS NOT NULL`) means the
+database, not a service, guarantees one row per real band once resolved — a collision fails loudly
+(operator-correctable, AC-11.5) rather than silently duplicating.
+
+**D-57 — The disambiguation choice is stored on the shared `Band`, not per user.** `Band` is global
+(D-25), so the choice must be too, otherwise every user pays the same question and the cache
+fragments per user. First resolver wins; a wrong choice is visible and correctable in one place
+(the backoffice's audited MBID-correction action, AC-11.5) — the same property that makes a mistake
+shared makes the fix shared.
+
+**D-58 — `SetlistGateway` is the only door; the HTTP client is not injectable elsewhere.**
+`App\Service\Setlist\SetlistFmClient` is consumed solely by `SetlistCache`; nothing outside
+`App\Service\Setlist\` may reference it, enforced by a static source scan
+(`SetlistGatewayIsOnlyDoorTest`) rather than a container `has()`/`get()` check — the test
+environment's `framework.test: true` makes every service publicly retrievable, which would make a
+container-based check unable to distinguish the real production access boundary. The setlist.fm
+analogue of the streaming port rule (§4): one seam, no side doors.
+
+**D-59 — Two freshness classes, decided by the data's nature, not a global TTL.** Immutable data (a
+specific past setlist's detail; a page of a band's setlist index whose entries are all in the past)
+is stored with `staleAfter = NULL` and is never re-fetched. Volatile data (artist search results,
+the first page of a band's index, which can gain entries) carries a `staleAfter`. The Redis tier
+keeps `SETLISTFM_CACHE_TTL` for everything, since its only job is absorbing repeats within a
+session.
+
+**D-60 — Setlists are stored twice, on purpose: verbatim JSONB *and* relational rows.** The JSONB
+payload (`setlist_cache.payload`) is the receipt — what setlist.fm actually returned — so a later
+change to song-parsing logic is a re-derivation, not a re-fetch. The relational `Setlist`/`Song`
+rows exist because matching, ordering and counting songs are queries; doing them through JSONB
+operators would push provider-agnostic logic into PostgreSQL syntax.
+
+**D-61 — Rate limit and daily budget are one gate, in Redis, fail-closed.** `SetlistFmBudget`
+exposes a single `acquire()` consuming a per-second token bucket and a UTC-calendar-day counter
+together, so no new call site can forget to consume one or the other in the right order. Both live
+in Redis so the limit is application-wide, not per process. Redis unavailable means **no outbound
+call** — a limiter that fails open is not a limiter (same posture as
+`App\Service\Security\RateLimiterGuard`).
+
+**D-62 — A web request never queues on the rate limiter.** With a 2/s global bucket, ten
+simultaneous users would mean a five-second wait for the last one. The wait is bounded
+(`SETLISTFM_TOKEN_WAIT`, default 1s) and expiry degrades to cache with `rate_limited`. The nightly
+refresh job, not user-facing, is the one caller allowed to wait longer.
+
+**D-63 — Degradation is a first-class field, not an HTTP status.** Every setlist-bearing response
+carries `{source, fetchedAt, stale, reason}` (§5). Using status codes instead (503 for exhausted,
+204 for nothing) would make the client's error path carry product meaning and make a perfectly good
+cached answer look like a failure. 200 + an explicit reason lets the client render "showing setlists
+from yesterday — fresh data available tomorrow at 00:00 UTC" without inventing the vocabulary
+itself.
+
+**D-64 — A shared circuit breaker, because retries spend real budget.** Every retry attempt that
+reaches the network consumes one of 1,440 requests, so retries are capped (2), jittered,
+`Retry-After` is honoured, and after 5 consecutive transient failures a Redis-shared breaker opens
+for a cooldown during which zero calls are attempted. Without the shared state, N processes would
+each discover an outage independently and spend N× the requests learning the same thing.
+
+**D-65 — Freshness is a nightly, prioritized, budget-capped job — never an on-demand check.** The
+refresh policy: one scheduled run per night (`app:setlist:refresh`), over bands attached to concerts
+that are upcoming or ended in the last 7 days, nearest-first, spending at most
+`SETLISTFM_REFRESH_BUDGET_SHARE` of the day's budget. On-demand per-user checks were rejected
+outright: they scale with traffic (exactly what the budget cannot absorb) and their cost is paid in
+user-visible latency. Trade-off accepted: a setlist published this morning may not appear until
+tomorrow.
+
+**D-66 — Setlist data is shared reference data, not a user-scoped resource.** Setlists, songs and
+bands are facts about the world, identical for everyone. The 404-not-403 ownership gate (D-27) does
+not apply and is not extended to these resources — they are authenticated (so the budget can't be
+drained anonymously) but not owner-filtered. No `ConcertOwnerExtension`-shaped extension exists for
+them.
+
+**D-67 — The backoffice gets read-only views plus exactly two audited writes.** Cache-health,
+budget and cache-entry views are read-only (consistent with D-46). The two exceptions — correcting a
+band's MBID and clearing a band's cached setlist associations (AC-11.5) — are both routed through
+`AuditLogger`. Notably absent: a "refresh this band now" button — a one-click budget spend on the
+most dangerous resource in the product, and the nightly job already covers the need.
+
+**D-68 — Cache and budget metrics live in Redis, not in a table.** Hit/miss counters are per-day
+Redis counters with a 7-day expiry (for the dashboard's trailing-week view) — operational telemetry,
+not domain data. Writing a row per cache read would make the cache slower than the thing it is
+caching, and the numbers are worthless a week later.
+
+**D-69 — The budget ceiling is configuration, not a constant.** `SETLISTFM_DAILY_BUDGET` and
+`SETLISTFM_RATE_PER_SECOND` are env vars; no literal `1440` or `2` appears anywhere outside the
+default declaration. Raising them is valid only after setlist.fm grants a higher tier
+(`docs/external-apis.md`) — an operational action, not a code dependency.
+
+**D-70 — Fixtures are recorded from real responses, committed, and are the fidelity ceiling of the
+suite.** CI never calls setlist.fm (D-2), so `tests/Fixtures/setlistfm/` *is* the fidelity of the
+tests. A single `@group live` smoke test exists to catch the day setlist.fm's shape changes
+underneath them, run manually before a release — a scheduled live test would itself be a scheduled
+budget spend.
+
 ## 2. Shape of the system
 
 ```
@@ -395,19 +491,43 @@ the codebase changes. This is the property that makes the Spotify user-cap survi
 
 The standard API key allows **2 requests/second and 1,440 requests/day for the entire application**.
 That is the binding constraint on how many users Setlistify can serve, so caching is part of the
-design rather than an optimization applied later.
+design rather than an optimization applied later. Shipped by
+`docs/specs/2026-08-22-setlistfm-integration.md` (D-56–D-70).
 
-Three tiers, checked in order:
+Three tiers, checked in order (`App\Service\Setlist\SetlistCache`):
 
-1. **Redis**, short TTL (minutes) — absorbs repeat requests inside one user session.
-2. **PostgreSQL** (`setlist_cache`, JSONB payload + fetched_at) — the durable tier. A band's past
-   setlists are immutable history; once fetched, they never need re-fetching. Only "has this band
-   played since?" queries need refreshing, and those are date-bounded.
-3. **setlist.fm** — reached only on a miss in both, through a token-bucket rate limiter (2/s) that
-   also enforces the daily budget and fails soft when it is exhausted.
+1. **Redis**, short TTL (`SETLISTFM_CACHE_TTL`, seconds) — absorbs repeat requests inside one user
+   session. A durable-tier hit promotes into this tier (AC-6.2).
+2. **PostgreSQL** (`setlist_cache`, JSONB payload + `fetched_at` + `stale_after`) — the durable tier.
+   `stale_after = NULL` marks data D-59 treats as immutable (a specific past setlist; a page of a
+   band's setlist index that is entirely in the past) — never re-fetched. A non-null `stale_after`
+   marks volatile data (an artist search; the first page of a band's index) eligible for re-fetch.
+3. **setlist.fm** — reached only on a miss in both, through `App\Service\Setlist\SetlistFmClient`,
+   gated by `App\Service\Setlist\SetlistFmBudget` (D-61): a Redis-backed per-second token bucket, a
+   Redis-backed daily counter keyed by UTC calendar date, and a Redis-shared circuit breaker (D-64)
+   that opens after 5 consecutive transient failures. `SetlistFmClient` is the *only* class allowed
+   to hold the outbound HTTP client (D-58) — `App\Service\Setlist\SetlistGateway` is the sole public
+   entry point every other class in the app depends on, enforced by a static source scan
+   (`SetlistGatewayIsOnlyDoorTest`), not just convention.
 
 When the daily budget is spent, the app serves cached data and tells the user plainly that fresh
-setlists are unavailable until tomorrow. It does not silently return an empty result.
+setlists are unavailable until tomorrow — never a silently empty result. Every setlist-bearing API
+response carries a freshness envelope, `{source, fetchedAt, stale, reason}` (D-63,
+`App\ApiResource\Setlist\FreshnessEnvelope`): `reason` is one of `null` | `budget_exhausted` |
+`rate_limited` | `upstream_unavailable`, and `budget_exhausted` responses include the UTC instant
+the budget resets.
+
+Staying current is a **nightly, budget-capped, prioritized job** (`app:setlist:refresh`, D-65) —
+never an on-demand check triggered by a user read. It processes bands attached to concerts that are
+upcoming or ended within the last 7 days, nearest-to-today first, spends at most
+`SETLISTFM_REFRESH_BUDGET_SHARE` of the daily budget, and is guarded by a `symfony/lock` so two
+overlapping runs can't double-spend. There is no in-app scheduler component; a deployment cron
+entry invokes the command (README.md's operations section).
+
+A band's setlist.fm identity is its MusicBrainz ID (MBID), not its typed name (D-56) —
+`App\Service\Setlist\BandIdentityResolver` resolves it via `Band::$normalizedName` as a search hint
+only, auto-resolving a single exact normalized match and marking ambiguity/absence as explicit
+states (`resolved` | `ambiguous` | `no_presence` | `unresolved`) rather than guessing.
 
 ## 6. Provider configuration (backoffice-controlled)
 
@@ -487,14 +607,22 @@ can use sessions and 2FA instead of the API's JWTs.
   Lost-device recovery is `bin/console app:admin:2fa:reset`, console-only, same bar as provisioning.
 - **Shipped in this feature** (`docs/specs/2026-08-21-backoffice-foundation.md`): read-only lists and
   detail views for **users, concerts and bands**, plus a read-only **audit log** view and a dashboard
-  with three counts (total users, total concerts, concerts in the last 7 days). **Not yet shipped**:
-  playlists, generation jobs and setlist-cache health views — those land with the prompts that create
-  those entities (09, 14–19), per D-47's "admin reads through Doctrine directly" pattern.
+  with three counts (total users, total concerts, concerts in the last 7 days). **Not yet shipped at
+  that point**: playlists, generation jobs and setlist-cache health views — those landed with the
+  prompts that create those entities.
+- **setlist.fm additions** (`docs/specs/2026-08-22-setlistfm-integration.md`, D-67): the dashboard
+  gained a setlist.fm panel (today's budget consumption, cache hit rate for today and the trailing 7
+  days by tier, total cache entries/songs, the circuit breaker state, and the last nightly refresh
+  run's outcome, flagged if over 36 hours stale — AC-11.1–AC-11.3) and a read-only
+  `SetlistCacheEntryCrudController` list (AC-11.4). Exactly two audited writes were added — correcting
+  a band's setlist.fm MBID and clearing a band's cached setlist associations (AC-11.5) — both routed
+  through `AuditLogger` like every other admin write; no "refresh this band now" button exists
+  (deliberately: it would be a one-click budget spend, D-67).
 - **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
   token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
-  shared `Band`/`Venue` untouched), and reveal-email (rate-limited, audited). Provider configuration
-  is prompt 11 — this feature does not become a general-purpose data editor (D-46 makes read-only the
-  structural default, not a convention).
+  shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), and the two setlist.fm band
+  writes above. Provider configuration is prompt 11 — this feature does not become a general-purpose
+  data editor (D-46 makes read-only the structural default, not a convention).
 - **Every write is audited.** `App\Service\Admin\AuditLogger` is the single write path for
   `AuditLogEntry` — actor, entity, field, old → new, timestamp, IP. The entity is append-only (a
   Doctrine event subscriber rejects update/delete outright) and its digested personal-data fields
@@ -516,8 +644,12 @@ User ─┬─< Concert ─┬─< ConcertBand >─ Band
       ├─< StreamingAccount (provider, encrypted tokens, scopes, expiry)
       └─< AuditLogEntry (as actor, admin only)
 
-Band ──< SetlistCacheEntry (setlist.fm id, event date, venue, JSONB payload, fetched_at)
-              └──< Song (position, title, is_cover, cover_of_band, info)
+Band (setlistfmMbid, setlistfmName, setlistfmResolutionState, setlistfmCheckedAt, setlistfmResolvedAt)
+  ├─< Setlist (setlistfmId, eventDate, venue*, tourName, songCount, isEmpty, fetchedAt)
+  │       └──< Song (position, setLabel, title, coverOfName/Mbid, withName, info, isTape)
+  │
+SetlistCacheEntry (cacheKey [UNIQUE], endpoint, payload JSONB, fetchedAt, staleAfter, httpStatus)
+  — the receipt `Setlist`/`Song` were derived from (D-60); not FK-linked to Band, keyed by request.
 
 Playlist ──< PlaylistTrack (song ref, provider track id, match confidence, outcome)
 
@@ -528,11 +660,11 @@ ProviderSetting (provider, enabled, playbackMode, isDefault, notes)
 the source setlist has a row, including the ones that produced no track.
 
 `Concert`, `Band` and `ConcertBand` are built (`docs/specs/2026-08-21-concert-domain-api.md`, D-24–
-D-31) — the sketch above now matches the code: `ConcertBand.billingOrder` keeps a lineup ordered,
-`Concert.pastAfter` is the derived boundary instant `App\Service\Concert\ConcertScheduler` computes
-on every write, and `Band.setlistfmMbid` is the nullable column prompt 09 will populate without a
-migration. Everything else in this sketch (`Playlist`, `StreamingAccount`, `SetlistCacheEntry`,
-`ProviderSetting`, …) is still a later prompt.
+D-31) — `ConcertBand.billingOrder` keeps a lineup ordered, `Concert.pastAfter` is the derived
+boundary instant `App\Service\Concert\ConcertScheduler` computes on every write. `Band`'s five
+`setlistfm*` columns, `Setlist`, `Song` and `SetlistCacheEntry` are built
+(`docs/specs/2026-08-22-setlistfm-integration.md`, D-56–D-70) — see §5. Everything else in this
+sketch (`Playlist`, `StreamingAccount`, `ProviderSetting`, `PlaylistTrack`) is still a later prompt.
 
 ## 11. Security posture
 

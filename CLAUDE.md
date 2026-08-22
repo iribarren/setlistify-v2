@@ -46,6 +46,10 @@ that touches an external API.
 - **setlist.fm responses are always cached.** The standard API key allows 2 requests/second and
   **1,440 requests/day total** — for the whole application, not per user. Never call setlist.fm
   without going through the caching client. A cache miss is a budget decision.
+  `App\Service\Setlist\SetlistGateway` (`backend/src/Service/Setlist/`) is the only door — no other
+  class may hold a reference to the outbound HTTP client, enforced by a static test (D-58,
+  `docs/specs/2026-08-22-setlistfm-integration.md`), the same seam shape as the streaming port rule
+  above.
 - **Provider credentials never leave the secrets layer.** Client IDs and secrets come from
   environment/secret storage only. They are never committed, never logged, and never rendered in the
   backoffice — not even masked.
