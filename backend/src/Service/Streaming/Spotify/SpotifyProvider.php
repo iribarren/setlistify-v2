@@ -8,7 +8,6 @@ use App\Service\Streaming\Model\PlaylistDraft;
 use App\Service\Streaming\Model\ProviderPlaylist;
 use App\Service\Streaming\Model\ProviderTokens;
 use App\Service\Streaming\Model\SongQuery;
-use App\Service\Streaming\Model\TrackCandidate;
 use App\Service\Streaming\StreamingProviderInterface;
 
 /**
@@ -182,7 +181,7 @@ final class SpotifyProvider implements StreamingProviderInterface
         }
     }
 
-    public function playlistEmbedUrl(string $playlistId): ?string
+    public function playlistEmbedUrl(string $playlistId): string
     {
         return \sprintf('https://open.spotify.com/embed/playlist/%s', $playlistId);
     }

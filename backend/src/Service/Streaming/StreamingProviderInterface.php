@@ -71,8 +71,8 @@ interface StreamingProviderInterface
 
     /**
      * @return list<TrackCandidate> ordered by descending confidence (AC-11.1). Empty array for no
-     *                               results — never an exception (AC-11.6, CLAUDE.md: generation
-     *                               degrades, it does not fail).
+     *                              results — never an exception (AC-11.6, CLAUDE.md: generation
+     *                              degrades, it does not fail).
      */
     public function searchTrack(SongQuery $query, ProviderTokens $tokens): array;
 

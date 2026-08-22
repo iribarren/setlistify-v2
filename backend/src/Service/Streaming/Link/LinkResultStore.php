@@ -60,7 +60,6 @@ final readonly class LinkResultStore
         }
 
         try {
-            /** @var mixed $data */
             $data = json_decode($raw, true, flags: \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             return null;

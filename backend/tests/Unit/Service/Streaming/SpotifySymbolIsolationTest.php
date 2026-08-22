@@ -51,6 +51,6 @@ final class SpotifySymbolIsolationTest extends TestCase
             }
         }
 
-        self::assertSame([], $offenders, "D-82/AC-9.4 violation — the word \"Spotify\" may only appear under src/".self::ALLOWED_DIRECTORY."/:\n".implode("\n", $offenders));
+        self::assertSame([], $offenders, 'D-82/AC-9.4 violation — the word "Spotify" may only appear under src/'.self::ALLOWED_DIRECTORY."/:\n".implode("\n", $offenders));
     }
 }

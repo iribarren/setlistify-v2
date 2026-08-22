@@ -69,7 +69,6 @@ final class SpotifyErrorMapper
     private function tokenErrorCode(string $rawBody): ?string
     {
         try {
-            /** @var mixed $decoded */
             $decoded = json_decode($rawBody, true, flags: \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             return null;
@@ -81,7 +80,6 @@ final class SpotifyErrorMapper
     private function messageFrom(string $rawBody, string $fallback): string
     {
         try {
-            /** @var mixed $decoded */
             $decoded = json_decode($rawBody, true, flags: \JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
             return $fallback;

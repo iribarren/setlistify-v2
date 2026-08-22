@@ -49,7 +49,7 @@ final class SpotifyTrackMapper
         return $candidates;
     }
 
-    /** @param array<string, mixed> $item */
+    /** @param array<array-key, mixed> $item */
     private function mapItem(array $item, SongQuery $query): ?TrackCandidate
     {
         $id = $item['id'] ?? null;

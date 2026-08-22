@@ -159,7 +159,11 @@ class StreamingAccount
         return $this->updatedAt;
     }
 
-    /** AC-1.5: completing the link flow again for this (user, provider) updates this same row. */
+    /**
+     * AC-1.5: completing the link flow again for this (user, provider) updates this same row.
+     *
+     * @param list<string> $scopes
+     */
     public function relink(
         string $accessToken,
         ?string $refreshToken,

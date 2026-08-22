@@ -47,8 +47,8 @@ final readonly class StreamingTokenManager
     }
 
     /**
-     * @throws TokenExpiredException     the account needs reconnecting; status is already updated
-     * @throws \App\Service\Streaming\Exception\StreamingException a transient provider failure — the account is untouched
+     * @throws TokenExpiredException the account needs reconnecting; status is already updated
+     * @throws StreamingException    a transient provider failure — the account is untouched
      */
     public function usableTokens(StreamingAccount $account): ProviderTokens
     {

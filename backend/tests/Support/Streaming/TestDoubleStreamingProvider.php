@@ -84,7 +84,7 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
         // No-op: nothing to assert against for the test double beyond "did not throw".
     }
 
-    public function playlistEmbedUrl(string $playlistId): ?string
+    public function playlistEmbedUrl(string $playlistId): string
     {
         return \sprintf('https://double.invalid/embed/%s', $playlistId);
     }

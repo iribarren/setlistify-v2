@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\State\Provider;
 
+use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\Entity\StreamingAccount;
 use App\Entity\User;
+use App\Repository\StreamingAccountRepository;
 use App\Security\StreamingAccountOwnerExtension;
 use App\State\StreamingAccountOutputMapper;
-use ApiPlatform\Doctrine\Orm\Util\QueryNameGenerator;
-use App\Repository\StreamingAccountRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
@@ -20,7 +20,7 @@ use Symfony\Bundle\SecurityBundle\Security;
  * shape. No pagination: a user has at most a handful of linked providers, so the whole set is
  * returned as one collection.
  *
- * @implements ProviderInterface<list<\App\ApiResource\StreamingAccountOutput>>
+ * @implements ProviderInterface<\App\ApiResource\StreamingAccountOutput>
  */
 final readonly class StreamingAccountCollectionProvider implements ProviderInterface
 {
@@ -32,6 +32,7 @@ final readonly class StreamingAccountCollectionProvider implements ProviderInter
     ) {
     }
 
+    /** @return list<\App\ApiResource\StreamingAccountOutput> */
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
     {
         if (!$this->security->getUser() instanceof User) {

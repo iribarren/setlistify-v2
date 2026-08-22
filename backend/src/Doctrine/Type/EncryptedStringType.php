@@ -68,7 +68,11 @@ final class EncryptedStringType extends Type
             return null;
         }
 
-        return self::cipher()->decrypt((string) $value);
+        if (!\is_string($value)) {
+            throw new \InvalidArgumentException('encrypted_string expects a string database value.');
+        }
+
+        return self::cipher()->decrypt($value);
     }
 
     public function getName(): string

@@ -27,13 +27,15 @@ final class StreamingAccountRepository extends ServiceEntityRepository
     /** Not owner-filtered — only for the link flow, which already knows the owner from the pending link. */
     public function findOneByUserAndProvider(int $userId, string $provider): ?StreamingAccount
     {
-        return $this->createQueryBuilder('sa')
+        $result = $this->createQueryBuilder('sa')
             ->andWhere('sa.user = :user_id')
             ->andWhere('sa.provider = :provider')
             ->setParameter('user_id', $userId)
             ->setParameter('provider', $provider)
             ->getQuery()
             ->getOneOrNullResult();
+
+        return $result instanceof StreamingAccount ? $result : null;
     }
 
     public function save(StreamingAccount $account): void

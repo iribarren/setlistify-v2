@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Service\Streaming\Spotify;
 
-use App\Service\Streaming\Exception\StreamingException;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * The only class holding the outbound transport for this adapter — mirrors
- * `App\Service\Setlist\SetlistFmClient`'s shape (D-58's pattern, generalised here per D-73/AC-10.6).
- * Two scoped clients: `$accountsClient` (`SPOTIFY_ACCOUNTS_BASE_URL`, the OAuth token endpoint) and
+ * The only class holding the outbound transport for this adapter — the same "one client, one
+ * owner" shape the setlist.fm integration already established (D-58's pattern, generalised here
+ * per D-73/AC-10.6). Two scoped clients: `$accountsClient` (`SPOTIFY_ACCOUNTS_BASE_URL`, the OAuth
+ * token endpoint) and
  * `$apiClient` (`SPOTIFY_API_BASE_URL`, the Web API). Every outbound call carries the scoped
  * client's configured timeout and gets bounded, jittered retries on transient failures only (429,
  * 5xx, connection/timeout) — never on a 4xx that isn't 429 (AC-10.6).
@@ -34,8 +34,8 @@ final class SpotifyHttpClient
     }
 
     /**
-     * @param array<string, scalar>  $formParams
-     * @param array<string, string>  $headers
+     * @param array<string, scalar> $formParams
+     * @param array<string, string> $headers
      *
      * @return array<string, mixed>
      */

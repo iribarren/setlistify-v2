@@ -18,12 +18,15 @@ final class TokenCipherTest extends TestCase
 {
     private function key(int $seed): string
     {
-        return base64_encode(str_repeat(\chr($seed), \SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES));
+        $raw = base64_decode(base64_encode(str_repeat(\chr($seed), \SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_KEYBYTES)), true);
+        self::assertIsString($raw);
+
+        return $raw;
     }
 
     public function testEncryptThenDecryptRoundTrips(): void
     {
-        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: base64_decode($this->key(1), true));
+        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: $this->key(1));
 
         $envelope = $cipher->encrypt('super-secret-access-token');
 
@@ -33,7 +36,7 @@ final class TokenCipherTest extends TestCase
 
     public function testCiphertextIsNotThePlaintextOrAnObviousEncodingOfIt(): void
     {
-        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: base64_decode($this->key(1), true));
+        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: $this->key(1));
         $plaintext = 'BQD1abcSpotifyAccessTokenValue';
 
         $envelope = $cipher->encrypt($plaintext);
@@ -44,10 +47,8 @@ final class TokenCipherTest extends TestCase
 
     public function testRecordWrittenUnderARetiredKeyStillDecryptsAfterRotation(): void
     {
-        $oldKeyRaw = base64_decode($this->key(2), true);
-        \assert(\is_string($oldKeyRaw));
-        $newKeyRaw = base64_decode($this->key(3), true);
-        \assert(\is_string($newKeyRaw));
+        $oldKeyRaw = $this->key(2);
+        $newKeyRaw = $this->key(3);
 
         // Written before rotation, under the then-active key "old".
         $beforeRotation = new TokenCipher(activeKeyId: 'old', activeKey: $oldKeyRaw);
@@ -67,11 +68,11 @@ final class TokenCipherTest extends TestCase
 
     public function testDecryptingWithAnUnknownKeyIdFailsLoudly(): void
     {
-        $writer = new TokenCipher(activeKeyId: 'lost-key', activeKey: base64_decode($this->key(4), true));
+        $writer = new TokenCipher(activeKeyId: 'lost-key', activeKey: $this->key(4));
         $envelope = $writer->encrypt('token');
 
         // No retired key holds "lost-key" — AC-6.5: never a silent null, never a plaintext fallback.
-        $reader = new TokenCipher(activeKeyId: 'current', activeKey: base64_decode($this->key(5), true));
+        $reader = new TokenCipher(activeKeyId: 'current', activeKey: $this->key(5));
 
         $this->expectException(UnknownEncryptionKeyException::class);
         $reader->decrypt($envelope);
@@ -79,7 +80,7 @@ final class TokenCipherTest extends TestCase
 
     public function testMalformedEnvelopeFailsLoudly(): void
     {
-        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: base64_decode($this->key(1), true));
+        $cipher = new TokenCipher(activeKeyId: 'v1', activeKey: $this->key(1));
 
         $this->expectException(MalformedTokenEnvelopeException::class);
         $cipher->decrypt('not-a-valid-envelope');
