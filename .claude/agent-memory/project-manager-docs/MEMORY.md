@@ -6,4 +6,5 @@
 - [Spec 05 concert decisions](project_spec_05_decisions.md) — D-24..D-31: timezone model, band dedup, venue embeddable, 404-not-403 ownership.
 - [Spec 08 backoffice decisions](project_spec_08_decisions.md) — D-42..D-55: in-app IP allowlist, digest-only audit values, two-channel owner reads.
 - [Spec 09 setlist.fm decisions](project_spec_09_decisions.md) — D-56..D-70: MBID identity, shared disambiguation, dual storage, one budget gate, nightly refresh.
+- [Spec 10 streaming port decisions](project_spec_10_decisions.md) — D-71..D-88: frozen 9-method port, tagged locator, backend-owned OAuth, key-id token encryption.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.

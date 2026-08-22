@@ -12,6 +12,18 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
     AC-13.3) before any release that touches this code.
   - Actually running the app against real data at all — right now it's untested against the
     live API end-to-end.
+- **`SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET`** — only placeholder values exist in this
+  environment while implementing prompt 10 (streaming port and account linking). Needed for:
+  - Allowlisting real test accounts in the Spotify dashboard (Development Mode caps the app at
+    5 users — see `docs/specs/2026-08-22-streaming-port-and-account-linking.md` R-2).
+  - Registering two separate app registrations (dev and prod) with different redirect URIs, per
+    `docs/env-vars.md`.
+  - Actually clicking through the OAuth consent screen to verify AC-1.6 (link flow completes on
+    web, iOS and Android) — this was not verifiable end-to-end without real credentials.
+  - Capturing real fixtures and running the `@group live` smoke test (D-85) before any release
+    that touches this code.
+  - Verifying the native (iOS/Android) OAuth round trip on a real device or simulator, which
+    also wasn't available in this environment.
 
 ## Deferred / follow-up work
 
