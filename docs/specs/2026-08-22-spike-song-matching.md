@@ -9,7 +9,7 @@
 | **Type** | **SPIKE — a recommendation, not an implementation.** No branch, no code, no migration |
 | **Depends on** | `09` — setlist.fm integration (merged) · `10` — streaming port and account linking (merged) · `11` — backoffice provider configuration (merged) |
 | **Implemented by** | `14` — playlist fast mode backend · `17` — normal mode · `18` — YouTube adapter |
-| **Status** | **Approved** |
+| **Status** | **Approved — 2026-08-23.** All four open questions resolved (see *Risks and Open Questions* → *Resolved on approval*); nothing deferred |
 
 ---
 
@@ -1122,9 +1122,15 @@ burst workload, when the promotion pattern already exists in this codebase.
 
 #### The entity
 
+**Identity correction (D-146, resolved on prompt 14's approval, 2026-08-23):** `id` below was
+originally sketched as `uuid`. Prompt 14 implements it, like every other entity in
+`backend/src/Entity/`, with the project's standard integer surrogate key
+(`#[ORM\GeneratedValue]`/`SERIAL`) — see spec 13 §2's identity-correction note for the full reasoning,
+which applies identically here.
+
 ```
 TrackResolution
-  id                uuid
+  id                integer (SERIAL)
   provider          string        ← StreamingProviderInterface::key(), a runtime string
   algorithmVersion  smallint      ← bumped by any normalizer / formula / threshold change
   normalizedTitle   string(200)   ← SongNormalizer output: comparisonCore
@@ -1219,7 +1225,7 @@ id** per song, or an explicit `expected: not_found` / `expected: skipped`.
 | 5 | **Sigur Rós** — 2022 tour | **Non-Latin / diacritic titles** and the N4 catastrophe case | `Sæglópur` (N1b ligature fold), `Hoppípolla`, `Untitled #1 (Vaka)` / `Untitled #3 (Samskeyti)` — the parenthetical-extraction test that blind stripping fails |
 | 6 | **Vetusta Morla** — WiZink Center, Madrid, 2023 | **Spanish diacritics and leading articles** | `Los Días Raros`, `Copenhague`; verifies N6 keeps the article and N1 folds the accent |
 | 7 | **Phish** — any 2023 show | **Medleys, segues and jams** | ` > ` segue notation, multi-segment entries, `Jam` entries that must be `skipped`; also verifies the medley-convention assumption |
-| 8 | **A small support act** on any of the above bills | **Absent from catalog** | Songs with genuinely no provider presence — the `not_found` control. Also the case where a same-titled song by an unrelated artist tempts a false positive (the artist gate's test) |
+| 8 | **Alcalá Norte** — a Madrid support slot from the fixture-6 bill, 2023 | **Absent from catalog** | Songs with genuinely no provider presence — the `not_found` control. A live set far larger than the released catalog of the time, so the absences are real rather than contrived. Short, generic Spanish titles also make this the artist gate's test: a same-titled song by an unrelated artist must not be auto-accepted. Catalog absence is verified per entry at capture time and the capture date recorded (resolved on approval, 2026-08-23) |
 
 Between them: **≥ 6 covers, ≥ 4 medleys, ≥ 8 non-song entries, ≥ 12 diacritic/non-Latin titles,
 ≥ 5 abbreviations, ≥ 6 songs absent from the catalog**, and roughly 180–220 labelled song entries in
@@ -1552,7 +1558,7 @@ should be added if access is ever granted; the honest upgrade path for better ma
 - Spotify's audio-features restriction for new applications still stands (D-124). If it were lifted,
   the recommendation does not change — the endpoints answer a question nobody is asking.
 
-## Risks and Open Questions
+## Risks and Resolved Questions
 
 | # | Risk | Impact | Mitigation / decision |
 |---|---|---|---|
@@ -1569,23 +1575,50 @@ should be added if access is ever granted; the honest upgrade path for better ma
 | R-11 | **Coverage is disappointing on first run** and the instinct is to lower the thresholds | Medium | D-123 states the trade direction in advance: coverage may be traded down to protect precision, never the reverse. Lowering a threshold to hit a coverage number is explicitly the wrong move (D-117) |
 | R-12 | **Prompt 14 diverges from this spec silently** because reality disagrees | Medium | Prompt 14's own brief already requires updating these specs in the same branch rather than diverging. The tuned thresholds landing back in this document (D-122) is the concrete instance |
 
-**Open questions — for the user to resolve on approval**
+**Resolved on approval — 2026-08-23**
 
-1. **The `CHOICE` band's Fast-mode behaviour (D-110): include-and-flag, or drop?** The recommendation
-   is include-and-flag — a 0.7 match is probably right, and the report is honest either way. The
-   counter-argument is that a flagged wrong track is still a wrong track in someone's playlist, and a
-   stricter product would only ever include what it is sure of. **Recommendation: include and flag.**
-2. **Thresholds in configuration rather than the backoffice (D-110).** This is a deliberate departure
-   from the project's usual instinct of putting operational knobs in `/admin`, argued in §3. Confirm
-   that a threshold change being a reviewed pull request with harness evidence — rather than a click —
-   is the wanted trade. **Recommendation: configuration.**
-3. **Cover attribution (D-113).** Searching by the original artist means a Johnny Cash setlist returns
-   Nine Inch Nails' *Hurt*. Confirm that naming the attribution in the report is a sufficient answer,
-   versus spending a second search on covers. **Recommendation: original artist, one search, named in
-   the report.**
-4. **The fixture set's eighth entry** (a small support act, for the absent-from-catalog case) needs a
-   specific real band chosen and its catalog absence verified during capture. Any preference, or leave
-   it to the capture session?
+The four questions this document left open were put to the product owner with the recommendations
+below, and **every recommendation was accepted**. They are decisions now, not questions; the
+reasoning is kept because it is the reasoning a future reader will want when they are tempted to
+reverse one. Nothing in this document is deferred.
+
+1. **The `CHOICE` band's Fast-mode behaviour — RESOLVED: include and flag** (confirms **D-110**).
+   A 0.7 match is probably right, and the report is honest either way. The counter-argument was
+   heard and rejected: a flagged wrong track is indeed still a wrong track, but a *dropped* 0.7 match
+   is a wrong absence with no flag at all, and `CLAUDE.md`'s degradation rule points at including the
+   best available result plus an honest account of it. The flag is what makes inclusion safe — the
+   track carries `matched_low_confidence`, not `matched`, and the report says so in words.
+   Prompt 14 implements include-and-flag; prompt 17 turns the same band into a question instead.
+2. **Thresholds in configuration, not the backoffice — RESOLVED: configuration** (confirms
+   **D-110**). The departure from the project's usual "put the knob in `/admin`" instinct is
+   accepted as argued in §3: a threshold's effect is invisible for weeks, its only legitimate
+   justification is a before/after run of §9's harness, and a change to it must bump
+   `algorithmVersion` so two calibrations never mix in the resolution cache. A pull request can
+   enforce all three; a form field can enforce none of them. `backend/config/matching/profiles.yaml`
+   is the location; the `MATCHING_*` env overrides remain an operational escape hatch only, and
+   `docs/env-vars.md` must say so in those words.
+3. **Cover attribution — RESOLVED: search the original artist, one search, attribution named in the
+   report** (confirms **D-113**). The honest cost is accepted explicitly: a Johnny Cash setlist
+   entry for *Hurt* returns Nine Inch Nails' recording, and a Jimi Hendrix *All Along the
+   Watchtower* returns Bob Dylan's. That is the price of the far more common case, where the
+   performing band has no released recording of the song at all and a second search would buy
+   nothing. The mitigations stand as specified: the report line reads *"cover of Nine Inch Nails"* so
+   the user sees exactly what happened rather than wondering why the track sounds wrong, and prompt
+   17's ranked list is the one-tap fix — including the performing band's own recording among the
+   candidates when the cover search lands in the `CHOICE` band, which is the one place D-120 agrees
+   a second search earns its cost.
+4. **Fixture 8's support act — RESOLVED: `Alcalá Norte`**, taken from the fixture-6 bill (Madrid,
+   2023). The choice is deliberate on three counts: (a) they are a real band with real, findable
+   setlist.fm entries from Madrid support slots, so the fixture is capturable at all; (b) at the time
+   of those shows their released catalog was a small handful of singles while their live set was a
+   full album's worth of material, so most labelled entries are *genuinely* `not_found` rather than
+   artificially so — which is the control the fixture exists to provide; and (c) their titles are
+   short, generic Spanish phrases, which is precisely the input that tempts a same-title,
+   wrong-artist false positive and therefore exercises the artist gate (D-109) as intended.
+   **Capture obligation:** catalog absence is a fact about a moving catalog, so the capture session
+   verifies each entry's absence at capture time and records the capture date alongside the fixture.
+   If a later re-capture finds the catalog has filled in, the fixture is re-labelled rather than
+   replaced — the expected outcomes change, the band does not.
 
 ---
 
@@ -1647,10 +1680,13 @@ branch, per `CLAUDE.md`'s mandatory check (`/doc-check`):
 
 ---
 
-**Review requested.** This spike proposes decisions **D-106**–**D-124** and nothing is implementable
-until it is approved. The four most consequential — and the four most worth disagreeing with — are
+**Approved 2026-08-23.** This spike carries decisions **D-106**–**D-124**, all of them now settled;
+the four questions it originally left open were resolved in the affirmative on the same date and are
+recorded above. The four most consequential decisions — and the four most worth disagreeing with —
+are
 **D-110** (three bands meaning different things per mode, with thresholds in configuration rather
 than the backoffice), **D-111** (studio as the default version, with the renormalizing fallback
 instead of a user toggle), **D-113** (covers searched by the original artist, accepting that a band's
-own studio cover loses) and **D-116** (a curated non-song lexicon, defended rather than assumed). The
-four open questions above are the only things deliberately left undecided.
+own studio cover loses) and **D-116** (a curated non-song lexicon, defended rather than assumed).
+**Nothing in this document is deferred**: prompt 13 may consume every number and every outcome value
+here as settled, and prompt 14 may implement them without returning for a decision.
