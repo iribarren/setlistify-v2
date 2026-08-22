@@ -76,6 +76,21 @@
         <env name="ADMIN_TOTP_ISSUER" value="Setlistify" force="true"/>
         <env name="ADMIN_IP_ALLOWLIST" value="" force="true"/>
         <env name="ADMIN_TOTP_ENCRYPTION_KEY" value="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=" force="true"/>
+
+        <!-- setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md) — force="true"
+             for the same reason as the blocks above: the default test suite must never depend on
+             .env.local, and AC-13.1/D-2 require it to make zero outbound calls regardless. The key
+             below is deliberately NOT real-looking (SetlistFmApiKeyNotRealTest, AC-13.2). Every
+             test in the default suite mocks HttpClientInterface, so SETLISTFM_BASE_URL is never
+             actually dialled. -->
+        <env name="SETLISTFM_API_KEY" value="test-fixture-key-not-a-real-credential" force="true"/>
+        <env name="SETLISTFM_DAILY_BUDGET" value="1440" force="true"/>
+        <env name="SETLISTFM_RATE_PER_SECOND" value="2" force="true"/>
+        <env name="SETLISTFM_CACHE_TTL" value="300" force="true"/>
+        <env name="SETLISTFM_BASE_URL" value="https://setlistfm.invalid/rest/1.0" force="true"/>
+        <env name="SETLISTFM_HTTP_TIMEOUT" value="5" force="true"/>
+        <env name="SETLISTFM_TOKEN_WAIT" value="1" force="true"/>
+        <env name="SETLISTFM_REFRESH_BUDGET_SHARE" value="0.25" force="true"/>
     </php>
 
     <testsuites>
@@ -83,6 +98,16 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+
+    <!-- AC-13.3, D-70: the one live setlist.fm smoke test is tagged #[Group('live')] and excluded
+         from the default suite (and therefore from CI, D-2). Run it manually before a release
+         (see the root README.md's Operations section for the exact command) with a real
+         SETLISTFM_API_KEY set. -->
+    <groups>
+        <exclude>
+            <group>live</group>
+        </exclude>
+    </groups>
 
     <source ignoreSuppressionOfDeprecations="true"
             ignoreIndirectDeprecations="true"

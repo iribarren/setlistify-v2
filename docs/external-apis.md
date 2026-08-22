@@ -39,6 +39,16 @@ band had no setlists.
 conversation with setlist.fm. The second has a long lead time and gates monetization **regardless of
 which model is chosen** — advertising revenue and subscription revenue are both revenue.
 
+**Enforcement status (as of `docs/specs/2026-08-22-setlistfm-integration.md`).** The daily budget
+and the per-second rate are now enforced in-application, not just documented as a constraint:
+`App\Service\Setlist\SetlistFmBudget` is a Redis-backed gate every outbound request passes through
+(token bucket + UTC-calendar-day counter + a shared circuit breaker), and it fails **closed** if
+Redis itself is unreachable — no code path can exceed the configured limits regardless of process
+count. Consumption, cache hit rate and the circuit breaker's state are visible on the backoffice
+dashboard (`docs/architecture.md` §9, §11) — the constraint no longer needs a `psql` session to
+observe. `SETLISTFM_DAILY_BUDGET`/`SETLISTFM_RATE_PER_SECOND` are read from configuration
+(`docs/env-vars.md`); raising them is only valid once the higher tier below is actually granted.
+
 ---
 
 ## Spotify
@@ -196,3 +206,4 @@ advertising and subscriptions count as commercial use; neither escapes any of it
 | Date | Change |
 |------|--------|
 | 2026-08-21 | Initial research. Verified Spotify quota modes and SDA policy, setlist.fm rate limits and non-commercial terms, YouTube quota and ad-enabled client policy, Apple MusicKit advertising prohibition, TIDAL non-commercial restriction. |
+| 2026-08-22 | setlist.fm's daily budget and rate limit are now enforced in-application (`docs/specs/2026-08-22-setlistfm-integration.md`), not just documented — see the updated setlist.fm section above. No terms change; the higher-tier application and commercial-use conversation remain outstanding. |

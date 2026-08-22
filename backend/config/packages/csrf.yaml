@@ -19,3 +19,8 @@ framework:
             # before this fix.
             - admin_2fa_confirm
             - admin_user_action
+            # setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md, AC-11.5): the
+            # two audited band writes (correct MBID, clear cached setlists) are bespoke, non-
+            # form_login POSTs on the admin firewall too — same same-origin CSRF scheme as the
+            # actions above, not left unprotected.
+            - admin_band_action

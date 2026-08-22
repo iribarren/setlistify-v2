@@ -1,0 +1,29 @@
+{
+    "type": "artists",
+    "itemsPerPage": 20,
+    "page": 1,
+    "total": 3,
+    "artist": [
+        {
+            "mbid": "5b11f4ce-a62d-471e-81fc-a69a8278c7da",
+            "name": "Nirvana",
+            "sortName": "Nirvana",
+            "disambiguation": "90s US grunge band",
+            "url": "https://www.setlist.fm/setlists/nirvana-23d6a88b.html"
+        },
+        {
+            "mbid": "757ca5ec-3547-4fb9-b1e6-b1c9e4b1c8f6",
+            "name": "Nirvana",
+            "sortName": "Nirvana",
+            "disambiguation": "UK band, active 1965-1971",
+            "url": "https://www.setlist.fm/setlists/nirvana-63d6b88c.html"
+        },
+        {
+            "mbid": "9f8a1c2d-1111-4b2b-9c3d-abcdef123456",
+            "name": "Nirvana Tribute Band",
+            "sortName": "Nirvana Tribute Band",
+            "disambiguation": "tribute act, mentions Nirvana in disambiguation",
+            "url": "https://www.setlist.fm/setlists/nirvana-tribute-band-73d6c88d.html"
+        }
+    ]
+}

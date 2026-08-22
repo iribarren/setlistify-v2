@@ -64,7 +64,6 @@ final class TwoFactorEnrollmentController extends AbstractController
             $session->set(self::SESSION_BACKUP_CODES_KEY, $backupCodes);
         }
         /** @var list<string> $backupCodes */
-
         $totp = TOTP::createFromSecret($secret);
         $totp->setLabel($adminUser->getUserIdentifier());
         \assert('' !== $this->totpIssuer, 'ADMIN_TOTP_ISSUER must not be empty');

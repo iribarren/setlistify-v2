@@ -34,12 +34,7 @@ abstract class AbstractAdminCrudController extends AbstractCrudController
     /** @return iterable<\EasyCorp\Bundle\EasyAdminBundle\Contracts\Field\FieldInterface> */
     public function configureFields(string $pageName): iterable
     {
-        throw new \LogicException(\sprintf(
-            '%s must override configureFields() with an explicit field allowlist — the base '
-            .'implementation intentionally throws instead of falling back to EasyAdmin\'s '
-            .'"expose everything" default (D-46).',
-            static::class,
-        ));
+        throw new \LogicException(\sprintf('%s must override configureFields() with an explicit field allowlist — the base implementation intentionally throws instead of falling back to EasyAdmin\'s "expose everything" default (D-46).', static::class));
     }
 
     public function configureActions(Actions $actions): Actions

@@ -31,10 +31,7 @@ final readonly class AdminUserChecker implements UserCheckerInterface
         $email = $user->getUserIdentifier();
         if ($this->lockoutTracker->isLocked($email)) {
             $minutes = (int) ceil($this->lockoutTracker->remainingLockSeconds($email) / 60);
-            throw new CustomUserMessageAccountStatusException(\sprintf(
-                'Too many failed attempts. This account is locked for %d more minute(s).',
-                max(1, $minutes),
-            ));
+            throw new CustomUserMessageAccountStatusException(\sprintf('Too many failed attempts. This account is locked for %d more minute(s).', max(1, $minutes)));
         }
     }
 

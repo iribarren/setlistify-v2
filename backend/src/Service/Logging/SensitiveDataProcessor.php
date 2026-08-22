@@ -32,6 +32,11 @@ final class SensitiveDataProcessor implements ProcessorInterface
         'authorization',
         'set-cookie',
         'cookie',
+        // setlist.fm integration (docs/specs/2026-08-22-setlistfm-integration.md, US-12): the
+        // outbound `x-api-key` header must never appear in a log line, in any casing/nesting.
+        'x-api-key',
+        'apikey',
+        'api_key',
     ];
 
     public function __invoke(LogRecord $record): LogRecord

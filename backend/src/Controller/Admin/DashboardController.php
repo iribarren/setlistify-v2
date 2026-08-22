@@ -6,6 +6,9 @@ namespace App\Controller\Admin;
 
 use App\Security\Admin\AdminUser;
 use App\Service\Admin\EmailMasker;
+use App\Service\Setlist\SetlistCacheMetrics;
+use App\Service\Setlist\SetlistFmBudget;
+use App\Service\Setlist\SetlistRefreshRunLog;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
@@ -26,6 +29,9 @@ final class DashboardController extends AbstractDashboardController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly SetlistFmBudget $setlistFmBudget,
+        private readonly SetlistCacheMetrics $setlistCacheMetrics,
+        private readonly SetlistRefreshRunLog $setlistRefreshRunLog,
     ) {
     }
 
@@ -40,10 +46,30 @@ final class DashboardController extends AbstractDashboardController
             ['since' => (new \DateTimeImmutable('-7 days'))->format('Y-m-d H:i:s')],
         ));
 
+        // setlist.fm panel (US-11, AC-11.1, AC-11.2, AC-11.3, AC-11.7): every figure below is read
+        // fresh on each render — no caching layer of its own, consistent with D-53.
+        $usage = $this->setlistFmBudget->dailyUsage();
+        $totalCacheEntries = self::toInt($connection->fetchOne('SELECT COUNT(*) FROM setlist_cache'));
+        $totalSongs = self::toInt($connection->fetchOne('SELECT COUNT(*) FROM songs'));
+        $lastRun = $this->setlistRefreshRunLog->lastRun();
+        $lastRunStale = null === $lastRun
+            || new \DateTimeImmutable($lastRun['finishedAt']) < new \DateTimeImmutable('-36 hours');
+
         return $this->render('admin/dashboard.html.twig', [
             'total_users' => $totalUsers,
             'total_concerts' => $totalConcerts,
             'recent_concerts' => $recentConcerts,
+            'setlistfm_used' => $usage['used'],
+            'setlistfm_budget' => $usage['budget'],
+            'setlistfm_percent' => $usage['budget'] > 0 ? round(100 * $usage['used'] / $usage['budget'], 1) : 0.0,
+            'setlistfm_reset_at' => $usage['resetAt'],
+            'setlistfm_breaker_state' => $this->setlistFmBudget->breakerState(),
+            'setlistfm_today' => $this->setlistCacheMetrics->today(),
+            'setlistfm_trailing7' => $this->setlistCacheMetrics->trailing7Days(),
+            'setlistfm_total_cache_entries' => $totalCacheEntries,
+            'setlistfm_total_songs' => $totalSongs,
+            'setlistfm_last_run' => $lastRun,
+            'setlistfm_last_run_stale' => $lastRunStale,
         ]);
     }
 
@@ -60,6 +86,7 @@ final class DashboardController extends AbstractDashboardController
         yield MenuItem::linkTo(UserCrudController::class, 'Users', 'fa fa-users');
         yield MenuItem::linkTo(ConcertCrudController::class, 'Concerts', 'fa fa-music');
         yield MenuItem::linkTo(BandCrudController::class, 'Bands', 'fa fa-guitar');
+        yield MenuItem::linkTo(SetlistCacheEntryCrudController::class, 'Setlist cache', 'fa fa-database');
         yield MenuItem::linkTo(AuditLogEntryCrudController::class, 'Audit log', 'fa fa-list');
     }
 

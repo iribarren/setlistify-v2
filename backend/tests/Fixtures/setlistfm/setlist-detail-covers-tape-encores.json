@@ -1,0 +1,59 @@
+{
+    "id": "63de4613",
+    "versionId": "7be1aaa0",
+    "eventDate": "18-06-2023",
+    "lastUpdated": "2023-06-19T10:23:45.000+0000",
+    "artist": {
+        "mbid": "5b11f4ce-a62d-471e-81fc-a69a8278c7da",
+        "name": "Nirvana",
+        "sortName": "Nirvana",
+        "url": "https://www.setlist.fm/setlists/nirvana-23d6a88b.html"
+    },
+    "venue": {
+        "id": "33d6e3d3",
+        "name": "The Forum",
+        "city": {
+            "id": "5368361",
+            "name": "Inglewood",
+            "state": "California",
+            "stateCode": "CA",
+            "country": {"code": "US", "name": "United States"}
+        },
+        "url": "https://www.setlist.fm/venue/the-forum-inglewood-ca-usa-33d6e3d3.html"
+    },
+    "tour": {"name": "In Utero Tour"},
+    "sets": {
+        "set": [
+            {
+                "song": [
+                    {"name": "Smells Like Teen Spirit"},
+                    {"name": "Come As You Are"},
+                    {"name": "Aneurysm"},
+                    {"name": "Drain You", "info": "false start, restarted from the top"}
+                ]
+            },
+            {
+                "encore": 1,
+                "song": [
+                    {
+                        "name": "The Man Who Sold the World",
+                        "cover": {"mbid": "5441c29d-3602-4898-b1a1-b77fa23b8e50", "name": "David Bowie"}
+                    },
+                    {
+                        "name": "Heart-Shaped Box",
+                        "with": {"mbid": "b3ae82c9-0fee-43be-9c3e-cd63b9a26b9c", "name": "Pat Smear"}
+                    },
+                    {"name": "Endless, Nameless", "info": "extended feedback outro, guitar smashing"}
+                ]
+            },
+            {
+                "encore": 2,
+                "song": [
+                    {"name": "Radio Intro Tape", "tape": true}
+                ]
+            }
+        ]
+    },
+    "info": "Recorded for the Live and Loud broadcast.",
+    "url": "https://www.setlist.fm/setlist/nirvana/2023/the-forum-inglewood-ca-63de4613.html"
+}

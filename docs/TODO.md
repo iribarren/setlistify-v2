@@ -1,0 +1,33 @@
+# TODO
+
+Deferred items and things only the project owner can provide. Not a backlog (that's
+`docs/prompts/`) — this is for loose ends that fell out of implemented features.
+
+## API keys / credentials needed
+
+- **`SETLISTFM_API_KEY`** — no live key was available while implementing prompt 09
+  (setlist.fm integration). Needed for:
+  - Capturing real fixtures to replace the hand-constructed ones (see below).
+  - Running the `@group live` smoke test (`docs/specs/2026-08-22-setlistfm-integration.md`
+    AC-13.3) before any release that touches this code.
+  - Actually running the app against real data at all — right now it's untested against the
+    live API end-to-end.
+
+## Deferred / follow-up work
+
+- **Replace hand-constructed setlist.fm fixtures with real captures.** The default test suite's
+  fixtures (multi-candidate search, empty search, large index, covers/tape/encores, empty
+  setlist, 429, 500 — `docs/specs/2026-08-22-setlistfm-integration.md` AC-13.4) were written by
+  hand from the documented API shape, not captured live, because no API key was available. They
+  should be re-captured once a key exists, since a subtle shape mismatch would go undetected
+  until the live smoke test or production.
+- **Apply for setlist.fm's higher rate tier** (16 req/s, 50,000/day vs the standard 2/s,
+  1,440/day) — costs nothing to ask, raises the ceiling 35×. Purely operational, doesn't block
+  any code (D-69 in `docs/architecture.md`).
+- **Wire up the nightly `app:setlist:refresh` job as an actual cron entry** in the deployment
+  target. It's implemented and documented in the README's Operations section but nothing
+  schedules it yet outside of running it manually.
+- **Watch `docs/specs/2026-08-22-setlistfm-integration.md`'s two tuned defaults** once there's
+  real usage: the 7-day post-concert refresh window and the 25% nightly-job budget share
+  (AC-10.1, AC-10.3). Both are guesses made without data, both are env-configurable, and the
+  backoffice dashboard (US-11) exists partly to tell you if they need adjusting.

@@ -1,0 +1,15 @@
+{
+    "type": "artists",
+    "itemsPerPage": 20,
+    "page": 1,
+    "total": 1,
+    "artist": [
+        {
+            "mbid": "678d88b2-87b0-403b-b63d-5da7465aecc3",
+            "name": "Radiohead",
+            "sortName": "Radiohead",
+            "disambiguation": "",
+            "url": "https://www.setlist.fm/setlists/radiohead-13d6f88e.html"
+        }
+    ]
+}

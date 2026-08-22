@@ -17,4 +17,52 @@
             <div>Concerts created in the last 7 days</div>
         </div>
     </div>
+
+    <h3>setlist.fm (US-11)</h3>
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:2em;">{{ setlistfm_used }} / {{ setlistfm_budget }}</div>
+            <div>Requests used today ({{ setlistfm_percent }}%)</div>
+        </div>
+        <div>
+            <div style="font-size:2em;">{{ setlistfm_reset_at|date('Y-m-d H:i') }} UTC</div>
+            <div>Budget resets at</div>
+        </div>
+        <div>
+            <div style="font-size:2em; {{ setlistfm_breaker_state == 'open' ? 'color:#b00020;' : '' }}">{{ setlistfm_breaker_state }}</div>
+            <div>Circuit breaker</div>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:1.5em;">{{ (setlistfm_today.hitRate * 100)|round(1) }}%</div>
+            <div>Cache hit rate — today (Redis {{ setlistfm_today.redis }}, PG {{ setlistfm_today.postgres }}, outbound {{ setlistfm_today.outbound }})</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ (setlistfm_trailing7.hitRate * 100)|round(1) }}%</div>
+            <div>Cache hit rate — trailing 7 days (Redis {{ setlistfm_trailing7.redis }}, PG {{ setlistfm_trailing7.postgres }}, outbound {{ setlistfm_trailing7.outbound }})</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ setlistfm_total_cache_entries }}</div>
+            <div>Total durable cache entries</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ setlistfm_total_songs }}</div>
+            <div>Total stored songs</div>
+        </div>
+    </div>
+
+    <div style="{{ setlistfm_last_run_stale ? 'color:#b00020;' : '' }}">
+        {% if setlistfm_last_run is null %}
+            <strong>Nightly refresh has never run.</strong>
+        {% else %}
+            <strong>Last nightly refresh:</strong> {{ setlistfm_last_run.finishedAt }} —
+            {{ setlistfm_last_run.bandsAttempted }} band(s) attempted,
+            {{ setlistfm_last_run.requestsSpent }} request(s) spent,
+            {{ setlistfm_last_run.entriesWritten }} setlist(s) written,
+            {{ setlistfm_last_run.budgetRemaining }} of its share remaining.
+            {% if setlistfm_last_run_stale %}<strong> — over 36 hours old (R-9)</strong>{% endif %}
+        {% endif %}
+    </div>
 {% endblock %}

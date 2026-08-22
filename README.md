@@ -107,6 +107,31 @@ docker compose exec backend bin/console app:admin:2fa:reset you@example.test
 This clears the TOTP secret and every backup code; the next login re-enrolls with a brand new
 secret and a brand new set of codes.
 
+## Operations
+
+**Nightly setlist.fm refresh** (`docs/architecture.md` §5, D-65) — the only thing allowed to spend
+setlist.fm budget speculatively. Not scheduled from inside the app (no `symfony/scheduler`
+dependency); the deployment target's own cron invokes it once a night:
+
+```bash
+docker compose exec backend bin/console app:setlist:refresh
+```
+
+Safe to run more than once a night (idempotent, AC-10.8) and safe to run concurrently (guarded by a
+`symfony/lock`, a second overlapping run exits immediately). Its last outcome is visible on the
+backoffice dashboard (budget spent, bands attempted, setlists written), flagged if it hasn't run in
+over 36 hours.
+
+**setlist.fm live smoke test** (`docs/specs/2026-08-22-setlistfm-integration.md`, AC-13.3, D-70) —
+the default test suite never calls setlist.fm (`docs/architecture.md` D-2); one test tagged
+`@group live` does, deliberately, to catch a real API shape change before a release. Run it manually,
+never on a schedule (a scheduled live test is itself a scheduled budget spend), with a real
+`SETLISTFM_API_KEY` set:
+
+```bash
+docker compose exec backend vendor/bin/phpunit --group live
+```
+
 ## Frontend (runs on the host)
 
 An Expo + Expo Router + TypeScript app — one codebase for web, iOS and Android. See
