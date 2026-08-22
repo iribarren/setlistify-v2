@@ -559,6 +559,7 @@ states (`resolved` | `ambiguous` | `no_presence` | `unresolved`) rather than gue
 
 ## 6. Provider configuration (backoffice-controlled)
 
+**Built** (`docs/specs/2026-08-22-backoffice-provider-configuration.md`, D-89–D-105).
 `ProviderSetting`, one row per provider:
 
 | Field | Type | Meaning |
@@ -572,8 +573,9 @@ states (`resolved` | `ambiguous` | `no_presence` | `unresolved`) rather than gue
 **Credentials are not in this table and never will be.** Client IDs and secrets come from the secret
 store. `docs/env-vars.md` defines the boundary.
 
-`ProviderRegistry` is the only read path, Redis-cached with explicit invalidation on write. It is
-consulted when:
+`App\Service\Provider\ProviderRegistry` is the only read path (implements the `ProviderAvailability`
+seam prompt 10 shipped empty, D-86/D-89), Redis-cached with explicit invalidation on write
+(`App\Service\Provider\ProviderSettingWriter`, the only write path). It is consulted when:
 
 - listing providers a user may link,
 - choosing a provider for playlist generation,
@@ -582,7 +584,10 @@ consulted when:
 
 Disabling a provider is a **graceful** operation, not a kill: existing linked accounts and generated
 playlists remain, the concert page shows a "temporarily unavailable" state, and nothing 500s. This is
-the intended response to YouTube exhausting its 10k units/day mid-afternoon.
+the intended response to YouTube exhausting its 10k units/day mid-afternoon. A disabled (or unknown)
+provider is a typed `503`/`404` (`App\Service\Provider\ProviderDisabledException`/`App\Service\
+Streaming\UnknownProviderException`, D-94) at every wired call site — see US-4 of the prompt 11 spec
+for the exhaustive enumeration and prompts 14/17/19's recorded obligation to read the registry too.
 
 ## 7. Playback surface
 
@@ -648,9 +653,12 @@ can use sessions and 2FA instead of the API's JWTs.
   (deliberately: it would be a one-click budget spend, D-67).
 - **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
   token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
-  shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), and the two setlist.fm band
-  writes above. Provider configuration is prompt 11 — this feature does not become a general-purpose
-  data editor (D-46 makes read-only the structural default, not a convention).
+  shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), the two setlist.fm band
+  writes above, and provider configuration (`docs/specs/2026-08-22-backoffice-provider-configuration.md`,
+  D-89–D-105) — `enabled`/`playbackMode`/`isDefault`/`notes` on `ProviderSetting`, EDIT only (no
+  `NEW`/`DELETE`: rows come from the migration seed), routed through `App\Service\Provider\
+  ProviderSettingWriter`. This feature does not become a general-purpose data editor (D-46 makes
+  read-only the structural default, not a convention).
 - **Every write is audited.** `App\Service\Admin\AuditLogger` is the single write path for
   `AuditLogEntry` — actor, entity, field, old → new, timestamp, IP. The entity is append-only (a
   Doctrine event subscriber rejects update/delete outright) and its digested personal-data fields
@@ -695,7 +703,8 @@ boundary instant `App\Service\Concert\ConcertScheduler` computes on every write.
 `setlistfm*` columns, `Setlist`, `Song` and `SetlistCacheEntry` are built
 (`docs/specs/2026-08-22-setlistfm-integration.md`, D-56–D-70) — see §5. `StreamingAccount` is built
 (`docs/specs/2026-08-22-streaming-port-and-account-linking.md`, D-77/D-78) — see §4 and §11.
-Everything else in this sketch (`Playlist`, `ProviderSetting`, `PlaylistTrack`) is still a later
+`ProviderSetting` is built (`docs/specs/2026-08-22-backoffice-provider-configuration.md`, D-89–
+D-105) — see §6. Everything else in this sketch (`Playlist`, `PlaylistTrack`) is still a later
 prompt.
 
 ## 11. Security posture

@@ -220,6 +220,12 @@ a URL the backend produced and later resolves the opaque, one-time reference the
   `router.replace("/account")` so a page refresh can't try to resolve an already-consumed,
   single-use reference again (AC-8.7). The native leg gets the same reference directly from
   `openAuthSessionAsync`'s result URL — no route/query-param involvement.
+
+**Not consumed yet, on purpose (D-101):** the backend's `docs/specs/2026-08-22-backoffice-provider-configuration.md`
+ships a public, unauthenticated `GET /api/config/providers` — the future startup read for which
+providers are enabled and how playback should render, so a backoffice change reaches the app without
+a build. No frontend code reads it yet; that lands with prompts 16 (playlist fast-mode UI) and 19
+(playback surface), once there is a screen to hang the "temporarily unavailable" state on.
 - **Out of scope here** (later prompts): which providers are enabled and playback mode (prompt 11 —
   this branch hardcodes Spotify as the one connectable provider, `SUPPORTED_PROVIDERS` in
   `lib/streaming/index.ts`), track matching, playlist generation, and the concert page player embed.

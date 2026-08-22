@@ -98,8 +98,11 @@ or promotions on the Non-Streaming SDA; the sale of, or sale of access to, a Non
 Streaming SDA. **While the app is unmonetized this is harmless** — the prohibition is on commercial
 uses, and there are none. It becomes live the day any monetization is enabled.
 
-**Mitigation, already built in.** `ProviderSetting.playbackMode` is a runtime flag. Setting it to
-`deeplink` removes in-app playback and converts Setlistify to a Non-Streaming SDA without a deploy.
+**Mitigation, already built in.** `ProviderSetting.playbackMode` is a runtime flag, editable from the
+`/admin` "Providers" screen (`docs/specs/2026-08-22-backoffice-provider-configuration.md`). Setting it
+to `deeplink` removes in-app playback and converts Setlistify to a Non-Streaming SDA on the next
+request — no deploy, no app-store release. The edit screen states this consequence inline, at the
+moment of the click, rather than only here.
 
 **Open question worth resolving in writing.** Spotify's own iframe widget is a greyer case than SDK
 playback, because Spotify serves the audio itself. Ask Spotify directly whether embedding their
@@ -150,9 +153,11 @@ cost of much weaker catalog matching. YouTube is full of covers, live uploads, l
 region-blocked items, so `TrackCandidate` confidence scoring matters far more here than on Spotify.
 
 **Quota is the real ceiling** and it is exhaustible mid-day. This is the primary reason
-`ProviderSetting.enabled` exists as a runtime kill switch: when the budget is gone, disable the
-provider and let users see a clean "temporarily unavailable" state rather than a wall of errors.
-Quota increases can be requested from Google.
+`ProviderSetting.enabled` exists as a runtime kill switch, shipped in
+`docs/specs/2026-08-22-backoffice-provider-configuration.md`: flip it off from `/admin` and every
+wired call site (linking, token refresh, the public config endpoint) reports the provider
+unavailable within one request — no deploy — while users see a clean "temporarily unavailable" state
+rather than a wall of errors. Quota increases can be requested from Google.
 
 **Advertising caveats, if an ad model is ever chosen.** Ads may not be sold on a page containing
 YouTube API data unless non-YouTube content on that same page carries "sufficient independent value"
