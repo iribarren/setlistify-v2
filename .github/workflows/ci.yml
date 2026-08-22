@@ -88,6 +88,12 @@ jobs:
       MAILER_FROM_ADDRESS: no-reply@setlistify.test
       WEB_APP_URL: http://localhost:8081
       LOCK_DSN: flock
+      # Backoffice foundation (docs/specs/2026-08-21-backoffice-foundation.md) — CI-only dummy
+      # values, never a real secret.
+      ADMIN_PATH_PREFIX: /admin
+      ADMIN_TOTP_ISSUER: Setlistify
+      ADMIN_IP_ALLOWLIST: ""
+      ADMIN_TOTP_ENCRYPTION_KEY: "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo="
     steps:
       - uses: actions/checkout@v4
 

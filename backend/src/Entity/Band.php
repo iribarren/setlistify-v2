@@ -46,6 +46,12 @@ class Band
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    /**
+     * NOT a mapped column — transient, admin-list-only aggregate (AC-6.5), same `AS HIDDEN
+     * concertCount` pattern as {@see \App\Entity\User::$concertCount}.
+     */
+    private int $concertCount = 0;
+
     public function __construct(string $name, string $normalizedName, \DateTimeImmutable $now)
     {
         $this->name = $name;
@@ -82,5 +88,11 @@ class Band
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    /** See {@see self::$concertCount} — only meaningful after the admin list query. */
+    public function getConcertCount(): int
+    {
+        return $this->concertCount;
     }
 }

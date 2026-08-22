@@ -1,0 +1,8 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Revealed email — user {{ user.id }}{% endblock %}
+
+{% block main %}
+    <p>This reveal was recorded in the audit log (AC-9.3) and is not cached (AC-9.5).</p>
+    <p style="font-size:1.4em; font-family:monospace;">{{ email }}</p>
+{% endblock %}

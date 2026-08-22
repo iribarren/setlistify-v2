@@ -69,6 +69,13 @@
         <env name="AUTH_COOKIE_SECURE" value="false" force="true"/>
         <env name="MAILER_FROM_ADDRESS" value="no-reply@setlistify.test" force="true"/>
         <env name="WEB_APP_URL" value="http://localhost:8081" force="true"/>
+
+        <!-- Backoffice foundation (docs/specs/2026-08-21-backoffice-foundation.md) — force="true"
+             for the same reason as the auth block above: tests must not depend on .env.local. -->
+        <env name="ADMIN_PATH_PREFIX" value="/admin" force="true"/>
+        <env name="ADMIN_TOTP_ISSUER" value="Setlistify" force="true"/>
+        <env name="ADMIN_IP_ALLOWLIST" value="" force="true"/>
+        <env name="ADMIN_TOTP_ENCRYPTION_KEY" value="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=" force="true"/>
     </php>
 
     <testsuites>

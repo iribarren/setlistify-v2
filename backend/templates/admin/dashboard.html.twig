@@ -1,0 +1,20 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Dashboard{% endblock %}
+
+{% block main %}
+    <div style="display:flex; gap:2em; margin-bottom:2em;">
+        <div>
+            <div style="font-size:2em;">{{ total_users }}</div>
+            <div>Total users</div>
+        </div>
+        <div>
+            <div style="font-size:2em;">{{ total_concerts }}</div>
+            <div>Total concerts</div>
+        </div>
+        <div>
+            <div style="font-size:2em;">{{ recent_concerts }}</div>
+            <div>Concerts created in the last 7 days</div>
+        </div>
+    </div>
+{% endblock %}

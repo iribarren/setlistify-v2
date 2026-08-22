@@ -1,0 +1,23 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Delete user {{ user.id }}{% endblock %}
+
+{% block main %}
+    {% if error is defined %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p><strong>This is irreversible.</strong> Deleting user <strong>{{ masked_email }}</strong>
+        (id {{ user.id }}) permanently removes their account, every concert they tracked and its
+        lineup, and every refresh/reset/verification token — bands and venues they referenced are
+        shared and are not deleted.</p>
+
+    <p>Type the user's id (<code>{{ user.id }}</code>) below to confirm.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="text" name="confirm_id" placeholder="{{ user.id }}" required autofocus>
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_action') }}">
+        <button type="submit">Permanently delete this user</button>
+        <a href="{{ index_path }}">Cancel</a>
+    </form>
+{% endblock %}
