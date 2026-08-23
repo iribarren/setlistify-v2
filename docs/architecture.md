@@ -651,6 +651,20 @@ can use sessions and 2FA instead of the API's JWTs.
   a band's setlist.fm MBID and clearing a band's cached setlist associations (AC-11.5) — both routed
   through `AuditLogger` like every other admin write; no "refresh this band now" button exists
   (deliberately: it would be a one-click budget spend, D-67).
+- **Playlist generation additions** (spec `2026-08-23-spike-playlist-pipeline.md` §8, D-141/D-142 —
+  filling in the "not yet shipped" gap noted above): read-only `PlaylistGenerationJobCrudController`
+  (list: created, user, concert, provider, mode, state, duration, matched/total, algorithm version;
+  filters on state, provider, mode, blocked reason and failure reason; detail view adds the block/
+  failure detail, stage timings and the full `PlaylistTrack` table with per-song outcome, confidence
+  and reason code) and read-only `PlaylistCrudController` (generated playlists with their report
+  summary). Both read across every owner directly via Doctrine, same shape as `ConcertCrudController`
+  (D-47) — no owner-extension is touched. **No write action anywhere, not even a retry** (D-142): a
+  stuck or failed job is fixed by the pipeline's own resumption/expiry commands, never an admin click.
+  The dashboard gained a "Playlist generation (last 7 days)" panel (`App\Service\Playlist\
+  PlaylistDashboardMetrics`) — jobs started/completed/blocked/failed, p50/p95 generation time, mean
+  match rate, not-found rate, the blocked-reason breakdown, and the five most frequently unmatched
+  (artist, title) pairs — flagged when p95 duration exceeds 90s, mean match rate drops below 0.75, or
+  the blocked share exceeds 10% of jobs.
 - **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
   token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
   shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), the two setlist.fm band

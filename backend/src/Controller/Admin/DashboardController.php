@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 
 use App\Security\Admin\AdminUser;
 use App\Service\Admin\EmailMasker;
+use App\Service\Playlist\PlaylistDashboardMetrics;
 use App\Service\Setlist\SetlistCacheMetrics;
 use App\Service\Setlist\SetlistFmBudget;
 use App\Service\Setlist\SetlistRefreshRunLog;
@@ -32,6 +33,7 @@ final class DashboardController extends AbstractDashboardController
         private readonly SetlistFmBudget $setlistFmBudget,
         private readonly SetlistCacheMetrics $setlistCacheMetrics,
         private readonly SetlistRefreshRunLog $setlistRefreshRunLog,
+        private readonly PlaylistDashboardMetrics $playlistDashboardMetrics,
     ) {
     }
 
@@ -70,6 +72,10 @@ final class DashboardController extends AbstractDashboardController
             'setlistfm_total_songs' => $totalSongs,
             'setlistfm_last_run' => $lastRun,
             'setlistfm_last_run_stale' => $lastRunStale,
+
+            // "Playlist generation (last 7 days)" panel (spec 2026-08-23-spike-playlist-pipeline.md
+            // §8, D-141/D-142) — read fresh on each render, same reasoning as the setlist.fm panel.
+            'playlist_metrics' => $this->playlistDashboardMetrics->sevenDaySummary(),
         ]);
     }
 
@@ -87,6 +93,8 @@ final class DashboardController extends AbstractDashboardController
         yield MenuItem::linkTo(ConcertCrudController::class, 'Concerts', 'fa fa-music');
         yield MenuItem::linkTo(BandCrudController::class, 'Bands', 'fa fa-guitar');
         yield MenuItem::linkTo(SetlistCacheEntryCrudController::class, 'Setlist cache', 'fa fa-database');
+        yield MenuItem::linkTo(PlaylistGenerationJobCrudController::class, 'Playlist generation jobs', 'fa fa-tasks');
+        yield MenuItem::linkTo(PlaylistCrudController::class, 'Playlists', 'fa fa-list-ol');
         yield MenuItem::linkTo(StreamingAccountCrudController::class, 'Streaming accounts', 'fa fa-plug');
         yield MenuItem::linkTo(ProviderSettingCrudController::class, 'Providers', 'fa fa-toggle-on');
         yield MenuItem::linkTo(AuditLogEntryCrudController::class, 'Audit log', 'fa fa-list');
