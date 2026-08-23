@@ -4,6 +4,13 @@
 # Files in the packages/ subdirectory configure your dependencies.
 # See also https://symfony.com/doc/current/service_container/import.html
 
+imports:
+    # Song matching calibration (docs/specs/2026-08-22-spike-song-matching.md, D-110/D-116). Two data
+    # files rather than inline parameters: a threshold change must be reviewable on its own, and the
+    # non-song lexicon is explicitly data-not-code so adding a language is a config PR.
+    - { resource: 'matching/profiles.yaml' }
+    - { resource: 'matching/non_song_terms.yaml' }
+
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
@@ -56,6 +63,17 @@ services:
             $tokenWaitSeconds: '%env(float:SETLISTFM_TOKEN_WAIT)%'
             $refreshBudgetShare: '%env(float:SETLISTFM_REFRESH_BUDGET_SHARE)%'
             $setlistfmLogger: '@monolog.logger.setlistfm'
+            # Playlist generation (docs/specs/2026-08-23-spike-playlist-pipeline.md,
+            # docs/specs/2026-08-23-playlist-fast-mode-backend.md). P-1/P-4/§4/§5's numeric
+            # constants, bound globally so every stage/command that needs one just asks for it.
+            $maxBands: '%env(int:GENERATION_MAX_BANDS)%'
+            $maxSongs: '%env(int:GENERATION_MAX_SONGS)%'
+            $setlistPages: '%env(int:GENERATION_SETLIST_PAGES)%'
+            $insertBatchSize: '%env(int:GENERATION_INSERT_BATCH_SIZE)%'
+            $rateLimitInlineRetries: '%env(int:GENERATION_RATE_LIMIT_INLINE_RETRIES)%'
+            $maxBlockCycles: '%env(int:GENERATION_MAX_BLOCK_CYCLES)%'
+            $suspendedSetlistChoiceTtlSeconds: '%env(int:SUSPENDED_SETLIST_CHOICE_TTL)%'
+            $suspendedVersionChoiceTtlSeconds: '%env(int:SUSPENDED_VERSION_CHOICE_TTL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -259,6 +277,41 @@ services:
             $clientSecret: '%env(SPOTIFY_CLIENT_SECRET)%'
             $accountsBaseUrl: '%env(SPOTIFY_ACCOUNTS_BASE_URL)%'
         tags: ['app.streaming_provider']
+
+    # --- Song matching --------------------------------------------------------------------------
+    # (docs/specs/2026-08-22-spike-song-matching.md)
+
+    # Everything in App\Service\Matching\ is provider-agnostic and must stay that way — profile keys
+    # are runtime strings, never PHP literals, which is what lets prompt 18 add a second provider's
+    # calibration without a branch in any of these classes (D-118).
+    App\Service\Matching\MatchProfileRegistry:
+        arguments:
+            $defaultProfile: '%matching.default_profile%'
+            $overrides: '%matching.profile_overrides%'
+            $algorithmVersion: '%matching.algorithm_version%'
+
+    App\Service\Matching\NonSongClassifier:
+        arguments:
+            $alwaysTerms: '%matching.non_song_terms.always%'
+            $positionSensitiveTerms: '%matching.non_song_terms.positionSensitive%'
+
+    # Dedicated Redis connection for the resolution cache's front tier (spec 12 §8, D-121) — same
+    # rationale as setlistfm.redis/provider.redis/streaming.redis above: ephemeral keys unrelated to
+    # sessions, so not shared with the `Redis` service that only feeds RedisSessionHandler.
+    matching.redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
+
+    # Public so tests can drive the cache directly (mirrors SetlistCache's rationale above).
+    App\Service\Matching\Cache\TrackResolutionStore:
+        public: true
+        arguments:
+            $redis: '@matching.redis'
+
+    # The only public entry point into matching (mirrors SetlistGateway's single-door shape, D-58).
+    App\Service\Matching\TrackMatcher:
+        public: true
 
 when@test:
     services:

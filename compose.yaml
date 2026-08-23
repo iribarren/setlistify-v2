@@ -92,6 +92,38 @@ services:
       retries: 10
       start_period: 15s
 
+  worker:
+    # Playlist generation runs off the request thread (spec 13/14, D-145): this consumes
+    # `async_playlist` (Redis stream) so `BuildPlaylistMessage` is ever actually handled — without
+    # it every job sits in `queued` forever. Same image as `backend`, no published port.
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env.local
+    volumes:
+      - ./backend:/app
+    command: >
+      bin/console messenger:consume async_playlist
+        --time-limit=3600 --memory-limit=256M --failure-limit=10 -v
+    deploy:
+      replicas: ${PLAYLIST_WORKER_COUNT:-2}
+    # The image's own HEALTHCHECK curls the HTTP server (docker/backend/Dockerfile) — this
+    # container runs messenger:consume instead and never listens on 8080, so that check would
+    # never pass. Liveness here is "the process is still running", which `docker compose ps` /
+    # `restart: unless-stopped` already cover without a false-negative HTTP probe.
+    healthcheck:
+      disable: true
+
 volumes:
   postgres_data:
   redis_data:

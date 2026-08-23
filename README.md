@@ -31,10 +31,12 @@ cd setlistify-v2
 cp backend/.env.example backend/.env.local
 cp frontend/.env.example frontend/.env.local
 
-# On Linux/macOS, make containers write files back as your own user, not root
-# (skip this if your host user's UID/GID happen to already be 1000/1000).
-export APP_UID=$(id -u)
-export APP_GID=$(id -g)
+# Make the containers write files back as your own user (skip only if your host UID/GID are
+# already 1000/1000). Compose reads the root `.env` automatically, so this survives new shells
+# and future rebuilds — an `export` would not, and a stale build arg is how you end up with a
+# bind mount full of files you cannot edit or `git checkout` away from.
+cp .env.example .env
+printf 'APP_UID=%s\nAPP_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
 
 # Generate a local JWT signing keypair for auth (gitignored, never committed — docs/env-vars.md).
 # Passphrase must match JWT_PASSPHRASE in backend/.env.local.
@@ -45,6 +47,7 @@ openssl pkey -in backend/config/jwt/private.pem -pubout -out backend/config/jwt/
 # Bring the stack up
 docker compose up -d
 docker compose ps   # postgres, redis, mailpit and backend should all report "healthy" within ~90s
+                    # (worker has no healthcheck — it consumes async_playlist for playlist generation)
 
 # Install backend dependencies (with dev tools) and apply migrations — see backend/README.md
 docker compose exec backend composer install

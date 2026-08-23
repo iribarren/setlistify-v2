@@ -18,3 +18,12 @@ AC-9.4), not just this convention.
 one entry in `App\Service\Streaming\Link\LinkFlowService`'s redirect-URI map (`config/services.yaml`),
 and a service tagged `app.streaming_provider` — nothing else in the codebase changes
 (`TestDoubleProviderIsDiscoverableTest` proves this for a test-double adapter, AC-9.5).
+
+**Confidence scoring has left the adapter (D-147, redeeming D-83's "provisional" label).**
+`SpotifyTrackMapper` no longer scores a candidate — it maps a search response into
+`TrackCandidate[]`, including the generic, provider-agnostic signal fields
+(`artistAuthority`/`albumType`/`popularity`/`isrc`/`providerRank`, D-119) that
+`App\Service\Matching\MatchConfidence` scores instead. `TrackCandidate::$confidence` remains, but
+purely as a provider-result-rank-derived ordering hint that scorer never reads. `SpotifyQueryBuilder`
+holds query construction (including `market`), so an adapter's three jobs relative to matching are
+now: build the query, map the response, extract signals — never score.

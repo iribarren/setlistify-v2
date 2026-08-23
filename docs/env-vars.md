@@ -99,6 +99,50 @@ flags — not variables.
 | `APPLE_TEAM_ID` / `APPLE_KEY_ID` | no | MusicKit, future |
 | `APPLE_PRIVATE_KEY` | **yes** | MusicKit ES256 signing key, future |
 
+### Local container identity (root `.env`, not `backend/.env.local`)
+
+These two are read by **Docker Compose itself**, not by the application, so they live in a `.env` at
+the repository root (copied from the root `.env.example`) rather than in `backend/.env.local`. They
+are machine-specific and gitignored.
+
+| Variable | Secret | Purpose |
+|---|---|---|
+| `APP_UID` | no | uid the `backend`/`worker` containers run as (`docker/backend/Dockerfile` build arg). Default `1000`. |
+| `APP_GID` | no | gid, same. Default `1000`. |
+
+`./backend` is bind-mounted into both containers, so **anything the container writes there is owned
+by this uid on the host too** — Composer installs, the Symfony cache, generated migrations. If it does
+not match your host user, those files become unwritable by you: editors fail with `EACCES`, and
+`git stash`/`git checkout` fail partway through a branch switch because git cannot unlink them,
+leaving `HEAD` on one branch and the working tree on another.
+
+Set them once per clone, in the root `.env` so the value survives new shells and rebuilds:
+
+```bash
+printf 'APP_UID=%s\nAPP_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+docker compose build backend worker && docker compose up -d --force-recreate backend worker
+```
+
+An `export` in one shell is not enough — the value is a **build arg**, so a stale image keeps the old
+uid until it is rebuilt.
+
+### Playlist generation
+
+Numeric tuning constants for the generation pipeline (`docs/specs/2026-08-23-spike-playlist-
+pipeline.md`, `docs/specs/2026-08-23-playlist-fast-mode-backend.md`). None are secrets.
+
+| Variable | Secret | Purpose |
+|---|---|---|
+| `PLAYLIST_WORKER_COUNT` | no | Number of `messenger:consume async_playlist` worker replicas (`compose.yaml`). Default `2`. |
+| `GENERATION_MAX_BANDS` | no | P-1: caps a multi-band concert to its highest-billed N bands. Default `4`. |
+| `GENERATION_MAX_SONGS` | no | P-1: caps the total songs across a generation, cutting from the lowest-billed end. Default `60`. |
+| `GENERATION_SETLIST_PAGES` | no | D-131: at most this many setlist.fm index pages spent per band per generation. Default `1` — never a per-setlist detail fetch, never a speculative freshness check. |
+| `SUSPENDED_SETLIST_CHOICE_TTL` | no | P-4: seconds a Normal-mode `awaiting_setlist_choice` job survives before `app:playlist:expire-jobs` expires it. Default `604800` (7 days). No effect on Fast mode. |
+| `SUSPENDED_VERSION_CHOICE_TTL` | no | P-4: same, for `awaiting_version_choice`. Default `259200` (72 hours). No effect on Fast mode. |
+| `GENERATION_INSERT_BATCH_SIZE` | no | Provider `addTracks()` batch size (spec 13 §4). Default `50`. |
+| `GENERATION_MAX_BLOCK_CYCLES` | no | T-14: a `blocked` job past this many resume cycles moves to `failed` instead. Default `3`. |
+| `GENERATION_RATE_LIMIT_INLINE_RETRIES` | no | F-05: inline retries on a provider rate limit before blocking. Default `3`. |
+
 ### Backoffice provider configuration
 
 Whether a provider is **enabled**, and how playback is rendered, are backoffice flags

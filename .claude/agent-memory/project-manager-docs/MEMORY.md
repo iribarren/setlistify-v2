@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Spec house style](project_spec_house_style.md) — D-nnn numbering is global across all specs; header table, spike conventions, open-question format.
 - [Backlog prompt → spec flow](project_backlog_prompts.md) — specs come from numbered briefs in `docs/prompts/`, expanded not copied.
 - [Spec 00 open decisions](project_spec_00_decisions.md) — FrankenPHP runtime and no-live-APIs-in-CI, approved 2026-08-21.
 - [Spec 04 auth decisions](project_spec_04_decisions.md) — D-18..D-23: web cookie tokens, verification flag, Mailpit, custom refresh tokens.
@@ -8,4 +9,5 @@
 - [Spec 09 setlist.fm decisions](project_spec_09_decisions.md) — D-56..D-70: MBID identity, shared disambiguation, dual storage, one budget gate, nightly refresh.
 - [Spec 10 streaming port decisions](project_spec_10_decisions.md) — D-71..D-88: frozen 9-method port, tagged locator, backend-owned OAuth, key-id token encryption.
 - [Spec 11 provider config decisions](project_spec_11_decisions.md) — D-89..D-105: registry sole read path, fail-open cache, independent enabled/playbackMode axes.
+- [Spec 12 song matching spike](project_spec_12_decisions.md) — D-106..D-124: simple+honest thesis, 0.80/0.55 bands, studio default, DB resolution cache.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.

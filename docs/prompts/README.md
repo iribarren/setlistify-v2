@@ -36,6 +36,12 @@ Prompts marked **design** use `/design`: they produce a visual design canvas, no
 | Commercial groundwork | 22–23 | Usage limits, then an informed monetization decision |
 | Post-MVP exploration | 24–26 | Rich metadata, video snippets, deeper social integration |
 
+## Fixes
+
+Work that is not a backlog feature — unfinished scope from a prompt that already shipped,
+environment breakage, accumulated debt — lives in [`fixes/`](fixes/README.md), outside this
+numbering. The sequence below stays strictly ordered; nothing is inserted between numbers.
+
 ## The backlog
 
 | # | Prompt | Kind |

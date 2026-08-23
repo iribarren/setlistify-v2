@@ -32,6 +32,7 @@ final class SpotifyProvider implements StreamingProviderInterface
         private readonly SpotifyHttpClient $httpClient,
         private readonly SpotifyErrorMapper $errorMapper,
         private readonly SpotifyTrackMapper $trackMapper,
+        private readonly SpotifyQueryBuilder $queryBuilder,
         private readonly string $clientId,
         private readonly string $clientSecret,
         private readonly string $accountsBaseUrl,
@@ -128,11 +129,7 @@ final class SpotifyProvider implements StreamingProviderInterface
         $response = $this->httpClient->get(
             'search',
             '/search',
-            [
-                'q' => \sprintf('track:%s artist:%s', $query->songTitle, $query->bandName),
-                'type' => 'track',
-                'limit' => 20,
-            ],
+            $this->queryBuilder->build($query),
             $tokens->accessToken,
         );
 
