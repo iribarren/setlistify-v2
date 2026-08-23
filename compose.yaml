@@ -114,9 +114,15 @@ services:
       - ./backend:/app
     command: >
       bin/console messenger:consume async_playlist
-        --time-limit=3600 --memory-limit=256M --limit=0 --failure-limit=10 -v
+        --time-limit=3600 --memory-limit=256M --failure-limit=10 -v
     deploy:
       replicas: ${PLAYLIST_WORKER_COUNT:-2}
+    # The image's own HEALTHCHECK curls the HTTP server (docker/backend/Dockerfile) — this
+    # container runs messenger:consume instead and never listens on 8080, so that check would
+    # never pass. Liveness here is "the process is still running", which `docker compose ps` /
+    # `restart: unless-stopped` already cover without a false-negative HTTP probe.
+    healthcheck:
+      disable: true
 
 volumes:
   postgres_data:
