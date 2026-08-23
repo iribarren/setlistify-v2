@@ -52,7 +52,7 @@ final readonly class MatchProfileRegistry
             choiceThreshold: (float) ($thresholds['choice'] ?? 0.55),
             artistGateFloor: (float) ($thresholds['artistGateFloor'] ?? 0.50),
             artistGateCap: (float) ($thresholds['artistGateCap'] ?? 0.45),
-            durationPlausibilityFactor: isset($config['durationPlausibilityFactor'])
+            durationPlausibilityFactor: is_numeric($config['durationPlausibilityFactor'] ?? null)
                 ? (float) $config['durationPlausibilityFactor']
                 : null,
         );

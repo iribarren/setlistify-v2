@@ -67,7 +67,6 @@ final class TrackResolutionStoreTest extends MatchingIntegrationTestCase
     public function testTtlsDifferByOutcome(): void
     {
         $repository = self::getContainer()->get(TrackResolutionRepository::class);
-        \assert($repository instanceof TrackResolutionRepository);
         $store = $this->store();
 
         $store->save('spotify', 1, 'a', 'matched-song', 't1', 0.9, 'matched', []);
@@ -101,14 +100,12 @@ final class TrackResolutionStoreTest extends MatchingIntegrationTestCase
         self::assertNull($store->find('spotify', 1, 'a', 'vanished-song'));
 
         $repository = self::getContainer()->get(TrackResolutionRepository::class);
-        \assert($repository instanceof TrackResolutionRepository);
         self::assertNull($repository->findOneByKey('spotify', 1, 'a', 'vanished-song'));
     }
 
     private function store(): TrackResolutionStore
     {
         $store = self::getContainer()->get(TrackResolutionStore::class);
-        \assert($store instanceof TrackResolutionStore);
 
         return $store;
     }

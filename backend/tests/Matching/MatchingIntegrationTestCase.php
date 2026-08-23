@@ -22,7 +22,6 @@ abstract class MatchingIntegrationTestCase extends KernelTestCase
     protected function resetMatchingRedis(): void
     {
         $redis = self::getContainer()->get('matching.redis');
-        \assert($redis instanceof \Redis);
         $keys = $redis->keys('matching:*');
         if ([] !== $keys) {
             $redis->del($keys);
@@ -39,7 +38,6 @@ abstract class MatchingIntegrationTestCase extends KernelTestCase
     protected function redis(): \Redis
     {
         $redis = self::getContainer()->get('matching.redis');
-        \assert($redis instanceof \Redis);
 
         return $redis;
     }

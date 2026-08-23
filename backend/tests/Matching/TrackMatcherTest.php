@@ -195,7 +195,6 @@ final class TrackMatcherTest extends MatchingIntegrationTestCase
     private function matcher(): TrackMatcher
     {
         $matcher = self::getContainer()->get(TrackMatcher::class);
-        \assert($matcher instanceof TrackMatcher);
 
         return $matcher;
     }

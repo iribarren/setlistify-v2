@@ -99,6 +99,33 @@ flags — not variables.
 | `APPLE_TEAM_ID` / `APPLE_KEY_ID` | no | MusicKit, future |
 | `APPLE_PRIVATE_KEY` | **yes** | MusicKit ES256 signing key, future |
 
+### Local container identity (root `.env`, not `backend/.env.local`)
+
+These two are read by **Docker Compose itself**, not by the application, so they live in a `.env` at
+the repository root (copied from the root `.env.example`) rather than in `backend/.env.local`. They
+are machine-specific and gitignored.
+
+| Variable | Secret | Purpose |
+|---|---|---|
+| `APP_UID` | no | uid the `backend`/`worker` containers run as (`docker/backend/Dockerfile` build arg). Default `1000`. |
+| `APP_GID` | no | gid, same. Default `1000`. |
+
+`./backend` is bind-mounted into both containers, so **anything the container writes there is owned
+by this uid on the host too** — Composer installs, the Symfony cache, generated migrations. If it does
+not match your host user, those files become unwritable by you: editors fail with `EACCES`, and
+`git stash`/`git checkout` fail partway through a branch switch because git cannot unlink them,
+leaving `HEAD` on one branch and the working tree on another.
+
+Set them once per clone, in the root `.env` so the value survives new shells and rebuilds:
+
+```bash
+printf 'APP_UID=%s\nAPP_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+docker compose build backend worker && docker compose up -d --force-recreate backend worker
+```
+
+An `export` in one shell is not enough — the value is a **build arg**, so a stale image keeps the old
+uid until it is rebuilt.
+
 ### Playlist generation
 
 Numeric tuning constants for the generation pipeline (`docs/specs/2026-08-23-spike-playlist-
