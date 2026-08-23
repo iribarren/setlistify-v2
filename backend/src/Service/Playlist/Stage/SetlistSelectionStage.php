@@ -54,6 +54,20 @@ final readonly class SetlistSelectionStage
 
     public function run(PlaylistGenerationJob $job): Playlist
     {
+        // Idempotency (spec 14 §5, spec 13 §5): a resumed run (T-13 blocked -> queued) or a retry
+        // (T-16 failed -> queued) re-enters the pipeline from `queued`, which re-runs THIS stage —
+        // but the `Playlist` and its up-front `PlaylistTrack` skeleton (D-139/D-140) must be created
+        // exactly once per job, not once per attempt. Recreating them on every resume would silently
+        // orphan a Playlist that may already carry a confirmed `providerPlaylistId` (D-136) or a
+        // partially advanced insertion watermark (D-137), defeating both idempotency mechanisms one
+        // stage upstream of where they are enforced. A prior attempt that never got this far (e.g.
+        // blocked mid-selection by F-01) has no Playlist row yet, so this is a no-op precisely when
+        // it should be.
+        $existing = $this->playlistRepository->findOneBy(['job' => $job]);
+        if (null !== $existing) {
+            return $existing;
+        }
+
         $now = \DateTimeImmutable::createFromInterface($this->clock->now());
         $concert = $job->getConcert();
 
