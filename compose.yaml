@@ -50,10 +50,7 @@ services:
     # D-20 (docs/specs/2026-08-21-auth-and-accounts.md): dev-only mail sink for verification and
     # password-reset emails. Backend talks to it via MAILER_DSN=smtp://mailpit:1025
     # (backend/.env.example) — application code depends on symfony/mailer and that DSN only.
-    # Not digest-pinned like the other services here — no network access at authoring time to
-    # resolve a real sha256 for this image. Pin it the same way as postgres/redis above the next
-    # time this file is touched with registry access.
-    image: axllent/mailpit:v1.24-alpine
+    image: axllent/mailpit:v1.31.0@sha256:c96991d9bef73594c246d89ca81411d4e916f03e76a7d2d72fa2ab5dd3c9ce24
     restart: unless-stopped
     ports:
       - "8025:8025" # Web UI: view every email sent in dev at http://localhost:8025
