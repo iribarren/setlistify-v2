@@ -264,7 +264,7 @@ go through the identical pipeline, which is the only way the comparison is meani
 | **N4** | **Parenthetical extraction, not stripping** — every `(…)`, `[…]` and trailing ` - …` segment is removed from the core into a classified qualifier list (below) | `"Nothing Else Matters - Live"` → core `nothing else matters`, qualifier `Version: live` | **The single most consequential transform.** Blind stripping turns `"Untitled #1 (Vaka)"` into `untitled 1`, which is then equidistant from `Untitled #2`, `#3`, `#4` — a catastrophic false match on a real, common band. Blind *keeping* makes the studio and live pressings of a song equally distant from the query, so version preference (§4) becomes impossible to express |
 | **N5** | **Featured-credit stripping** — `feat.`/`ft.`/`featuring`/`with`/`w/`/`con` plus everything after it, but **only** as a trailing segment or inside an extracted parenthetical, never mid-title | `"Under Pressure (feat. David Bowie)"` → core `under pressure`, featured `David Bowie` | Skip it and a guest credit in the catalog defeats an exact setlist entry. Apply it mid-title and `"Sleeping with the Television On"` becomes `sleeping` — which is why the rule is positional, not a bare substring search. Note that the *setlist* side rarely needs N5: setlist.fm records guests in `Song::$withName`, a real column, so the guest is already out of the title |
 | **N6** | **Leading articles are kept** — deliberately **not** stripped (D-106) | `"The End"` stays `the end`; `"Los Días Raros"` stays `los dias raros` | This is the intentional divergence from `BandResolver::normalize()`, which *does* strip them. In band names an article is decoration; in song titles it is load-bearing — `"The End"` vs `"End"`, `"A Day in the Life"` vs `"Day in the Life"`, `"The Wall"` vs `"Wall"` are all distinct real titles. Stripping creates collisions that no later signal can undo. Instead, articles become **stop tokens** in the token-set metric (weight 0.25 rather than 1.0), so their presence or absence costs a little and never decides a match |
-| **N7** | Remove remaining characters that are neither letters, digits nor whitespace | `"rock 'n' roll"` → `rock n roll`; `"rockin'"` → `rockin` | Applied symmetrically to both sides after tokenization, so apostrophes vanish on both. Known residual: `"Rock 'n' Roll"` → `rock n roll` vs a catalog `"Rock and Roll"` → `rock and roll` still differ by one token. The trigram half of the metric cushions this (§2); it is not fully solved and is listed as a residual below |
+| **N7** | Remove remaining characters that are neither letters, digits nor whitespace — **apostrophes are deleted, every other separator becomes a space** (corrected during prompt 14's implementation, D-160) | `"rock 'n' roll"` → `rock n roll`; `"rockin'"` → `rockin` | Applied symmetrically to both sides after tokenization, so apostrophes vanish on both. Known residual: `"Rock 'n' Roll"` → `rock n roll` vs a catalog `"Rock and Roll"` → `rock and roll` still differ by one token. The trigram half of the metric cushions this (§2); it is not fully solved and is listed as a residual below |
 | **N8** | Re-collapse whitespace, trim | — | None |
 
 #### Qualifier classification (the N4 payload)
@@ -325,6 +325,14 @@ re-derivable — costs nothing and is what D-25 anticipated.
 | Digits vs spelled numerals | `2 Princes` vs `Two Princes` | A ten-word bidirectional lexicon creates its own ambiguity (`One`, `Seven` are real titles). Not worth it before evidence |
 | Translations and alternate titles | A Spanish-language setlist entry for an English-titled song | Genuinely unsolvable without a metadata source. Prompt 24 (MusicBrainz canonical titles) is where this gets better |
 | Typos in crowd-entered titles | `Paranoid Andriod` | Handled *implicitly and well* by the trigram metric — this is precisely what fuzzy matching is for |
+
+**N7 correction, found in implementation (D-160).** The transform table originally said only "remove"
+the remaining characters. Deleting them uniformly is wrong: `Tenth Avenue Freeze-Out` collapses to the
+single token `freezeout`, while the same song entered as `Tenth Avenue Freeze Out` tokenizes as two —
+so the token-set half of the metric scores a perfect pair as a partial mismatch. The rule is therefore
+**apostrophes are deleted** (both sides elide them identically: `rockin'` → `rockin`, `don't` → `dont`)
+and **every other separator becomes a space** (`freeze-out` → `freeze out`, `untitled #1` → `untitled 1`).
+The worked-example table above already assumed this behaviour; the transform description did not say it.
 
 ---
 
@@ -534,6 +542,20 @@ artist is rejected by construction; (c) a candidate with a perfect title and a *
 (`s_artist = 0.60`) lands around `0.72` — the middle band, which is the honest answer. **They are
 guesses until §9's harness runs.** Prompt 14 must run the harness and record the tuned values in this
 document.
+
+> **Correction (D-160), found while implementing prompt 14.** Justification (c) above is
+> arithmetically wrong. A candidate with a perfect title, `s_artist = 0.60` and otherwise *perfect*
+> metadata scores **0.874**, not ~0.72 — it auto-accepts. With the artist signal weighted 0.25,
+> dropping it from 1.00 to 0.60 costs only 0.10 of the numerator, which strong metadata elsewhere more
+> than absorbs; the renormalizing denominator (0.92) then divides the remainder back up. The middle
+> band is reached by a related artist **plus** genuinely weaker metadata (≈0.67 for the same title and
+> artist with no version fit, a compilation release type and unknown authority).
+>
+> The numbers are deliberately left as they are rather than patched to satisfy the prose: they are an
+> initial calibration and §9's harness is what decides them. Both cases are pinned by
+> `MatchConfidenceTest` so any future weight change is visible rather than silent. What this does
+> change is the *reading* of the artist gate: the gate — not the weight — is the only thing keeping an
+> unrelated artist out of auto-accept, which is further support for D-109's cap-not-weight shape.
 
 #### Where the thresholds live (D-110)
 

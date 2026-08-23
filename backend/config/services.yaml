@@ -4,6 +4,13 @@
 # Files in the packages/ subdirectory configure your dependencies.
 # See also https://symfony.com/doc/current/service_container/import.html
 
+imports:
+    # Song matching calibration (docs/specs/2026-08-22-spike-song-matching.md, D-110/D-116). Two data
+    # files rather than inline parameters: a threshold change must be reviewable on its own, and the
+    # non-song lexicon is explicitly data-not-code so adding a language is a config PR.
+    - { resource: 'matching/profiles.yaml' }
+    - { resource: 'matching/non_song_terms.yaml' }
+
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
@@ -259,6 +266,23 @@ services:
             $clientSecret: '%env(SPOTIFY_CLIENT_SECRET)%'
             $accountsBaseUrl: '%env(SPOTIFY_ACCOUNTS_BASE_URL)%'
         tags: ['app.streaming_provider']
+
+    # --- Song matching --------------------------------------------------------------------------
+    # (docs/specs/2026-08-22-spike-song-matching.md)
+
+    # Everything in App\Service\Matching\ is provider-agnostic and must stay that way — profile keys
+    # are runtime strings, never PHP literals, which is what lets prompt 18 add a second provider's
+    # calibration without a branch in any of these classes (D-118).
+    App\Service\Matching\MatchProfileRegistry:
+        arguments:
+            $defaultProfile: '%matching.default_profile%'
+            $overrides: '%matching.profile_overrides%'
+            $algorithmVersion: '%matching.algorithm_version%'
+
+    App\Service\Matching\NonSongClassifier:
+        arguments:
+            $alwaysTerms: '%matching.non_song_terms.always%'
+            $positionSensitiveTerms: '%matching.non_song_terms.positionSensitive%'
 
 when@test:
     services:

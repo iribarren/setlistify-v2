@@ -1,0 +1,48 @@
+# Song matching calibration (docs/specs/2026-08-22-spike-song-matching.md, D-110).
+#
+# Thresholds live HERE and deliberately not in `ProviderSetting`/the backoffice. Unlike `enabled` or
+# `playbackMode` — whose effect is visible in the very next request and instantly reversible — moving
+# `autoAccept` from 0.80 to 0.72 changes the quality of every playlist generated from then on, in a
+# way nobody notices for weeks. The only legitimate way to change one is against the fixture harness
+# with before/after numbers, which is a pull request, not a click; and it must bump
+# `matching.algorithm_version` below so cached resolutions never mix two calibrations.
+#
+# Profile keys are runtime provider strings, never PHP literals — that is what keeps the whole
+# `App\Service\Matching\` namespace free of provider symbols (D-118).
+parameters:
+    # Bumping this invalidates every cached resolution (D-121). Bump it with ANY change to the
+    # normalization pipeline, the title metric, the weights or the thresholds.
+    matching.algorithm_version: 1
+
+    matching.default_profile:
+        weights:
+            title: 0.40
+            artist: 0.25
+            version: 0.12
+            # Specified, weighted and NORMALLY ABSENT: setlist.fm supplies no duration, so there is
+            # nothing on our side to compare a candidate's against. The usual denominator is
+            # therefore 0.92. It is defined now so that switching it on later (prompt 24's
+            # MusicBrainz metadata) is a config change rather than a re-derivation of every weight.
+            duration: 0.08
+            releaseType: 0.06
+            authority: 0.05
+            popularity: 0.02
+            rank: 0.02
+        titleBlend:
+            # Favours trigrams because typos and punctuation divergence are more common in
+            # crowd-entered setlist data than word reordering is. A calibration constant, expected
+            # to move once the fixture harness has run.
+            trigram: 0.60
+            tokenSet: 0.40
+        thresholds:
+            autoAccept: 0.80
+            choice: 0.55
+            # Below `artistGateFloor`, the score is capped at `artistGateCap` — which sits just below
+            # `choice`, so an unrelated artist lands in the reject band by construction.
+            artistGateFloor: 0.50
+            artistGateCap: 0.45
+        durationPlausibilityFactor: null
+
+    # Per-provider overrides, merged over the default above. Empty until prompt 18 adds the second
+    # adapter — the same algorithm serves both providers, but each carries its own calibration.
+    matching.profile_overrides: {}

@@ -1,0 +1,65 @@
+# Performance-artifact lexicon (docs/specs/2026-08-22-spike-song-matching.md, D-116).
+#
+# Data, not code — adding a language is a config PR, and the fixture harness regression-tests it.
+#
+# THREE PROPERTIES MAKE THIS LIST SAFE, and none of them may be relaxed:
+#
+# 1. Every term is matched against the WHOLE normalized title, exactly — NEVER as a substring.
+#    `Intro` by The xx and `Jam` by Michael Jackson are real released songs; a substring match would
+#    destroy both, and a whole-title match still catches them, which is why (2) exists.
+# 2. `positionSensitive` terms only classify as artifacts at a set boundary (first or last entry of a
+#    set). Mid-set, a title of that name is treated as a song.
+# 3. Required precision is 1.00: no real song may EVER be classified as a non-song. Recall may be
+#    imperfect — a missed artifact becomes a `not_found` line, which is mildly noisy but not wrong.
+#    This asymmetry is the whole argument for a curated list over a classifier.
+#
+# The list grows with LANGUAGES, not with music: these are performance artifacts, not song titles.
+#
+# Two flat parameters rather than one nested map: Symfony parameter references have no dotted access
+# into an array, so the classifier would otherwise have to receive the whole map and index it itself.
+parameters:
+        # Unambiguous artifacts — no released song plausibly carries these exact titles, so they
+        # classify anywhere in the set.
+    matching.non_song_terms.always:
+            - 'drum solo'
+            - 'bass solo'
+            - 'guitar solo'
+            - 'keyboard solo'
+            - 'piano solo'
+            - 'encore break'
+            - 'crowd noise'
+            - 'soundcheck'
+            - 'tuning'
+            - 'banter'
+            - 'stage banter'
+            - 'improvisation'
+            - 'improv'
+            # Spanish
+            - 'solo de bateria'
+            - 'solo de guitarra'
+            - 'solo de bajo'
+            - 'improvisacion'
+            - 'prueba de sonido'
+            # German
+            - 'schlagzeugsolo'
+            - 'gitarrensolo'
+            - 'basssolo'
+            # French
+            - 'solo de batterie'
+            - 'solo de guitare'
+            # Italian
+            - 'assolo di batteria'
+            - 'assolo di chitarra'
+
+        # Real songs exist with these exact titles (`Intro` — The xx; `Jam` — Michael Jackson;
+        # `Interlude` — many). Classified as an artifact ONLY at a set boundary.
+    matching.non_song_terms.positionSensitive:
+            - 'intro'
+            - 'outro'
+            - 'interlude'
+            - 'jam'
+            - 'speech'
+            - 'introduccion'
+            - 'intro musical'
+            - 'einleitung'
+            - 'zugabe'
