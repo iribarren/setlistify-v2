@@ -63,6 +63,17 @@ services:
             $tokenWaitSeconds: '%env(float:SETLISTFM_TOKEN_WAIT)%'
             $refreshBudgetShare: '%env(float:SETLISTFM_REFRESH_BUDGET_SHARE)%'
             $setlistfmLogger: '@monolog.logger.setlistfm'
+            # Playlist generation (docs/specs/2026-08-23-spike-playlist-pipeline.md,
+            # docs/specs/2026-08-23-playlist-fast-mode-backend.md). P-1/P-4/§4/§5's numeric
+            # constants, bound globally so every stage/command that needs one just asks for it.
+            $maxBands: '%env(int:GENERATION_MAX_BANDS)%'
+            $maxSongs: '%env(int:GENERATION_MAX_SONGS)%'
+            $setlistPages: '%env(int:GENERATION_SETLIST_PAGES)%'
+            $insertBatchSize: '%env(int:GENERATION_INSERT_BATCH_SIZE)%'
+            $rateLimitInlineRetries: '%env(int:GENERATION_RATE_LIMIT_INLINE_RETRIES)%'
+            $maxBlockCycles: '%env(int:GENERATION_MAX_BLOCK_CYCLES)%'
+            $suspendedSetlistChoiceTtlSeconds: '%env(int:SUSPENDED_SETLIST_CHOICE_TTL)%'
+            $suspendedVersionChoiceTtlSeconds: '%env(int:SUSPENDED_VERSION_CHOICE_TTL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
