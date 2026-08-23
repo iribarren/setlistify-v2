@@ -24,6 +24,8 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
     that touches this code.
   - Verifying the native (iOS/Android) OAuth round trip on a real device or simulator, which
     also wasn't available in this environment.
+  - **Capturing the 8 real Spotify search-response fixtures** the matching-quality gate needs to
+    arm (see below) — a Client Credentials token is enough, no user scope required.
 
 ## Deferred / follow-up work
 
@@ -49,3 +51,15 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
   not by a human looking at the real form — worth doing given the screen's whole purpose is that
   an operator understands the legal consequence of `playbackMode` at the moment of the click
   (R-4). The stack (`docker compose`) is already up and ready for this.
+- **Arm the matching-quality gate** (`docs/specs/2026-08-22-spike-song-matching.md` §9, D-122/
+  D-123). `backend/tests/Matching/MatchingQualityHarnessTest.php` and
+  `MatchingFixtureFreezeTest.php` exist and run in the default suite, but the catalog-dependent
+  auto-accept-precision check `markTestSkipped`s — there are no captured Spotify search
+  responses and no human-labelled ground truth yet. Needs: a Spotify Client Credentials token,
+  the 8 real setlists named in spec §9's fixture table (Radiohead MSG 2018, Springsteen
+  Barcelona 2023, Pearl Jam 2022, Metallica Amsterdam 2023, Sigur Rós 2022, Vetusta Morla Madrid
+  2023, Phish 2023, Alcalá Norte's Vetusta Morla support slot 2023), one captured search response
+  per song under `backend/tests/Fixtures/matching/catalog/spotify/`, and one human labelling pass
+  (~180–220 entries) added to `backend/tests/Fixtures/matching/manifest.yaml`'s `catalog:`
+  section per the template documented there. Regenerate `manifest.sha256` and commit fixtures +
+  checksum together, with no algorithm change in the same PR (D-122's freeze rule).

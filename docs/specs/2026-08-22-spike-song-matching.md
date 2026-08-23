@@ -1317,6 +1317,33 @@ fixtures is allowed and encouraged, but a change may not add fixtures and change
 same pull request, because that makes the before/after incomparable. New fixtures land first, with
 the current numbers recorded; the change lands second.
 
+#### Harness status: mechanism built, primary gate unarmed (added post-prompt-14)
+
+Prompt 14 shipped `App\Service\Matching\*` without the fixture-based regression gate this section
+describes as "the only thing standing between a matching tweak and a silent regression". The
+bugfix that added this subsection (`bugfix/matching-quality-harness`) builds the mechanism —
+`App\Tests\Matching\MatchingQualityHarnessTest` and `MatchingFixtureFreezeTest`, both
+`@group matching-quality`, running in the default suite per this section's "ships as a test in the
+default suite" requirement — but does **not** fabricate the data the primary metric needs, because
+no live Spotify credentials and no human labeller were available at the time.
+
+**Armed today**, against real, honestly-labelled fixtures (`tests/Fixtures/matching/manifest.yaml`,
+`structural:` section — no catalog lookup needed to know the right answer):
+
+- Non-song classification precision (the `= 1.00` hard requirement) — real gate, fails the build.
+- Medley/segue text-splitting correctness.
+- Diacritic/ligature/leading-article normalization correctness.
+
+**Not armed**: auto-accept precision (the ★ primary metric), coverage, and silent-error rate — all
+three need per-song provider search responses and a hand-labelled expected track id, i.e. the eight
+real setlists and the ~200-entry labelling pass this section specifies, neither of which exists in
+this environment. `testAutoAcceptPrecisionCoverageAndSilentErrorRateGate()` skips loudly with the
+full capture checklist (credentials, the eight setlists' band/venue/date, fixture file shape,
+labelling protocol) rather than passing on invented numbers — see that test class's docblock for the
+exact steps. The threshold values in §3 (`autoAccept: 0.80`, `choice: 0.55`, the 60/40 title blend)
+therefore remain the "initial calibration, unproven" this section calls them; they have not yet been
+validated against real data, only exercised structurally.
+
 ---
 
 ## Decisions

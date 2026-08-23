@@ -1,0 +1,244 @@
+# Song-matching quality harness fixture manifest (docs/specs/2026-08-22-spike-song-matching.md §9,
+# D-122). Consumed by `App\Tests\Matching\MatchingQualityHarnessTest`.
+#
+# FROZEN (D-122): a pull request may not both edit this file's `structural` entries AND change
+# `App\Service\Matching\*`/`config/matching/*` in the same change — that makes a before/after
+# comparison meaningless. Add fixtures in one PR (with the resulting numbers recorded in the spec),
+# change the algorithm in the next. `manifest.sha256` is the checksum that enforces this — regenerate
+# it deliberately (see MatchingFixtureFreezeTest's docblock) whenever this file changes on purpose.
+#
+# Two sections:
+#
+#   `structural` — entries whose expected outcome is fully determined by the setlist TEXT and
+#   structural flags alone (isTape, position, medley punctuation, the normalization pipeline's own
+#   documented rules) — no provider catalog lookup is needed to know the right answer, so these are
+#   real, armed, honestly-labelled fixtures.
+#
+#   `catalog` — entries that need a real per-song provider search response and a human-verified
+#   expected track id (auto-accept precision, coverage, silent-error rate — spec §9's primary
+#   metrics). NONE EXIST YET. See MatchingQualityHarnessTest's class docblock for exactly what a
+#   human must capture to arm this section — do not add entries here without that capture pass; a
+#   fabricated `expectedTrackId` would make the gate lie about the one metric that matters most
+#   (D-123).
+
+structural:
+  nonSong:
+    # Signal 1 (isTape) — Metallica M72 tour, Johan Cruijff ArenA, Amsterdam 2023 (spec §9 fixture 4).
+    - id: nonsong-tape-ecstasy-of-gold
+      band: Metallica
+      title: "The Ecstasy of Gold"
+      isTape: true
+      isSetBoundary: true
+      expectedSkipped: true
+      reason: "setlist.fm isTape flag — the walk-on tape, never performed live (D-116 signal 1)."
+
+    # Signal 2 — always-terms (config/matching/non_song_terms.yaml), boundary irrelevant.
+    - id: nonsong-lexicon-drum-solo
+      band: Rush
+      title: "Drum Solo"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Curated lexicon always-term, exact whole-title match."
+
+    - id: nonsong-lexicon-bass-solo
+      band: Rush
+      title: "Bass Solo"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Curated lexicon always-term."
+
+    - id: nonsong-lexicon-guitar-solo
+      band: Van Halen
+      title: "Guitar Solo"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Curated lexicon always-term."
+
+    - id: nonsong-lexicon-encore-break
+      band: Pearl Jam
+      title: "Encore Break"
+      isTape: false
+      isSetBoundary: true
+      expectedSkipped: true
+      reason: "Curated lexicon always-term (spec §9 fixture 3, Pearl Jam)."
+
+    - id: nonsong-lexicon-improv
+      band: Pearl Jam
+      title: "Improv"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Curated lexicon always-term (spec §9 fixture 3: 'an Improv entry for the non-song classifier')."
+
+    - id: nonsong-lexicon-soundcheck
+      band: Radiohead
+      title: "Soundcheck"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Curated lexicon always-term."
+
+    # Spanish (Vetusta Morla / Alcalá Norte territory, spec §9 fixtures 6/8) and German (Metallica
+    # European leg, fixture 4) always-terms — the lexicon is data, not code, and is multi-language.
+    - id: nonsong-lexicon-spanish-solo-de-bateria
+      band: Vetusta Morla
+      title: "Solo de Batería"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "Spanish always-term; also exercises N1 accent folding on the artifact lexicon path."
+
+    - id: nonsong-lexicon-german-schlagzeugsolo
+      band: Metallica
+      title: "Schlagzeugsolo"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: true
+      reason: "German always-term (Metallica's European dates carry German-language setlist entries)."
+
+    # Signal 2 — position-sensitive terms, AT a set boundary.
+    - id: nonsong-boundary-intro
+      band: Sigur Rós
+      title: "Intro"
+      isTape: false
+      isSetBoundary: true
+      expectedSkipped: true
+      reason: "Position-sensitive term at a set boundary — classified as an artifact here."
+
+    - id: nonsong-boundary-outro
+      band: Sigur Rós
+      title: "Outro"
+      isTape: false
+      isSetBoundary: true
+      expectedSkipped: true
+      reason: "Position-sensitive term at a set boundary."
+
+    - id: nonsong-boundary-zugabe
+      band: Metallica
+      title: "Zugabe"
+      isTape: false
+      isSetBoundary: true
+      expectedSkipped: true
+      reason: "German position-sensitive term ('encore') at a set boundary."
+
+  # The precision-critical negative control: a title that collides with the lexicon but is a real,
+  # released song. NonSongClassifier's own docblock names both worked examples; a whole-title,
+  # position-sensitive design is what is supposed to keep these two safe. If this classifier ever
+  # regresses on one of these, non-song precision drops below 1.00 and the gate fails — this is the
+  # entire reason this list exists rather than trusting Signal 2 by inspection alone.
+  songDespiteLexiconTerm:
+    - id: realsong-jam-midset
+      band: Michael Jackson
+      title: "Jam"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: false
+      reason: "'Jam', Michael Jackson, Dangerous (1991) — real released song, not an artifact (NonSongClassifier's own worked example, spec §5)."
+
+    - id: realsong-intro-midset
+      band: The xx
+      title: "Intro"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: false
+      reason: "'Intro', The xx, xx (2009) — real released song; mid-set so the boundary disambiguator must not skip it."
+
+    - id: realsong-interlude-midset
+      band: Pearl Jam
+      title: "Interlude"
+      isTape: false
+      isSetBoundary: false
+      expectedSkipped: false
+      reason: "Generic 'Interlude' entry mid-set — position-sensitive term must not fire away from a set boundary."
+
+  # Medley/segue splitting (spec §9 fixture 7, Phish) — verified against `MedleySplitter` directly:
+  # correctness here is about the TEXT split, which needs no catalog lookup. Whether each resulting
+  # segment then matches the right track is exactly the catalog-dependent question this manifest
+  # deliberately does not answer yet (see the `catalog` section note above).
+  medley:
+    - id: medley-segue-tweezer-mikes-song
+      band: Phish
+      title: "Tweezer > Mike's Song"
+      expectedSegments: ["Tweezer", "Mike's Song"]
+      reason: "' > ' segue notation, two segments."
+
+    - id: medley-segue-down-with-disease-possum
+      band: Phish
+      title: "Down with Disease > Possum"
+      expectedSegments: ["Down with Disease", "Possum"]
+      reason: "' > ' segue notation."
+
+    - id: medley-slash-bathtub-gin-rainbow
+      band: Phish
+      title: "Bathtub Gin / Somewhere Over the Rainbow"
+      expectedSegments: ["Bathtub Gin", "Somewhere Over the Rainbow"]
+      reason: "' / ' medley convention (community convention, not a setlist.fm schema guarantee — MedleySplitter's own docblock)."
+
+    - id: medley-segue-three-way-wilson-roggae-wilson
+      band: Phish
+      title: "Wilson > Roggae > Wilson"
+      expectedSegments: ["Wilson", "Roggae", "Wilson"]
+      reason: "Multi-segment (three-way) segue."
+
+  # Diacritic/ligature normalization and leading-article retention. Expected `comparisonCore`/
+  # `tokens` are traced directly against `SongNormalizer`'s documented N0-N8 pipeline (spec §1) —
+  # a pure function of the input text, not a catalog judgement call, so asserting its output here
+  # is honest even without a human labeller or live credentials.
+  normalization:
+    - id: norm-saeglopur
+      band: Sigur Rós
+      title: "Sæglópur"
+      expectedComparisonCore: "saeglopur"
+      expectedTokens: ["saeglopur"]
+      reason: "N1b ligature fold (æ→ae) + N1 accent strip (spec §9 fixture 5)."
+
+    - id: norm-hoppipolla
+      band: Sigur Rós
+      title: "Hoppípolla"
+      expectedComparisonCore: "hoppipolla"
+      expectedTokens: ["hoppipolla"]
+      reason: "N1 accent strip, no ligature involved."
+
+    - id: norm-untitled-1-vaka
+      band: Sigur Rós
+      title: "Untitled #1 (Vaka)"
+      expectedComparisonCore: "untitled 1 vaka"
+      expectedTokens: ["untitled", "1", "vaka"]
+      reason: "N4 parenthetical extraction: '(Vaka)' is neither a version tag nor a featured-credit marker, so it folds back into the core as a TitleContinuation rather than being discarded — the case spec §9 fixture 5 calls out as the one blind stripping fails."
+
+    - id: norm-untitled-3-samskeyti
+      band: Sigur Rós
+      title: "Untitled #3 (Samskeyti)"
+      expectedComparisonCore: "untitled 3 samskeyti"
+      expectedTokens: ["untitled", "3", "samskeyti"]
+      reason: "Same parenthetical-extraction rule as norm-untitled-1-vaka."
+
+    - id: norm-los-dias-raros
+      band: Vetusta Morla
+      title: "Los Días Raros"
+      expectedComparisonCore: "los dias raros"
+      expectedTokens: ["los", "dias", "raros"]
+      reason: "N6: leading article ('Los') is kept in comparisonCore, only down-weighted later in the token-set metric (spec §9 fixture 6)."
+
+    - id: norm-copenhague
+      band: Vetusta Morla
+      title: "Copenhague"
+      expectedComparisonCore: "copenhague"
+      expectedTokens: ["copenhague"]
+      reason: "Spanish title, no diacritics — a control alongside norm-los-dias-raros (spec §9 fixture 6)."
+
+    - id: norm-the-bends-article-kept
+      band: Radiohead
+      title: "The Bends"
+      expectedComparisonCore: "the bends"
+      expectedTokens: ["the", "bends"]
+      reason: "N6 control in English: the leading article is a STOP_TOKEN for the token-set metric but is never stripped from comparisonCore itself."
+
+# See the class docblock on `App\Tests\Matching\MatchingQualityHarnessTest` for the exact capture
+# checklist required to populate this section. Until then it stays empty on purpose, and the
+# auto-accept-precision/coverage/silent-error-rate gate test skips with an explicit reason instead
+# of passing silently.
+catalog: []
