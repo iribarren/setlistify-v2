@@ -114,6 +114,18 @@
 
         <!-- Backoffice provider configuration (docs/specs/2026-08-22-backoffice-provider-configuration.md). -->
         <env name="PROVIDER_SETTINGS_CACHE_TTL" value="300" force="true"/>
+
+        <!-- Playlist generation (docs/specs/2026-08-23-spike-playlist-pipeline.md,
+             docs/specs/2026-08-23-playlist-fast-mode-backend.md). -->
+        <env name="PLAYLIST_WORKER_COUNT" value="2" force="true"/>
+        <env name="GENERATION_MAX_BANDS" value="4" force="true"/>
+        <env name="GENERATION_MAX_SONGS" value="60" force="true"/>
+        <env name="GENERATION_SETLIST_PAGES" value="1" force="true"/>
+        <env name="SUSPENDED_SETLIST_CHOICE_TTL" value="604800" force="true"/>
+        <env name="SUSPENDED_VERSION_CHOICE_TTL" value="259200" force="true"/>
+        <env name="GENERATION_INSERT_BATCH_SIZE" value="50" force="true"/>
+        <env name="GENERATION_MAX_BLOCK_CYCLES" value="3" force="true"/>
+        <env name="GENERATION_RATE_LIMIT_INLINE_RETRIES" value="3" force="true"/>
     </php>
 
     <testsuites>
