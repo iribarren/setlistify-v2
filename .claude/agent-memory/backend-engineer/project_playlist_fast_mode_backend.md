@@ -79,3 +79,75 @@ See [[project_streaming_port_and_linking]] for the port/adapter conventions this
 through `StreamingProviderInterface` only, and [[project_concert_domain_api]] for the
 owner-extension/locator/voter shape `PlaylistOwnerExtension`/`PlaylistGenerationJobOwnerExtension`
 copy exactly.
+
+## Test-scope backfill on `bugfix/playlist-fast-mode-failure-tests` (2026-08-23)
+
+Filled the test scope from ~3 tests to ~36 (integration + functional), and found/fixed two real
+production bugs the missing tests had been hiding. Both are described in full below because they're
+the kind of thing that silently regresses if a future refactor "simplifies" either spot back.
+
+**Bug 1 — `SetlistSelectionStage::run()` unconditionally created a NEW `Playlist` (with a fresh
+`PlaylistTrack` skeleton) every time the pipeline re-entered `resolving_setlist`, which happens on
+EVERY resume (T-13 `blocked -> queued`) or retry (T-16 `failed -> queued`) — not just the first
+attempt.** This silently orphaned the original `Playlist` (which may already carry a confirmed
+`providerPlaylistId`, D-136, or a partially-advanced insertion watermark, D-137) and made a resumed
+run call `createPlaylist()` and `addTracks()` a second time for a job that had already progressed
+past selection — the exact duplication AC-6/D-136/D-137 exist to prevent, and spec 13 §5's claim
+"there is no stage from which a retry is unsafe" was false until this fix. Fix: `run()` now checks
+`playlistRepository->findOneBy(['job' => $job])` first and returns the existing row untouched if one
+exists — a no-op precisely when a prior attempt already got past selection, and a normal fresh build
+when it didn't (e.g. a job blocked earlier, at F-01, never even reached that point). **Any stage that
+appears "purely local, so retry-safe" needs to actually check for its own already-produced artifact
+before recreating it — the claim isn't free, `SetlistSelectionStage` just hadn't been exercised by a
+resume/retry test before.**
+
+**Bug 2 — `PlaylistResponseHeadersSubscriber` never actually implemented
+`Symfony\Component\EventDispatcher\EventSubscriberInterface`, only its static `getSubscribedEvents()`
+method by duck typing.** Symfony's `services.yaml` autoconfiguration only auto-tags classes that
+literally implement the interface as `kernel.event_subscriber` — this class compiled fine, satisfied
+the shape, but was never wired to ANY event (confirmed via `bin/console debug:event-dispatcher
+kernel.response`, absent from the listener list entirely). Consequence: the ENTIRE polling contract —
+`ETag`/304, per-state `Retry-After`, and the "second POST for a live job returns 200 not 201"
+override — was dead code from day one, and every read still succeeded (200 with a body), so nothing
+about the happy path looked broken; only a test asserting the actual header/status contract catches
+this. Fix: add `implements EventSubscriberInterface`. **When adding a new `kernel.*` event listener as
+a plain class with `getSubscribedEvents()`, always verify registration with `bin/console
+debug:event-dispatcher <event>` — don't trust that "it compiles" means "it's wired."**
+
+**`WebTestCase`'s `KernelBrowser` reboots the kernel — and rebuilds its container, hence a fresh
+`EntityManager` — on every `$client->request()` call.** Any entity object fetched from
+`static::getContainer()` BEFORE a request and then reused in a `persist()` call AFTER one is a
+detached instance from a since-discarded `EntityManager`, and Doctrine throws
+`ORMInvalidArgumentException: A new entity was found through the relationship...` the moment it's
+referenced by something newly persisted. Reading a plain scalar getter (`->getId()`) on the stale
+object is fine (no EM involved); persisting something that references it is not. Fix used here:
+helper methods that create fixtures between HTTP calls take a plain `string $email`/`int $id` and
+refetch the entity fresh from the (current) container every time, never an entity parameter.
+
+**The anti-starvation partial unique index `uniq_live_generation_per_user`(D-144) — one live job
+(`queued`/`resolving_setlist`/`matching`/`building`) per OWNER across ALL concerts — bites in tests
+that create multiple jobs for the SAME user to exercise different states, even across different
+concerts.** A test creating a `queued` job and then trying to create a second job (to move to
+`matching`, etc.) for the same user before moving the first one out of a covered state throws a
+`UniqueConstraintViolationException` on that index. Use a separate registered user per state under
+test, not a shared one, when a test needs several jobs in different LIVE states simultaneously.
+
+**`TestDoubleStreamingProvider` (`backend/tests/Support/Streaming/`) gained failure-injection
+scripting** (`scriptQuotaExhaustedAtSearchCall()`/`AtAddTracksCall()` — exact 1-based call number,
+one-shot via `===` not `>=`, so a later retry's calls succeed normally; `scriptRateLimitedAtSearchCall()`;
+`scriptRefreshTokenExpires()`; `scriptTrackId()` (per-song-title id override); `scriptNoCandidates()`;
+`scriptVanishedTrack()`/`scriptRegionRestrictedTrack()` (by provider track id); call counters
+`getSearchTrackCallCount()`/`getCreatePlaylistCallCount()`/`getAddTracksCallCount()`/
+`getAddTracksCallLog()`; `reset()`) and is now `public: true` in `config/services.yaml`'s `when@test`
+block so a test can fetch the exact tagged instance and script it. **`addTracks()` marks the WHOLE
+batch with one outcome on a batch-level exception (`RegionRestrictedException`/`NotFoundException`)
+— the frozen 9-method port (D-71) gives no way to know which id in a multi-track call was the actual
+cause.** A test wanting to prove a truly PER-TRACK outcome (not "per-batch") needs more songs than
+`GENERATION_INSERT_BATCH_SIZE` (50) so the track under test lands alone in its own batch.
+
+**`SetlistFmBudget`'s Redis keys (`setlistfm:budget:<date>`, `setlistfm:breaker:failures`,
+`setlistfm:breaker:open_until`) are shared, real, and read in THIS priority order: breaker, then
+daily budget, then per-second rate token** — a test that scripts budget exhaustion without also
+snapshotting/clearing the breaker keys first is flaky under full-suite runs if an unrelated earlier
+test left the breaker open (a real, if low-probability, source of cross-suite pollution on a shared
+Redis key). Snapshot-and-restore both breaker keys the same way as the budget key.

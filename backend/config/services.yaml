@@ -316,6 +316,8 @@ services:
 when@test:
     services:
         # AC-9.5's proof: registered ONLY by this tag, discovered by StreamingProviderLocator with
-        # zero changes to any consuming class.
+        # zero changes to any consuming class. Public so tests can fetch this exact instance and
+        # script its failure-injection hooks (mirrors TrackResolutionStore/TrackMatcher above).
         App\Tests\Support\Streaming\TestDoubleStreamingProvider:
+            public: true
             tags: ['app.streaming_provider']
