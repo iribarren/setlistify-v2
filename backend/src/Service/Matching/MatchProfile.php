@@ -23,7 +23,7 @@ namespace App\Service\Matching;
 final readonly class MatchProfile
 {
     /**
-     * @param array<string, float> $weights   signal key => weight, summing to 1.00 when every signal is present
+     * @param array<string, float> $weights    signal key => weight, summing to 1.00 when every signal is present
      * @param array<string, float> $titleBlend `trigram` and `tokenSet`, summing to 1.00
      */
     public function __construct(

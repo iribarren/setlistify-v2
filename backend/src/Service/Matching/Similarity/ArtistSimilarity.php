@@ -26,9 +26,9 @@ final readonly class ArtistSimilarity
     private const float NO_MATCH_SCORE = 0.00;
 
     /**
-     * @param string       $expectedArtist  the cover's original artist when setlist.fm marked the entry
-     *                                      as a cover, otherwise the performing band's name (D-113)
-     * @param list<string> $otherCredits    the candidate's remaining credited artists
+     * @param string       $expectedArtist the cover's original artist when setlist.fm marked the entry
+     *                                     as a cover, otherwise the performing band's name (D-113)
+     * @param list<string> $otherCredits   the candidate's remaining credited artists
      */
     public function score(string $expectedArtist, string $primaryArtist, array $otherCredits = []): float
     {

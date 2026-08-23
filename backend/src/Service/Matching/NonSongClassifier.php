@@ -34,7 +34,7 @@ final readonly class NonSongClassifier
     private const int SUSPICIOUS_MAX_TOKENS = 2;
 
     /**
-     * @param list<string> $alwaysTerms          artifact anywhere in the set
+     * @param list<string> $alwaysTerms            artifact anywhere in the set
      * @param list<string> $positionSensitiveTerms artifact only at a set boundary
      */
     public function __construct(

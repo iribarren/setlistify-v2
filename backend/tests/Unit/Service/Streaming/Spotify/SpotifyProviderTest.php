@@ -11,6 +11,7 @@ use App\Service\Streaming\Model\SongQuery;
 use App\Service\Streaming\Spotify\SpotifyErrorMapper;
 use App\Service\Streaming\Spotify\SpotifyHttpClient;
 use App\Service\Streaming\Spotify\SpotifyProvider;
+use App\Service\Streaming\Spotify\SpotifyQueryBuilder;
 use App\Service\Streaming\Spotify\SpotifyScopes;
 use App\Service\Streaming\Spotify\SpotifyTrackMapper;
 use App\Service\Streaming\StreamingProviderInterface;
@@ -175,6 +176,7 @@ final class SpotifyProviderTest extends TestCase
             $httpClient,
             new SpotifyErrorMapper(),
             new SpotifyTrackMapper(),
+            new SpotifyQueryBuilder(),
             clientId: 'test-client-id',
             clientSecret: 'test-client-secret',
             accountsBaseUrl: 'https://accounts.spotify.test',

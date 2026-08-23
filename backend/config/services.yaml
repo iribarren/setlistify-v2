@@ -284,6 +284,24 @@ services:
             $alwaysTerms: '%matching.non_song_terms.always%'
             $positionSensitiveTerms: '%matching.non_song_terms.positionSensitive%'
 
+    # Dedicated Redis connection for the resolution cache's front tier (spec 12 §8, D-121) — same
+    # rationale as setlistfm.redis/provider.redis/streaming.redis above: ephemeral keys unrelated to
+    # sessions, so not shared with the `Redis` service that only feeds RedisSessionHandler.
+    matching.redis:
+        class: Redis
+        factory: ['Symfony\Component\Cache\Adapter\RedisAdapter', 'createConnection']
+        arguments: ['%env(REDIS_URL)%']
+
+    # Public so tests can drive the cache directly (mirrors SetlistCache's rationale above).
+    App\Service\Matching\Cache\TrackResolutionStore:
+        public: true
+        arguments:
+            $redis: '@matching.redis'
+
+    # The only public entry point into matching (mirrors SetlistGateway's single-door shape, D-58).
+    App\Service\Matching\TrackMatcher:
+        public: true
+
 when@test:
     services:
         # AC-9.5's proof: registered ONLY by this tag, discovered by StreamingProviderLocator with
