@@ -24,4 +24,12 @@ final class PlaylistRepository extends ServiceEntityRepository
         $em->persist($playlist);
         $em->flush();
     }
+
+    /** D-151: deletes our row only — never the provider-side playlist (the port has no delete method). */
+    public function remove(Playlist $playlist): void
+    {
+        $em = $this->getEntityManager();
+        $em->remove($playlist);
+        $em->flush();
+    }
 }
