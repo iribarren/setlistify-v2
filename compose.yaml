@@ -92,6 +92,32 @@ services:
       retries: 10
       start_period: 15s
 
+  worker:
+    # Playlist generation runs off the request thread (spec 13/14, D-145): this consumes
+    # `async_playlist` (Redis stream) so `BuildPlaylistMessage` is ever actually handled — without
+    # it every job sits in `queued` forever. Same image as `backend`, no published port.
+    build:
+      context: ./backend
+      dockerfile: ../docker/backend/Dockerfile
+      args:
+        APP_UID: ${APP_UID:-1000}
+        APP_GID: ${APP_GID:-1000}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env.local
+    volumes:
+      - ./backend:/app
+    command: >
+      bin/console messenger:consume async_playlist
+        --time-limit=3600 --memory-limit=256M --limit=0 --failure-limit=10 -v
+    deploy:
+      replicas: ${PLAYLIST_WORKER_COUNT:-2}
+
 volumes:
   postgres_data:
   redis_data:

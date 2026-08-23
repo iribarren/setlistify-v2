@@ -1,22 +1,40 @@
 framework:
     messenger:
-        # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
-        # failure_transport: failed
+        # A poisoned message lands here, inspectable with `messenger:failed:show` rather than lost
+        # (spec 14 §9).
+        failure_transport: failed
 
         transports:
-            # https://symfony.com/doc/current/messenger.html#transport-configuration
-            # async: '%env(MESSENGER_TRANSPORT_DSN)%'
-            # failed: 'doctrine://default?queue_name=failed'
-            sync: 'sync://'
+            # Redis, not Doctrine, for the working transport (D-145): the DSN already existed in
+            # .env.example, Redis is already a compose service, and the workload is a low-volume
+            # stream of short-lived jobs. If durability across a Redis restart ever outweighs
+            # throughput, this DSN is a one-line change to a Doctrine transport and nothing else
+            # moves.
+            async_playlist:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options:
+                    stream: playlist
+                    group: setlistify
+                    consumer: '%env(default::HOSTNAME)%'
+                retry_strategy:
+                    # 5 s -> 30 s -> 180 s, 20% jitter (spec 13 §4/§9, D-144). Covers transport-level
+                    # failures (F-12) only — domain waiting is `blocked`, not a Messenger retry.
+                    max_retries: 3
+                    delay: 5000
+                    multiplier: 6
+                    max_delay: 180000
+                    jitter: 0.2
+            failed: 'doctrine://default?queue_name=failed'
 
         routing:
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            'App\Message\BuildPlaylistMessage': async_playlist
 
-# when@test:
-#    framework:
-#        messenger:
-#            transports:
-#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
-#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
-#                async: 'in-memory://'
+when@test:
+    framework:
+        messenger:
+            transports:
+                # Messenger runs in-memory in the test environment: integration tests dispatch and
+                # then invoke the handler explicitly, so a test asserts the handler's behaviour
+                # without a worker process (spec 14 §8). T-FUNC-03 asserts the routing configuration
+                # itself, separately from this override.
+                async_playlist: 'in-memory://'
