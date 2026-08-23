@@ -99,6 +99,23 @@ flags — not variables.
 | `APPLE_TEAM_ID` / `APPLE_KEY_ID` | no | MusicKit, future |
 | `APPLE_PRIVATE_KEY` | **yes** | MusicKit ES256 signing key, future |
 
+### Playlist generation
+
+Numeric tuning constants for the generation pipeline (`docs/specs/2026-08-23-spike-playlist-
+pipeline.md`, `docs/specs/2026-08-23-playlist-fast-mode-backend.md`). None are secrets.
+
+| Variable | Secret | Purpose |
+|---|---|---|
+| `PLAYLIST_WORKER_COUNT` | no | Number of `messenger:consume async_playlist` worker replicas (`compose.yaml`). Default `2`. |
+| `GENERATION_MAX_BANDS` | no | P-1: caps a multi-band concert to its highest-billed N bands. Default `4`. |
+| `GENERATION_MAX_SONGS` | no | P-1: caps the total songs across a generation, cutting from the lowest-billed end. Default `60`. |
+| `GENERATION_SETLIST_PAGES` | no | D-131: at most this many setlist.fm index pages spent per band per generation. Default `1` — never a per-setlist detail fetch, never a speculative freshness check. |
+| `SUSPENDED_SETLIST_CHOICE_TTL` | no | P-4: seconds a Normal-mode `awaiting_setlist_choice` job survives before `app:playlist:expire-jobs` expires it. Default `604800` (7 days). No effect on Fast mode. |
+| `SUSPENDED_VERSION_CHOICE_TTL` | no | P-4: same, for `awaiting_version_choice`. Default `259200` (72 hours). No effect on Fast mode. |
+| `GENERATION_INSERT_BATCH_SIZE` | no | Provider `addTracks()` batch size (spec 13 §4). Default `50`. |
+| `GENERATION_MAX_BLOCK_CYCLES` | no | T-14: a `blocked` job past this many resume cycles moves to `failed` instead. Default `3`. |
+| `GENERATION_RATE_LIMIT_INLINE_RETRIES` | no | F-05: inline retries on a provider rate limit before blocking. Default `3`. |
+
 ### Backoffice provider configuration
 
 Whether a provider is **enabled**, and how playback is rendered, are backoffice flags

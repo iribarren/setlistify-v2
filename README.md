@@ -45,6 +45,7 @@ openssl pkey -in backend/config/jwt/private.pem -pubout -out backend/config/jwt/
 # Bring the stack up
 docker compose up -d
 docker compose ps   # postgres, redis, mailpit and backend should all report "healthy" within ~90s
+                    # (worker has no healthcheck — it consumes async_playlist for playlist generation)
 
 # Install backend dependencies (with dev tools) and apply migrations — see backend/README.md
 docker compose exec backend composer install
