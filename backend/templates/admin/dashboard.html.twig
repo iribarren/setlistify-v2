@@ -65,4 +65,81 @@
             {% if setlistfm_last_run_stale %}<strong> — over 36 hours old (R-9)</strong>{% endif %}
         {% endif %}
     </div>
+
+    <h3>Playlist generation (last 7 days)</h3>
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:1.5em;">{{ playlist_metrics.jobsStarted }}</div>
+            <div>Jobs started</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ playlist_metrics.jobsCompleted }}</div>
+            <div>Jobs completed</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ playlist_metrics.jobsBlocked }}</div>
+            <div>Jobs blocked</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ playlist_metrics.jobsFailed }}</div>
+            <div>Jobs failed</div>
+        </div>
+    </div>
+
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:1.5em; {{ playlist_metrics.investigate.p95Duration ? 'color:#b00020;' : '' }}">
+                {{ playlist_metrics.p95DurationMs is null ? '—' : (playlist_metrics.p95DurationMs / 1000)|round(1) ~ 's' }}
+            </div>
+            <div>p95 generation time (investigate above 90s)</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.p50DurationMs is null ? '—' : (playlist_metrics.p50DurationMs / 1000)|round(1) ~ 's' }}
+            </div>
+            <div>p50 generation time</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em; {{ playlist_metrics.investigate.matchRate ? 'color:#b00020;' : '' }}">
+                {{ playlist_metrics.meanMatchRate is null ? '—' : (playlist_metrics.meanMatchRate * 100)|round(1) ~ '%' }}
+            </div>
+            <div>Mean match rate (investigate below 75%)</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.notFoundRate is null ? '—' : (playlist_metrics.notFoundRate * 100)|round(1) ~ '%' }}
+            </div>
+            <div>Not-found rate</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em; {{ playlist_metrics.investigate.blockedShare ? 'color:#b00020;' : '' }}">
+                {{ playlist_metrics.jobsStarted > 0 ? ((playlist_metrics.jobsBlocked / playlist_metrics.jobsStarted) * 100)|round(1) ~ '%' : '—' }}
+            </div>
+            <div>Blocked share (investigate above 10%)</div>
+        </div>
+    </div>
+
+    <div style="margin-bottom:1em;">
+        <strong>Blocked reason breakdown:</strong>
+        {% if playlist_metrics.blockedReasonBreakdown is empty %}
+            none
+        {% else %}
+            {% for reason, count in playlist_metrics.blockedReasonBreakdown %}
+                {{ reason }}: {{ count }}{{ loop.last ? '' : ', ' }}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div>
+        <strong>Top 5 unmatched (artist, title) pairs:</strong>
+        {% if playlist_metrics.topUnmatchedPairs is empty %}
+            <div>none</div>
+        {% else %}
+            <ol>
+                {% for pair in playlist_metrics.topUnmatchedPairs %}
+                    <li>{{ pair.artist }} — {{ pair.title }} ({{ pair.count }})</li>
+                {% endfor %}
+            </ol>
+        {% endif %}
+    </div>
 {% endblock %}

@@ -1,0 +1,8 @@
+{# @var field \EasyCorp\Bundle\EasyAdminBundle\Dto\FieldDto #}
+{#
+    For genuinely virtual/computed fields (no backing entity property), EasyAdmin's default
+    templates render an "Inaccessible" badge before formatValue() ever runs, because the
+    template-path decision happens before the formatted value is computed. Setting this path
+    explicitly skips that check — see CommonPreConfigurator::buildTemplatePathOption().
+#}
+<span>{{ field.formattedValue|raw }}</span>
