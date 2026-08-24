@@ -11,4 +11,5 @@
 - [Spec 11 provider config decisions](project_spec_11_decisions.md) — D-89..D-105: registry sole read path, fail-open cache, independent enabled/playbackMode axes.
 - [Spec 12 song matching spike](project_spec_12_decisions.md) — D-106..D-124: simple+honest thesis, 0.80/0.55 bands, studio default, DB resolution cache.
 - [Spec 16 fast-mode UI decisions](project_spec_16_decisions.md) — D-161..D-181: one state-driven route, Retry-After polling, read-only report in fast mode.
+- [Result-state gaps fix decisions](project_spec_result_state_gaps_decisions.md) — D-182..D-187: NoSetlistCause enum, sourceSetlists, migration-free bugfix spec.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.

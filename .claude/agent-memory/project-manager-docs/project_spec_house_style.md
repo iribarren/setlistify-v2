@@ -13,7 +13,8 @@ be matched when writing a new one.
   As of 2026-08-23: spec 09 = D-56–D-70, spec 10 = D-71–D-88, spec 11 = D-89–D-105,
   spec 12 (song matching) = D-106–D-124, spec 13 (playlist pipeline) = D-125–D-144,
   spec 14 (playlist fast mode backend) = D-145–D-160,
-  spec 16 (playlist fast mode UI) = D-161–D-181.
+  spec 16 (playlist fast mode UI) = D-161–D-181,
+  the result-state-gaps fix (2026-08-24) = D-182–D-187.
   **Check the highest existing D-number before writing.**
 - **Header table** with rows: Spec ID · Backlog prompt · Command · Primary agent · Type ·
   Depends on · Implemented by · Decisions · Status.
