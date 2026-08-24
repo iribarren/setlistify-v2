@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .btn-sm { height:34px; padding:0 14px; font-size:12.5px; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+    .badge .dot { width: 6px; height: 6px; border-radius: 999px; }
+    .b-neutral { background: #f1eee9; color: #4f4641; } .b-neutral .dot { background: #7d7a74; }
+    .b-info { background: #dcedf7; color: #00336a; } .b-info .dot { background: #2382ba; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display:flex; align-items:center; justify-content:space-between; }
+    .apptop .left { display:flex; align-items:center; gap:14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width:17px; height:17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .detailbody { padding: 32px 40px 44px; display:flex; gap:36px; }
+    .maincol { flex:1.35; }
+    .sidecol { flex:1; }
+
+    .herocard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 24px 26px; margin-bottom: 22px; }
+    .herobands { font-family: Petrona, serif; font-weight: 600; font-size: 24px; line-height: 1.2; }
+    .herovenue { font-size: 13.5px; color: #4f4641; margin: 6px 0 12px; display:flex; align-items:center; gap:6px; }
+    .herovenue svg { width:14px; height:14px; color:#a8a099; }
+
+    .plheader { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .eyebrow { font-family:'Space Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#4f4641; }
+    .plcard { background:#fffffc; border:1px solid #e1ded7; border-radius:18px; overflow:hidden; }
+    .plmeta { display:flex; align-items:center; gap:16px; padding:20px 22px; border-bottom:1px solid #e1ded7; }
+    .plart { width:64px; height:64px; border-radius:12px; background:linear-gradient(135deg,#2382ba,#501a65); flex-shrink:0; }
+    .pltitle { font-family: Petrona, serif; font-weight:600; font-size:17px; }
+    .plsub { font-size:12.5px; color:#4f4641; margin-top:3px; }
+    .placts { margin-left:auto; display:flex; gap:8px; }
+
+    .tracklist { display:flex; flex-direction:column; }
+    .trow { display:flex; align-items:center; gap:14px; padding:11px 22px; border-bottom:1px solid #e1ded7; }
+    .trow:last-child { border-bottom:none; }
+    .trow .idx { font-family:'Space Mono', monospace; font-size:12px; color:#a8a099; width:18px; }
+    .trow .title { flex:1; font-size:14px; font-weight:500; }
+    .trow .dur { font-family:'Space Mono', monospace; font-size:11.5px; color:#a8a099; }
+    .morerow { padding:12px 22px; font-size:12.5px; color:#4f4641; text-align:center; }
+
+    .playback-reserved { border: 1.5px dashed #d7d2c9; border-radius: 16px; padding: 20px 22px; display:flex; gap:14px; align-items:flex-start; margin-top:16px; }
+    .playback-reserved .ricon { width:38px; height:38px; border-radius:10px; background:#f1eee9; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .playback-reserved .ricon svg { width:19px; height:19px; color:#7d7a74; }
+    .playback-reserved h4 { font-family: Petrona, serif; font-weight:600; font-size:14.5px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+    .playback-reserved h4 .tag { font-family:'Space Mono', monospace; font-size:9px; font-weight:700; text-transform:uppercase; color:#a8a099; background:#f1eee9; padding:2px 6px; border-radius:5px; }
+    .playback-reserved p { font-size:12.5px; color:#4f4641; margin:0; line-height:1.5; }
+
+    .notecard { background:#fffffc; border:1px solid #e1ded7; border-radius:16px; padding:20px 22px; }
+    .notecard h4 { font-family: Petrona, serif; font-weight:600; font-size:14.5px; margin:0 0 8px; }
+
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 8px; display:flex; align-items:center; gap:10px; }
+    .phonetop .backbtn { width:28px; height:28px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { flex:1; overflow-y:auto; padding: 4px 16px 24px; }
+    .phonebody .herocard { padding:16px 16px; }
+    .phonebody .herobands { font-size:19px; }
+    .phonebody .plmeta { padding:14px 16px; }
+    .phonebody .trow { padding:10px 16px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Concert page with playlist</h1>
+  <p class="subtitle">10 · Post-generation display — playback surface reserved for prompt 19</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Concert</h2></div>
+      </div>
+      <div class="detailbody">
+        <div class="maincol">
+          <div class="herocard">
+            <div class="herobands">Radiohead</div>
+            <div class="herovenue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Brixton Academy, London</div>
+            <span class="badge b-neutral"><span class="dot"></span>Past · 14 Sep 2026</span>
+          </div>
+
+          <div class="plheader"><span class="eyebrow">Playlist</span><span class="badge b-info"><span class="dot"></span>14 of 19 matched</span></div>
+          <div class="plcard">
+            <div class="plmeta">
+              <div class="plart"></div>
+              <div><div class="pltitle">Radiohead — Brixton Academy, 14 Sep 2026</div><div class="plsub">14 tracks · 58 min · Spotify</div></div>
+              <div class="placts"><button class="btn btn-secondary btn-sm">Review 5 songs</button><button class="btn btn-primary btn-sm">Open in Spotify</button></div>
+            </div>
+            <div class="tracklist">
+              <div class="trow"><span class="idx">01</span><span class="title">15 Step</span><span class="dur">3:57</span></div>
+              <div class="trow"><span class="idx">02</span><span class="title">Bodysnatchers</span><span class="dur">4:02</span></div>
+              <div class="trow"><span class="idx">03</span><span class="title">The Bends</span><span class="dur">4:04</span></div>
+              <div class="trow"><span class="idx">04</span><span class="title">Fake Plastic Trees</span><span class="dur">4:50</span></div>
+            </div>
+            <div class="morerow">+ 10 more tracks</div>
+          </div>
+
+          <div class="playback-reserved">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg></div>
+            <div><h4>Playback <span class="tag">prompt 19</span></h4><p>In-app play/pause and now-playing controls slot in here, directly under the tracklist — the playlist above is already the source of truth for what plays.</p></div>
+          </div>
+        </div>
+
+        <div class="sidecol">
+          <p class="eyebrow" style="margin-bottom:12px;">Coming later</p>
+          <div class="playback-reserved">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v13H7l-3 3z"/><path d="M8 9h8M8 12h5"/></svg></div>
+            <div><h4>Notes &amp; review <span class="tag">prompt 20</span></h4><p>Star rating and write-up will live here.</p></div>
+          </div>
+          <div class="playback-reserved" style="margin-top:14px;">
+            <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg></div>
+            <div><h4>Share <span class="tag">prompt 21</span></h4><p>A share card for this concert and its playlist.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Concert</h2></div>
+      <div class="phonebody">
+        <div class="herocard">
+          <div class="herobands">Radiohead</div>
+          <div class="herovenue" style="margin-bottom:8px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Brixton Academy, London</div>
+          <span class="badge b-neutral"><span class="dot"></span>14 Sep 2026</span>
+        </div>
+        <div class="plheader"><span class="eyebrow">Playlist</span><span class="badge b-info"><span class="dot"></span>14/19</span></div>
+        <div class="plcard">
+          <div class="plmeta">
+            <div class="plart" style="width:52px;height:52px;"></div>
+            <div><div class="pltitle" style="font-size:15px;">Brixton Academy, 14 Sep</div><div class="plsub">14 tracks · 58 min</div></div>
+          </div>
+          <div class="tracklist">
+            <div class="trow"><span class="idx">01</span><span class="title">15 Step</span><span class="dur">3:57</span></div>
+            <div class="trow"><span class="idx">02</span><span class="title">Bodysnatchers</span><span class="dur">4:02</span></div>
+            <div class="trow"><span class="idx">03</span><span class="title">The Bends</span><span class="dur">4:04</span></div>
+          </div>
+          <div class="morerow">+ 11 more tracks</div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn btn-secondary btn-sm" style="flex:1;">Review 5 songs</button>
+          <button class="btn btn-primary btn-sm" style="flex:1;">Open in Spotify</button>
+        </div>
+        <div class="playback-reserved" style="margin-top:16px; padding:16px 16px;">
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5v14l11-7z"/></svg></div>
+          <div><h4>Playback <span class="tag">p.19</span></h4><p>In-app controls land here.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Match state travels with the playlist, not just the result screen.</b> The "14 of 19 matched" badge from the result flow reappears here in info-blue on the permanent concert page — so a playlist that's still partially matched keeps saying so every time the page is visited, not just once at generation time, and "Review 5 songs" stays reachable for as long as those songs remain unmatched. The reserved playback panel sits directly beneath the tracklist (not above, not in a separate tab) since prompt 19's controls act on exactly the tracks listed there — same relationship <span style="font-family:'Space Mono',monospace;">ReservedSection</span> already establishes for Notes and Share in <a href="#">ConcertDetail.dc.html</a>, just filled in with real playlist content instead of a dashed placeholder.</p>
+</div>
+</x-dc>
+</body>
+</html>

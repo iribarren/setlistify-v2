@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .btn-sm { height:34px; padding:0 14px; font-size:12.5px; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display:flex; align-items:center; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .detailbody { padding: 30px 40px 40px; }
+
+    .resumebanner { display:flex; align-items:center; gap:16px; background:#dcedf7; border-radius:16px; padding:18px 22px; margin-bottom:24px; }
+    .resumebanner svg { width:24px; height:24px; color:#00336a; flex-shrink:0; }
+    .resumebanner .t { font-size:14.5px; font-weight:600; color:#00336a; }
+    .resumebanner .s { font-size:12.5px; color:#00336a; opacity:0.85; margin-top:2px; }
+    .resumebanner .acts { margin-left:auto; display:flex; gap:8px; flex-shrink:0; }
+
+    .plsection { background:#fffffc; border:1px solid #e1ded7; border-radius:18px; padding:24px 26px; }
+    .plsection .eyebrow { font-family:'Space Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#4f4641; margin:0 0 6px; }
+    .plsection h4 { font-family: Petrona, serif; font-weight:600; font-size:16px; margin:0 0 12px; }
+    .progrow { display:flex; align-items:center; gap:12px; }
+    .miniprog { flex:1; height:8px; border-radius:999px; background:#f1eee9; overflow:hidden; }
+    .miniprog .fill { height:100%; width:88%; background:#2382ba; }
+    .progtext { font-family:'Space Mono', monospace; font-size:12px; color:#00336a; white-space:nowrap; }
+
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 20px 16px 12px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { flex:1; overflow-y:auto; padding: 0 16px 24px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Suspend &amp; resume</h1>
+  <p class="subtitle">08 · Normal mode abandoned mid-flow, returned to days later</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop"><h2>Radiohead — Brixton Academy</h2></div>
+      <div class="detailbody">
+        <div class="resumebanner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <div><div class="t">You started building this playlist 3 days ago</div><div class="s">22 of 25 songs are already decided — pick up where you left off.</div></div>
+          <div class="acts"><button class="btn btn-primary btn-sm">Resume — 3 songs left</button><button class="btn btn-secondary btn-sm">Start over</button></div>
+        </div>
+
+        <div class="plsection">
+          <p class="eyebrow">In progress</p>
+          <h4>Brixton Academy, 14 Sep 2026 — 25 songs</h4>
+          <div class="progrow"><div class="miniprog"><div class="fill"></div></div><span class="progtext">22 / 25 confirmed</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><h2>Radiohead</h2></div>
+      <div class="phonebody">
+        <div class="resumebanner" style="flex-direction:column; align-items:flex-start; gap:8px;">
+          <div style="display:flex; align-items:center; gap:10px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div class="t" style="font-size:13.5px;">Started 3 days ago</div></div>
+          <div class="s" style="font-size:12px;">22 of 25 songs are already decided.</div>
+          <button class="btn btn-primary" style="width:100%; margin-top:4px;">Resume — 3 songs left</button>
+        </div>
+        <div class="plsection" style="padding:18px;">
+          <p class="eyebrow">In progress</p>
+          <div class="progrow"><div class="miniprog"><div class="fill"></div></div><span class="progtext">22/25</span></div>
+        </div>
+        <div style="text-align:center; margin-top:14px;"><button class="btn btn-secondary" style="width:100%;">Start over</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Re-entry leads with what's already done, not what's left to do.</b> "22 of 25 songs are already decided" reframes the return as nearly finished rather than an unfinished chore — the same info-blue language as "mostly matched," because a paused Normal-mode session and a partially-matched Fast result are the same shape of honest-partial state. The banner appears wherever the concert would otherwise show its "generate playlist" trigger, so there's no separate inbox or notification to hunt for — reopening the concert is enough. "Start over" stays available but demoted to secondary, since discarding 22 confirmed picks should never be the path of least resistance.</p>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600;0,700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+    a { color: #871600; } a:hover { color: #6b1100; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 11px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+    .badge .dot { width: 6px; height: 6px; border-radius: 999px; }
+    .b-neutral { background: #f1eee9; color: #4f4641; } .b-neutral .dot { background: #7d7a74; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap: 8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .btn svg { width: 18px; height: 18px; }
+
+    .link { font-size: 13.5px; font-weight: 600; color: #871600; text-decoration: underline; }
+    .chooserow { display:flex; align-items:center; gap:6px; font-size:13.5px; color:#4f4641; margin-top:10px; }
+
+    .modecard { flex:1; background:#fffffc; border:1.5px solid #e1ded7; border-radius:16px; padding:18px 18px; display:flex; flex-direction:column; gap:8px; }
+    .modecard.picked { border-color:#871600; box-shadow: 0 0 0 3px rgba(135,22,0,0.10); }
+    .modecard .micon { width:36px; height:36px; border-radius:10px; background:#f3e6df; display:flex; align-items:center; justify-content:center; }
+    .modecard.alt .micon { background:#efe4f4; }
+    .modecard .micon svg { width:18px; height:18px; color:#871600; }
+    .modecard.alt .micon svg { color:#501a65; }
+    .modecard h4 { font-family: Petrona, serif; font-weight:600; font-size:16px; margin:2px 0 0; }
+    .modecard p { font-size:12.5px; color:#4f4641; line-height:1.5; margin:0; flex:1; }
+    .modecard .picktag { font-family:'Space Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; color:#871600; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display: flex; align-items: center; justify-content: space-between; }
+    .apptop .left { display: flex; align-items: center; gap: 14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width: 17px; height: 17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .detailbody { padding: 36px 40px 44px; }
+    .herocard { background: #fffffc; border: 1px solid #e1ded7; border-radius: 18px; padding: 26px 28px; margin-bottom: 24px; }
+    .herobands { font-family: Petrona, serif; font-weight: 600; font-size: 26px; line-height: 1.2; }
+    .herovenue { font-size: 14.5px; color: #4f4641; margin: 6px 0 0; display: flex; align-items: center; gap: 6px; }
+    .herovenue svg { width: 15px; height: 15px; color: #a8a099; }
+
+    .plsection { background:#fffffc; border:1px solid #e1ded7; border-radius:18px; padding:26px 28px; }
+    .plsection .eyebrow { font-family:'Space Mono', monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:#4f4641; margin:0 0 14px; }
+    .modegrid { display:flex; gap:16px; margin-top:16px; }
+
+    .phoneframe { width: 390px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); position:relative; }
+    .phonetop { padding: 20px 16px 12px; display: flex; align-items: center; justify-content: space-between; }
+    .phonetop .left { display: flex; align-items: center; gap: 10px; }
+    .phonetop .backbtn { width: 30px; height: 30px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { padding: 6px 16px 24px; }
+    .phonebody .herocard { padding: 18px 18px; }
+    .phonebody .herobands { font-size: 20px; }
+
+    .scrim { position:absolute; inset:0; background:rgba(15,10,8,0.5); display:flex; align-items:flex-end; }
+    .sheet { width:100%; background:#fffffc; border-radius:20px 20px 0 0; padding:10px 20px 26px; }
+    .sheet .handle { width:36px; height:4px; border-radius:999px; background:#e1ded7; margin:0 auto 16px; }
+    .sheet h3 { font-family: Petrona, serif; font-weight:600; font-size:18px; margin:0 0 4px; }
+    .sheet p.lede { font-size:12.5px; color:#4f4641; margin:0 0 16px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Trigger &amp; mode</h1>
+  <p class="subtitle">01 · Concert page CTA — Fast is the default, Normal is one tap away</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Concert</h2>
+        </div>
+      </div>
+      <div class="detailbody">
+        <div class="herocard">
+          <div class="herobands">Radiohead</div>
+          <div class="herovenue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Brixton Academy, London — 14 Sep 2026</div>
+          <div style="margin-top:14px"><span class="badge b-neutral"><span class="dot"></span>Past</span></div>
+        </div>
+
+        <div class="plsection">
+          <p class="eyebrow">Playlist</p>
+          <button class="btn btn-primary" style="width:100%; max-width:320px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>Generate playlist</button>
+          <div class="chooserow">Builds it for you automatically. <a href="#">Choose the setlist or songs yourself instead →</a></div>
+
+          <p class="eyebrow" style="margin-top:26px">Expanded — after "Choose the setlist or songs yourself"</p>
+          <div class="modegrid">
+            <div class="modecard">
+              <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></div>
+              <h4>Fast</h4>
+              <p>We pick the show's latest setlist and match every song for you. Ready in under a minute.</p>
+              <button class="btn btn-primary" style="height:38px; font-size:13.5px;">Generate playlist</button>
+            </div>
+            <div class="modecard alt">
+              <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-11M12 6V3M20 21v-5M20 12V3"/><circle cx="4" cy="13" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="12" r="2"/></svg></div>
+              <h4>Choose it yourself</h4>
+              <p>Pick which show's setlist to use, then confirm any song we're not sure about.</p>
+              <button class="btn btn-secondary" style="height:38px; font-size:13.5px;">Choose the setlist</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe" style="height:844px;">
+      <div class="phonetop">
+        <div class="left">
+          <div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+          <h2>Concert</h2>
+        </div>
+      </div>
+      <div class="phonebody">
+        <div class="herocard">
+          <div class="herobands">Radiohead</div>
+          <div class="herovenue" style="margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12a7 7 0 10-14 0c0 5.6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Brixton Academy, London</div>
+          <span class="badge b-neutral"><span class="dot"></span>Past · 14 Sep 2026</span>
+        </div>
+        <div class="plsection" style="padding:20px;">
+          <p class="eyebrow">Playlist</p>
+          <button class="btn btn-primary" style="width:100%;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>Generate playlist</button>
+          <div class="chooserow" style="justify-content:center; text-align:center;">Or <a href="#">choose it yourself →</a></div>
+        </div>
+      </div>
+
+      <!-- sheet overlay: reached from "choose it yourself" -->
+      <div class="scrim">
+        <div class="sheet">
+          <div class="handle"></div>
+          <h3>How do you want it built?</h3>
+          <p class="lede">Both end with a Spotify playlist for this show.</p>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div class="modecard">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg></div>
+                <div style="flex:1;"><h4>Fast</h4><p style="margin-top:2px;">We pick everything. Ready in under a minute.</p></div>
+              </div>
+            </div>
+            <div class="modecard alt">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-11M12 6V3M20 21v-5M20 12V3"/><circle cx="4" cy="13" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="12" r="2"/></svg></div>
+                <div style="flex:1;"><h4>Choose it yourself</h4><p style="margin-top:2px;">Pick the show, then confirm anything uncertain.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Recommendation — no forced choice.</b> Fast is the one-tap default: tapping "Generate playlist" directly starts Fast mode, no picker in the way. The choice only surfaces for someone who wants control, via a small link underneath — never a wall of two equal buttons that makes everyone stop and decide. On desktop there's room to expand that link inline into two cards without leaving the page; on phone it opens as a bottom sheet (Components.dc.html's sheet pattern), because a full navigation away for a decision this small would be heavier than the decision itself. Copy stays jargon-free: "Fast" / "Choose it yourself", not "Fast mode" / "Normal mode" — those labels are ours, not the user's.</p>
+</div>
+</x-dc>
+</body>
+</html>

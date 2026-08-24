@@ -1,0 +1,32 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Fast mode" },
+    { "id": "page-2", "name": "Normal mode" },
+    { "id": "page-3", "name": "Degraded states" },
+    { "id": "page-4", "name": "Concert page" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 2020, "h": 1120, "page": "page-1" },
+    { "file": "Progress.dc.html", "x": 2140, "y": 0, "w": 2020, "h": 920, "page": "page-1" },
+    { "file": "ResultFull.dc.html", "x": 4280, "y": 0, "w": 2020, "h": 970, "page": "page-1" },
+    { "file": "ResultMostly.dc.html", "x": 6420, "y": 0, "w": 2020, "h": 970, "page": "page-1" },
+    { "file": "ResultBarely.dc.html", "x": 0, "y": 1280, "w": 2020, "h": 970, "page": "page-1" },
+    { "file": "ResultNothing.dc.html", "x": 2140, "y": 1280, "w": 2020, "h": 970, "page": "page-1" },
+    { "file": "Report.dc.html", "x": 4280, "y": 1280, "w": 2020, "h": 1180, "page": "page-1" },
+
+    { "file": "SetlistSelect.dc.html", "x": 0, "y": 0, "w": 2020, "h": 1120, "page": "page-2" },
+    { "file": "VersionSelect.dc.html", "x": 2140, "y": 0, "w": 2020, "h": 1650, "page": "page-2" },
+    { "file": "Confirm.dc.html", "x": 4280, "y": 0, "w": 2020, "h": 920, "page": "page-2" },
+    { "file": "Resume.dc.html", "x": 6420, "y": 0, "w": 2020, "h": 870, "page": "page-2" },
+
+    { "file": "DegradedBandUnknown.dc.html", "x": 0, "y": 0, "w": 2020, "h": 870, "page": "page-3" },
+    { "file": "DegradedNoSongs.dc.html", "x": 2140, "y": 0, "w": 2020, "h": 870, "page": "page-3" },
+    { "file": "DegradedBudgetExhausted.dc.html", "x": 4280, "y": 0, "w": 2020, "h": 870, "page": "page-3" },
+    { "file": "DegradedQuotaExhausted.dc.html", "x": 0, "y": 1030, "w": 2020, "h": 900, "page": "page-3" },
+    { "file": "DegradedTokenExpired.dc.html", "x": 2140, "y": 1030, "w": 2020, "h": 900, "page": "page-3" },
+    { "file": "DegradedProviderDisabled.dc.html", "x": 4280, "y": 1030, "w": 2020, "h": 900, "page": "page-3" },
+
+    { "file": "ConcertPlaylist.dc.html", "x": 0, "y": 0, "w": 2020, "h": 1180, "page": "page-4" }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

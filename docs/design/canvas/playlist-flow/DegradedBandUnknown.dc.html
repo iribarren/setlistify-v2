@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 10px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .statewrap { flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; text-align:center; justify-content:center; gap:14px; }
+    .sicon { width:52px; height:52px; border-radius:999px; background:#f1eee9; display:flex; align-items:center; justify-content:center; }
+    .sicon svg { width:26px; height:26px; color:#7d7a74; }
+    .stitle { font-family: Petrona, serif; font-weight:600; font-size:21px; margin:2px 0 0; }
+    .sbody { font-size:13.5px; color:#4f4641; max-width:400px; line-height:1.55; margin:0; }
+    .actionrow { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Degraded state — band unknown to setlist.fm</h1>
+  <p class="subtitle">09a · setlist.fm has no record of this band at all</p>
+  <div class="row">
+    <div class="desktop">
+      <div class="apptop"><h2>The Backroom Sessions — Cellar Bar</h2></div>
+      <div class="statewrap" style="min-height:520px;">
+        <div class="sicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M9 9l4 4M13 9l-4 4" stroke="#a8a099"/></svg></div>
+        <p class="stitle">Can't find "The Backroom Sessions" on setlist.fm</p>
+        <p class="sbody">This band isn't in setlist.fm's database yet — that happens with smaller or newer acts. There's no setlist for Setlistify to build from right now.</p>
+        <div class="actionrow"><button class="btn btn-secondary">Check spelling</button><button class="btn btn-secondary">Remind me later</button></div>
+      </div>
+    </div>
+    <div class="phoneframe">
+      <div class="phonetop"><h2>The Backroom Sessions</h2></div>
+      <div class="statewrap">
+        <div class="sicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M9 9l4 4M13 9l-4 4" stroke="#a8a099"/></svg></div>
+        <p class="stitle" style="font-size:18px;">Can't find this band on setlist.fm</p>
+        <p class="sbody" style="font-size:13px;">Smaller or newer acts aren't always listed there yet.</p>
+        <button class="btn btn-secondary" style="width:100%;">Check spelling</button>
+      </div>
+    </div>
+  </div>
+  <p class="note"><b>Not our fault, not the user's fault.</b> Neutral gray, a magnifying-glass icon (searching, not broken), and the cause is named plainly — a database coverage gap, common for small acts. No retry button that implies trying again will help (it won't, until setlist.fm adds the band) — instead "Check spelling" catches the one thing that's actually often wrong, and "Remind me later" defers gracefully rather than dead-ending the flow.</p>
+</div>
+</x-dc>
+</body>
+</html>

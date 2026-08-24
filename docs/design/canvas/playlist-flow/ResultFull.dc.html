@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 20px 16px 12px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+
+    .resultwrap { padding:40px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; }
+    .celebicon { width:56px; height:56px; border-radius:999px; background:#e2f2e3; display:flex; align-items:center; justify-content:center; }
+    .celebicon svg { width:28px; height:28px; color:#003d00; }
+    .resulttitle { font-family: Petrona, serif; font-weight:600; font-size:22px; margin:2px 0 0; }
+    .resultbody { font-size:13.5px; color:#4f4641; max-width:360px; line-height:1.5; margin:0; }
+    .countbig { font-family:'Space Mono', monospace; font-weight:700; font-size:15px; color:#003d00; background:#e2f2e3; padding:5px 14px; border-radius:999px; }
+    .actionrow { display:flex; gap:10px; margin-top:8px; }
+
+    .playlistcard { width:100%; max-width:420px; margin-top:6px; background:#fffffc; border:1px solid #e1ded7; border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:14px; text-align:left; }
+    .plart { width:52px; height:52px; border-radius:10px; background:linear-gradient(135deg,#308639,#00336a); flex-shrink:0; }
+    .plinfo .pltitle { font-family: Petrona, serif; font-weight:600; font-size:15px; }
+    .plinfo .plsub { font-size:12px; color:#4f4641; margin-top:2px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Result: fully matched</h1>
+  <p class="subtitle">03a · Result variant 1 of 4 — 19 / 19</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop"><h2>Radiohead — Brixton Academy</h2></div>
+      <div class="resultwrap" style="min-height:560px;">
+        <div class="celebicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <span class="countbig">19 / 19 matched</span>
+        <p class="resulttitle">Every song's on the playlist</p>
+        <p class="resultbody">All 19 songs from the setlist found a confident match on Spotify. Nothing left to review.</p>
+        <div class="playlistcard">
+          <div class="plart"></div>
+          <div class="plinfo"><div class="pltitle">Radiohead — Brixton Academy, 14 Sep 2026</div><div class="plsub">19 tracks · 1 hr 24 min · Spotify</div></div>
+        </div>
+        <div class="actionrow">
+          <button class="btn btn-primary">Open in Spotify</button>
+          <button class="btn btn-secondary">View concert</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><h2>Radiohead</h2></div>
+      <div class="resultwrap" style="padding:32px 24px;">
+        <div class="celebicon" style="width:48px;height:48px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <span class="countbig">19 / 19 matched</span>
+        <p class="resulttitle" style="font-size:19px;">Every song's on the playlist</p>
+        <p class="resultbody" style="font-size:13px;">All 19 songs found a confident match on Spotify.</p>
+        <div class="playlistcard">
+          <div class="plart"></div>
+          <div class="plinfo"><div class="pltitle" style="font-size:14px;">Brixton Academy, 14 Sep</div><div class="plsub">19 tracks · 1h 24m</div></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;">Open in Spotify</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>The success state.</b> Green checkmark, success-tinted count pill, no report link — there's nothing to review, so the CTA goes straight to the playlist. This is the ceiling every other variant is deliberately drawn <i>not</i> to look broken next to.</p>
+</div>
+</x-dc>
+</body>
+</html>

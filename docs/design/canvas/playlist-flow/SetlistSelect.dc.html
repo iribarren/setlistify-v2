@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display:flex; align-items:center; justify-content:space-between; }
+    .apptop .left { display:flex; align-items:center; gap:14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width:17px; height:17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .steps { font-family:'Space Mono', monospace; font-size:11px; color:#4f4641; }
+
+    .stepbody { padding:28px 40px 36px; }
+    .stepbody .eyebrow { font-family: Petrona, serif; font-weight:600; font-size:19px; margin:0 0 4px; }
+    .stepbody .lede { font-size:13px; color:#4f4641; margin:0 0 22px; }
+
+    .cardgrid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+    .setlist-card { background: #fffffc; border: 1.5px solid #e1ded7; border-radius: 16px; padding: 18px 20px; }
+    .setlist-card.picked { border-color:#871600; box-shadow: 0 0 0 3px rgba(135,22,0,0.10); }
+    .setlist-card.latest { border-color:#2382ba; }
+    .sctop { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+    .scvenue { font-family: Petrona, serif; font-weight:600; font-size:16px; }
+    .sccity { font-size:12px; color:#4f4641; margin-top:2px; }
+    .scdate { font-family:'Space Mono', monospace; font-size:11px; color:#871600; background:#f3e6df; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+    .scmeta { display:flex; align-items:center; gap:10px; font-size:12.5px; color:#4f4641; }
+    .sctag { font-family:'Space Mono', monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:0.05em; color:#2382ba; background:#dcedf7; padding:2px 8px; border-radius:6px; }
+
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 8px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
+    .phonetop .left { display:flex; align-items:center; gap:10px; }
+    .phonetop .backbtn { width:28px; height:28px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { flex:1; overflow-y:auto; padding: 4px 16px 20px; }
+    .phonebody .lede { font-size:12.5px; color:#4f4641; margin:0 0 14px; }
+    .phonebody .cardgrid { grid-template-columns: 1fr; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Normal mode: pick a setlist</h1>
+  <p class="subtitle">05 · Step 1 of 3 — choose from the band's recent shows</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Radiohead — Brixton Academy</h2></div>
+        <span class="steps">STEP 1 / 3</span>
+      </div>
+      <div class="stepbody">
+        <h3 class="eyebrow">Which show's setlist?</h3>
+        <p class="lede">Radiohead played 6 shows in the last month with a logged setlist. Pick the one closest to this concert — usually the same night.</p>
+        <div class="cardgrid">
+          <div class="setlist-card latest picked">
+            <div class="sctop"><div><div class="scvenue">Brixton Academy</div><div class="sccity">London, UK</div></div><span class="scdate">14 SEP 2026</span></div>
+            <div class="scmeta"><span class="sctag">Same night</span>19 songs · setlist.fm</div>
+          </div>
+          <div class="setlist-card">
+            <div class="sctop"><div><div class="scvenue">O2 Apollo</div><div class="sccity">Manchester, UK</div></div><span class="scdate">12 SEP 2026</span></div>
+            <div class="scmeta">21 songs · setlist.fm</div>
+          </div>
+          <div class="setlist-card">
+            <div class="sctop"><div><div class="scvenue">3Arena</div><div class="sccity">Dublin, IE</div></div><span class="scdate">10 SEP 2026</span></div>
+            <div class="scmeta">18 songs · setlist.fm</div>
+          </div>
+          <div class="setlist-card">
+            <div class="sctop"><div><div class="scvenue">AFAS Live</div><div class="sccity">Amsterdam, NL</div></div><span class="scdate">6 SEP 2026</span></div>
+            <div class="scmeta">20 songs · setlist.fm</div>
+          </div>
+        </div>
+        <div style="margin-top:24px; display:flex; gap:10px;"><button class="btn btn-primary">Continue with Brixton Academy</button><button class="btn btn-secondary">Cancel</button></div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Pick a setlist</h2></div><span class="steps">1/3</span></div>
+      <div class="phonebody">
+        <p class="lede">Radiohead played 6 shows recently. The closest match is highlighted.</p>
+        <div class="cardgrid">
+          <div class="setlist-card latest picked">
+            <div class="sctop"><div><div class="scvenue">Brixton Academy</div><div class="sccity">London, UK</div></div><span class="scdate">14 SEP</span></div>
+            <div class="scmeta"><span class="sctag">Same night</span>19 songs</div>
+          </div>
+          <div class="setlist-card">
+            <div class="sctop"><div><div class="scvenue">O2 Apollo</div><div class="sccity">Manchester, UK</div></div><span class="scdate">12 SEP</span></div>
+            <div class="scmeta">21 songs</div>
+          </div>
+          <div class="setlist-card">
+            <div class="sctop"><div><div class="scvenue">3Arena</div><div class="sccity">Dublin, IE</div></div><span class="scdate">10 SEP</span></div>
+            <div class="scmeta">18 songs</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 16px 22px; border-top:1px solid #e1ded7;"><button class="btn btn-primary" style="width:100%;">Continue with Brixton Academy</button></div>
+    </div>
+  </div>
+
+  <p class="note"><b>Enough context to choose meaningfully.</b> Every card carries date, venue+city and song count — the three facts someone actually needs to tell shows apart, laid out identically to the existing setlist-card pattern (Cards.dc.html) rather than a new shape. The show sharing this concert's date is pre-selected and tagged "Same night" so the obvious choice needs no scanning, while every other option stays one tap away for the case where setlist.fm logged the date wrong or the person wants a different night's set on purpose. Step indicator (1/3, top right) sets expectations for the two steps still ahead.</p>
+</div>
+</x-dc>
+</body>
+</html>

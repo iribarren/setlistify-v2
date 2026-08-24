@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .btn-sm { height:32px; padding:0 12px; font-size:12.5px; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display:flex; align-items:center; justify-content:space-between; }
+    .apptop .left { display:flex; align-items:center; gap:14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width:17px; height:17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .headline { padding: 22px 40px 0; }
+    .headline .frac { font-family:'Space Mono', monospace; font-weight:700; font-size:15px; color:#00336a; background:#dcedf7; padding:4px 12px; border-radius:999px; display:inline-block; margin-bottom:8px; }
+    .headline h3 { font-family: Petrona, serif; font-weight:600; font-size:19px; margin:0 0 4px; }
+    .headline p { font-size:13px; color:#4f4641; margin:0; }
+
+    .reportlist { padding: 18px 40px 32px; display:flex; flex-direction:column; gap:0; }
+    .rrow { display:flex; align-items:flex-start; gap:14px; padding:16px 4px; border-bottom:1px solid #e1ded7; }
+    .rrow:last-child { border-bottom:none; }
+    .ridx { font-family:'Space Mono', monospace; font-size:12px; color:#a8a099; width:20px; padding-top:2px; }
+    .ricon { width:32px; height:32px; border-radius:999px; background:#f3e8d3; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .ricon svg { width:16px; height:16px; color:#522700; }
+    .rmain { flex:1; }
+    .rtitle { font-size:14.5px; font-weight:600; }
+    .rreason { font-size:13px; color:#4f4641; margin-top:2px; line-height:1.4; }
+    .ract { flex-shrink:0; }
+
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 10px; display:flex; align-items:center; gap:10px; }
+    .phonetop .backbtn { width:28px; height:28px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { flex:1; overflow-y:auto; padding: 0 16px 20px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — The report</h1>
+  <p class="subtitle">04 · "What we couldn't match" — the signature honesty screen</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Radiohead — Brixton Academy</h2></div>
+        <button class="btn btn-secondary btn-sm">Open in Spotify</button>
+      </div>
+      <div class="headline">
+        <span class="frac">14 / 19 matched</span>
+        <h3>5 songs need your attention</h3>
+        <p>Every reason below is specific — nothing here is a generic error.</p>
+      </div>
+      <div class="reportlist">
+        <div class="rrow">
+          <span class="ridx">01</span>
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+          <div class="rmain"><div class="rtitle">Talk Show Host</div><div class="rreason">Two versions exist — the original and a 2016 re-record. Pick one and we'll add it.</div></div>
+          <div class="ract"><button class="btn btn-secondary btn-sm">Pick a version</button></div>
+        </div>
+        <div class="rrow">
+          <span class="ridx">02</span>
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17h.01"/></svg></div>
+          <div class="rmain"><div class="rtitle">True Love Waits</div><div class="rreason">Only a live recording is on Spotify — the studio version from the setlist isn't available there.</div></div>
+          <div class="ract"><button class="btn btn-secondary btn-sm">Use the live version</button></div>
+        </div>
+        <div class="rrow">
+          <span class="ridx">03</span>
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v13H7l-3 3z"/></svg></div>
+          <div class="rmain"><div class="rtitle">Follow Me Around</div><div class="rreason">Not on Spotify — this one has never been officially released.</div></div>
+          <div class="ract"><button class="btn btn-secondary btn-sm">Skip</button></div>
+        </div>
+        <div class="rrow">
+          <span class="ridx">04</span>
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12h2M17 12h2M7.5 7.5l1.5 1.5M15 15l1.5 1.5M7.5 16.5l1.5-1.5M15 9l1.5-1.5"/></svg></div>
+          <div class="rmain"><div class="rtitle">Untitled interlude</div><div class="rreason">This was an instrumental drum solo between songs — setlist.fm logs it, but it isn't a track.</div></div>
+          <div class="ract"><button class="btn btn-secondary btn-sm">Skip</button></div>
+        </div>
+        <div class="rrow">
+          <span class="ridx">05</span>
+          <div class="ricon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+          <div class="rmain"><div class="rtitle">Creep (cover, by support act)</div><div class="rreason">Setlist.fm credits this to Radiohead, but it was actually the opener covering them — excluded from this playlist.</div></div>
+          <div class="ract"><button class="btn btn-secondary btn-sm">Add anyway</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>5 songs to review</h2></div>
+      <div class="headline" style="padding:12px 16px 0;">
+        <span class="frac">14 / 19 matched</span>
+      </div>
+      <div class="phonebody">
+        <div class="reportlist" style="padding:8px 0 8px;">
+          <div class="rrow" style="padding:14px 0;">
+            <div class="ricon" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+            <div class="rmain"><div class="rtitle" style="font-size:13.5px;">Talk Show Host</div><div class="rreason" style="font-size:12px;">Two versions exist — pick one.</div></div>
+          </div>
+          <div class="rrow" style="padding:14px 0;">
+            <div class="ricon" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4M12 17h.01"/></svg></div>
+            <div class="rmain"><div class="rtitle" style="font-size:13.5px;">True Love Waits</div><div class="rreason" style="font-size:12px;">Only a live version is available.</div></div>
+          </div>
+          <div class="rrow" style="padding:14px 0;">
+            <div class="ricon" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v13H7l-3 3z"/></svg></div>
+            <div class="rmain"><div class="rtitle" style="font-size:13.5px;">Follow Me Around</div><div class="rreason" style="font-size:12px;">Never officially released.</div></div>
+          </div>
+          <div class="rrow" style="padding:14px 0;">
+            <div class="ricon" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 5v2M12 17v2M5 12h2M17 12h2"/></svg></div>
+            <div class="rmain"><div class="rtitle" style="font-size:13.5px;">Untitled interlude</div><div class="rreason" style="font-size:12px;">A drum solo, not a track.</div></div>
+          </div>
+          <div class="rrow" style="padding:14px 0;">
+            <div class="ricon" style="width:28px;height:28px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
+            <div class="rmain"><div class="rtitle" style="font-size:13.5px;">Creep (cover, support act)</div><div class="rreason" style="font-size:12px;">Actually the opener, not Radiohead.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Five reasons, five sentences, zero error codes.</b> Every row states a cause a non-technical person recognizes — a version choice, a rights gap, a data quirk from setlist.fm itself (the drum solo, the misattributed cover) — instead of "no match found." The row action always matches the reason: a version conflict offers "Pick a version," an outright absence offers "Skip" (with "Add anyway" for the misattribution case, since the real fix there is data, not matching). On phone, rows drop their action buttons and become tap targets instead — one row, one decision, no button crowding down a 5-item list; tapping opens the same picker inline. The list only ever shows the songs that need a look — matched songs don't appear here at all, so a 25-song setlist with 3 gaps is a 3-row screen, not a 25-row scroll.</p>
+</div>
+</x-dc>
+</body>
+</html>

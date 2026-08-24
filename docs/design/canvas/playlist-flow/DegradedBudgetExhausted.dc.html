@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 10px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .statewrap { flex:1; padding:40px; display:flex; flex-direction:column; align-items:center; text-align:center; justify-content:center; gap:14px; }
+    .sicon { width:52px; height:52px; border-radius:999px; background:#dcedf7; display:flex; align-items:center; justify-content:center; }
+    .sicon svg { width:26px; height:26px; color:#00336a; }
+    .stitle { font-family: Petrona, serif; font-weight:600; font-size:21px; margin:2px 0 0; }
+    .sbody { font-size:13.5px; color:#4f4641; max-width:420px; line-height:1.55; margin:0; }
+    .actionrow { display:flex; gap:10px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+    .countdown { font-family:'Space Mono', monospace; font-size:13px; color:#00336a; background:#dcedf7; padding:6px 14px; border-radius:999px; }
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Degraded state — setlist.fm daily budget exhausted</h1>
+  <p class="subtitle">09c · shared 1,440 lookups/day, spent for everyone</p>
+  <div class="row">
+    <div class="desktop">
+      <div class="apptop"><h2>Radiohead — Brixton Academy</h2></div>
+      <div class="statewrap" style="min-height:520px;">
+        <div class="sicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <p class="stitle">We've used up today's setlist.fm lookups</p>
+        <p class="sbody">Setlistify shares one lookup budget across every user, and it's spent for today. Nothing about your concert is lost — this just picks back up automatically.</p>
+        <span class="countdown">Resets in 6h 12m</span>
+        <div class="actionrow"><button class="btn btn-secondary">We'll notify you</button></div>
+      </div>
+    </div>
+    <div class="phoneframe">
+      <div class="phonetop"><h2>Radiohead</h2></div>
+      <div class="statewrap">
+        <div class="sicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <p class="stitle" style="font-size:18px;">Today's setlist.fm lookups are used up</p>
+        <p class="sbody" style="font-size:13px;">Shared across every Setlistify user. This picks back up on its own.</p>
+        <span class="countdown">Resets in 6h 12m</span>
+      </div>
+    </div>
+  </div>
+  <p class="note"><b>A shared, external constraint — not this user's problem to solve.</b> The clock icon and info-blue tone signal "temporary and outside your control," and the copy is upfront that the budget is shared across the whole app (per CLAUDE.md's setlist.fm rule), not something a retry or a paid plan fixes. The countdown to reset sets a concrete, honest expectation instead of a vague "try again later," and there is deliberately no "Try again" button — retrying before the reset would just waste another user's lookup for nothing.</p>
+</div>
+</x-dc>
+</body>
+</html>

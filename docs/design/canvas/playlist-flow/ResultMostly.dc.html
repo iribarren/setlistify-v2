@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 20px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 20px 16px 12px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+
+    .resultwrap { padding:40px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; }
+    .fraction { font-family:'Space Mono', monospace; font-weight:700; font-size:28px; color:#00336a; }
+    .bar { width:100%; max-width:280px; height:8px; border-radius:999px; background:#f1eee9; overflow:hidden; }
+    .fill { height:100%; background:#2382ba; }
+    .resulttitle { font-family: Petrona, serif; font-weight:600; font-size:21px; margin:4px 0 0; }
+    .resultbody { font-size:13.5px; color:#4f4641; max-width:380px; line-height:1.5; margin:0; }
+    .actionrow { display:flex; gap:10px; margin-top:8px; }
+
+    .playlistcard { width:100%; max-width:420px; margin-top:6px; background:#fffffc; border:1px solid #e1ded7; border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:14px; text-align:left; }
+    .plart { width:52px; height:52px; border-radius:10px; background:linear-gradient(135deg,#2382ba,#501a65); flex-shrink:0; }
+    .plinfo .pltitle { font-family: Petrona, serif; font-weight:600; font-size:15px; }
+    .plinfo .plsub { font-size:12px; color:#4f4641; margin-top:2px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Result: mostly matched</h1>
+  <p class="subtitle">03b · Result variant 2 of 4 — 14 / 19 · the typical Tuesday</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop"><h2>Radiohead — Brixton Academy</h2></div>
+      <div class="resultwrap" style="min-height:560px;">
+        <div class="fraction">14 / 19</div>
+        <div class="bar"><div class="fill" style="width:74%;"></div></div>
+        <p class="resulttitle">Playlist's ready — 5 songs need a pick</p>
+        <p class="resultbody">Everything else matched automatically. The rest just need you to confirm which version — usually a live cut vs. the studio one.</p>
+        <div class="playlistcard">
+          <div class="plart"></div>
+          <div class="plinfo"><div class="pltitle">Radiohead — Brixton Academy, 14 Sep 2026</div><div class="plsub">14 tracks so far · Spotify</div></div>
+        </div>
+        <div class="actionrow">
+          <button class="btn btn-primary">Review the 5 songs</button>
+          <button class="btn btn-secondary">Open in Spotify anyway</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><h2>Radiohead</h2></div>
+      <div class="resultwrap" style="padding:32px 24px;">
+        <div class="fraction" style="font-size:24px;">14 / 19</div>
+        <div class="bar"><div class="fill" style="width:74%;"></div></div>
+        <p class="resulttitle" style="font-size:18px;">Playlist's ready — 5 songs need a pick</p>
+        <p class="resultbody" style="font-size:13px;">Everything else matched. Confirm the rest to finish it.</p>
+        <div class="playlistcard">
+          <div class="plart"></div>
+          <div class="plinfo"><div class="pltitle" style="font-size:14px;">Brixton Academy, 14 Sep</div><div class="plsub">14 tracks so far</div></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;">Review the 5 songs</button>
+        <button class="btn btn-secondary" style="width:100%;">Open in Spotify anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>This is the normal outcome, not an apology.</b> Info-blue throughout (never amber/red — those are reserved for Warning/Error), a progress fraction instead of a percentage bar of "failure", and the headline leads with what's <i>done</i> ("Playlist's ready") before naming what's left. The primary action is "Review the 5 songs" — small, bounded, framed as confirmation rather than fixing something broken — with "Open in Spotify anyway" as an equally valid secondary path for someone who doesn't care about the last few tracks. Tapping either lands the count on the concert page immediately; "Review" opens <a href="#">Report.dc.html</a>.</p>
+</div>
+</x-dc>
+</body>
+</html>

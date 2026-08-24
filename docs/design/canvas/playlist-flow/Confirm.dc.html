@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,600&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    .doc { font-family: Manrope, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #faf8f4; padding: 56px; width: 1980px; color: #221812; }
+    h1.doctitle { font-family: Petrona, ui-serif, Georgia, serif; font-weight: 600; font-size: 40px; margin: 0 0 4px; }
+    p.subtitle { font-family: 'Space Mono', ui-monospace, Menlo, monospace; font-size: 13px; color: #4f4641; margin: 0 0 40px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .row { display: flex; gap: 40px; align-items: flex-start; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 12px; font-size: 15px; font-weight: 600; border: 1.5px solid transparent; gap:8px; }
+    .btn-primary { background: #871600; color: #fffffc; }
+    .btn-secondary { background: transparent; color: #221812; border-color: #4a4742; }
+
+    .desktop { width: 1440px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 14px; box-shadow: 0 1px 3px rgba(34,24,18,0.08); overflow: hidden; display: flex; flex-direction: column; }
+    .apptop { padding: 18px 40px; border-bottom: 1px solid #e1ded7; background: #fffffc; display:flex; align-items:center; justify-content:space-between; }
+    .apptop .left { display:flex; align-items:center; gap:14px; }
+    .backbtn { width: 34px; height: 34px; border-radius: 999px; border: 1.5px solid #4a4742; display: flex; align-items: center; justify-content: center; flex-shrink:0; }
+    .backbtn svg { width:17px; height:17px; }
+    .apptop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 18px; margin: 0; }
+    .steps { font-family:'Space Mono', monospace; font-size:11px; color:#4f4641; }
+
+    .stepbody { padding:28px 40px 36px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; }
+    .stepbody .eyebrow { font-family: Petrona, serif; font-weight:600; font-size:20px; margin:6px 0 0; }
+    .stepbody .lede { font-size:13.5px; color:#4f4641; max-width:420px; margin:0; line-height:1.5; }
+    .allgood { width:52px; height:52px; border-radius:999px; background:#e2f2e3; display:flex; align-items:center; justify-content:center; }
+    .allgood svg { width:26px; height:26px; color:#003d00; }
+
+    .summarycard { width:100%; max-width:460px; background:#fffffc; border:1px solid #e1ded7; border-radius:16px; padding:18px 20px; text-align:left; margin-top:6px; }
+    .sumrow { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #e1ded7; font-size:13.5px; }
+    .sumrow:last-child { border-bottom:none; }
+    .sumrow .k { color:#4f4641; }
+    .sumrow .v { font-weight:600; }
+    .sumrow .v.mono { font-family:'Space Mono', monospace; }
+
+    .phoneframe { width: 390px; height: 844px; background: #faf8f4; border: 1px solid #e1ded7; border-radius: 40px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 1px 3px rgba(34,24,18,0.08); }
+    .phonetop { padding: 18px 16px 8px; display:flex; align-items:center; gap:10px; justify-content:space-between; }
+    .phonetop .left { display:flex; align-items:center; gap:10px; }
+    .phonetop .backbtn { width:28px; height:28px; }
+    .phonetop h2 { font-family: Petrona, serif; font-weight: 600; font-size: 15px; margin: 0; }
+    .phonebody { flex:1; padding: 20px 20px 0; display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; }
+
+    .note { font-size: 12.5px; color: #4f4641; line-height: 1.6; max-width: 1600px; margin-top: 28px; }
+    .note b { font-family: Petrona, serif; font-weight: 600; }
+  </style>
+</helmet>
+<div class="doc">
+  <h1 class="doctitle">Playlist flow — Normal mode: confirm</h1>
+  <p class="subtitle">07 · Step 3 of 3 — review the whole picture, then build it</p>
+
+  <div class="row">
+    <!-- ============ DESKTOP ============ -->
+    <div class="desktop">
+      <div class="apptop">
+        <div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Radiohead — Brixton Academy</h2></div>
+        <span class="steps">STEP 3 / 3</span>
+      </div>
+      <div class="stepbody" style="min-height:480px; justify-content:center;">
+        <div class="allgood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h3 class="eyebrow">Ready to build the playlist</h3>
+        <p class="lede">25 songs, all decided — 22 matched automatically, 3 you just confirmed. Nothing left to review.</p>
+        <div class="summarycard">
+          <div class="sumrow"><span class="k">Setlist</span><span class="v">Brixton Academy, 14 Sep 2026</span></div>
+          <div class="sumrow"><span class="k">Songs on the playlist</span><span class="v mono">25 / 25</span></div>
+          <div class="sumrow"><span class="k">Matched automatically</span><span class="v mono">22</span></div>
+          <div class="sumrow"><span class="k">You confirmed</span><span class="v mono">3</span></div>
+          <div class="sumrow"><span class="k">Destination</span><span class="v">Spotify</span></div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;"><button class="btn btn-primary">Build the playlist</button><button class="btn btn-secondary">Back to song picks</button></div>
+      </div>
+    </div>
+
+    <!-- ============ PHONE ============ -->
+    <div class="phoneframe">
+      <div class="phonetop"><div class="left"><div class="backbtn"><svg viewBox="0 0 24 24" fill="none" stroke="#221812" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><h2>Confirm</h2></div><span class="steps">3/3</span></div>
+      <div class="phonebody">
+        <div class="allgood" style="width:46px;height:46px; margin-top:16px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h3 class="eyebrow" style="font-size:18px;">Ready to build the playlist</h3>
+        <p class="lede" style="font-size:13px;">25 songs, all decided. Nothing left to review.</p>
+        <div class="summarycard">
+          <div class="sumrow"><span class="k">Songs</span><span class="v mono">25 / 25</span></div>
+          <div class="sumrow"><span class="k">Automatic</span><span class="v mono">22</span></div>
+          <div class="sumrow"><span class="k">You confirmed</span><span class="v mono">3</span></div>
+          <div class="sumrow"><span class="k">Destination</span><span class="v">Spotify</span></div>
+        </div>
+      </div>
+      <div style="padding:14px 16px 22px; border-top:1px solid #e1ded7; display:flex; flex-direction:column; gap:8px;">
+        <button class="btn btn-primary" style="width:100%;">Build the playlist</button>
+        <button class="btn btn-secondary" style="width:100%;">Back to song picks</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>A closing summary, not a formality.</b> The confirm step exists because Normal mode's decisions happened across two prior screens — this is the one place the whole outcome is visible at once before it's written to Spotify. The count math is deliberately explicit (22 automatic + 3 confirmed = 25) so the number on this screen is traceable back to the version-selection screen, not a mystery total. "Build the playlist" then runs the same generation step shown in <a href="#">Progress.dc.html</a>, arriving at whichever <a href="#">Result</a> variant the actual match rate produces.</p>
+</div>
+</x-dc>
+</body>
+</html>
