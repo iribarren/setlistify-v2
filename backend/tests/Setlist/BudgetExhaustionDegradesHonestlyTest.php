@@ -104,8 +104,10 @@ final class BudgetExhaustionDegradesHonestlyTest extends SetlistIntegrationTestC
         $countingClient = new MockHttpClient(
             function () use (&$responses): \Symfony\Component\HttpClient\Response\MockResponse {
                 ++$this->outboundRequestCount;
+                $response = array_shift($responses);
+                self::assertNotNull($response, 'MockHttpClient exhausted its queued responses — the code under test made more outbound calls than the test expected.');
 
-                return array_shift($responses);
+                return $response;
             },
         );
         $budget = new SetlistFmBudget($this->redis(), $this->clock(), new \Psr\Log\NullLogger(), ratePerSecond: 1000, dailyBudget: $dailyBudget, tokenWaitSeconds: 1.0);

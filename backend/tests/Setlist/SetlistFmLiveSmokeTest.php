@@ -24,8 +24,8 @@ final class SetlistFmLiveSmokeTest extends SetlistIntegrationTestCase
     {
         self::bootKernel();
 
-        $apiKey = (string) ($_ENV['SETLISTFM_API_KEY'] ?? getenv('SETLISTFM_API_KEY'));
-        if (!preg_match('/^[0-9a-f]{32}$/', $apiKey)) {
+        $apiKey = $_ENV['SETLISTFM_API_KEY'] ?? getenv('SETLISTFM_API_KEY');
+        if (!\is_string($apiKey) || !preg_match('/^[0-9a-f]{32}$/', $apiKey)) {
             self::markTestSkipped('SETLISTFM_API_KEY is not set to a real-looking key — set one in backend/.env.local to run this test.');
         }
     }

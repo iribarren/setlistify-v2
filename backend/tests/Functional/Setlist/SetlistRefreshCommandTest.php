@@ -35,7 +35,6 @@ final class SetlistRefreshCommandTest extends KernelTestCase
         self::bootKernel();
         $container = self::getContainer();
         $redis = $container->get('setlistfm.redis');
-        \assert($redis instanceof \Redis);
         $keys = $redis->keys('setlistfm:*');
         if ([] !== $keys) {
             $redis->del($keys);
@@ -59,6 +58,7 @@ final class SetlistRefreshCommandTest extends KernelTestCase
             self::fixtureResponse('artist-setlists-large-index.json'),
         ]));
 
+        \assert(self::$kernel instanceof \Symfony\Component\HttpKernel\KernelInterface);
         $application = new Application(self::$kernel);
         $command = $application->find('app:setlist:refresh');
         $tester = new CommandTester($command);
@@ -72,7 +72,6 @@ final class SetlistRefreshCommandTest extends KernelTestCase
         self::assertSame($mbid, $reloaded->getSetlistfmMbid());
 
         $runLog = $container->get(SetlistRefreshRunLog::class);
-        \assert($runLog instanceof SetlistRefreshRunLog);
         $lastRun = $runLog->lastRun();
         self::assertNotNull($lastRun);
         self::assertGreaterThanOrEqual(1, $lastRun['bandsAttempted']);
@@ -86,6 +85,7 @@ final class SetlistRefreshCommandTest extends KernelTestCase
         $lock = $lockFactory->createLock('setlistfm:refresh');
         self::assertTrue($lock->acquire(false), 'precondition: lock must be free at test start');
 
+        \assert(self::$kernel instanceof \Symfony\Component\HttpKernel\KernelInterface);
         $application = new Application(self::$kernel);
         $command = $application->find('app:setlist:refresh');
         $tester = new CommandTester($command);
@@ -149,7 +149,6 @@ final class SetlistRefreshCommandTest extends KernelTestCase
     private function overrideGateway(\Symfony\Component\DependencyInjection\ContainerInterface $container, MockHttpClient $httpClient): void
     {
         $redis = $container->get('setlistfm.redis');
-        \assert($redis instanceof \Redis);
 
         $budget = new SetlistFmBudget($redis, $container->get(ClockInterface::class), new \Psr\Log\NullLogger(), ratePerSecond: 1000, dailyBudget: 1_000_000, tokenWaitSeconds: 10.0);
         $client = new SetlistFmClient($httpClient, $budget, new \Psr\Log\NullLogger(), 'unused-in-tests');

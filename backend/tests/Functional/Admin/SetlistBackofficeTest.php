@@ -21,7 +21,8 @@ final class SetlistBackofficeTest extends AdminWebTestCase
         $admin = $this->createAdmin();
         $this->loginAndEnroll($client, $admin['email'], $admin['password']);
 
-        $apiKey = (string) ($_ENV['SETLISTFM_API_KEY'] ?? getenv('SETLISTFM_API_KEY'));
+        $apiKey = $_ENV['SETLISTFM_API_KEY'] ?? getenv('SETLISTFM_API_KEY');
+        self::assertIsString($apiKey);
         self::assertNotSame('', $apiKey);
 
         foreach (['/admin', '/admin/setlist-cache-entry', '/admin/band'] as $route) {

@@ -21,6 +21,7 @@ final class SetlistNormalizerTest extends SetlistIntegrationTestCase
 
     public function testHydratesCoversTapeAndEncoresWithoutFilteringAnySong(): void
     {
+        /** @var array<string, mixed> $payload */
         $payload = json_decode(self::fixture('setlist-detail-covers-tape-encores.json'), true, flags: \JSON_THROW_ON_ERROR);
         $payload['id'] = self::uniqueSetlistfmId();
         $band = $this->persistBand(self::uniqueBandName('Nirvana'), self::uniqueMbid());
@@ -50,6 +51,7 @@ final class SetlistNormalizerTest extends SetlistIntegrationTestCase
 
     public function testHydratesAnEmptySetlistAsExplicitlyEmptyNotAsMissing(): void
     {
+        /** @var array<string, mixed> $payload */
         $payload = json_decode(self::fixture('setlist-detail-empty.json'), true, flags: \JSON_THROW_ON_ERROR);
         $payload['id'] = self::uniqueSetlistfmId();
         $band = $this->persistBand(self::uniqueBandName('Nirvana Empty Show'), self::uniqueMbid());
@@ -63,6 +65,7 @@ final class SetlistNormalizerTest extends SetlistIntegrationTestCase
 
     public function testHydratingTheSameSetlistfmIdTwiceReturnsTheSameEntityWithoutReparsing(): void
     {
+        /** @var array<string, mixed> $payload */
         $payload = json_decode(self::fixture('setlist-detail-covers-tape-encores.json'), true, flags: \JSON_THROW_ON_ERROR);
         $payload['id'] = self::uniqueSetlistfmId();
         $band = $this->persistBand(self::uniqueBandName('Nirvana Idempotent'), self::uniqueMbid());
