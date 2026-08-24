@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\ApiResource\Playlist;
 
+use App\Service\Playlist\Model\ResultKind;
+
 /**
  * `GET /api/playlists/{id}` (spec 14 §6). Carries no provider token, no raw candidate payload, no
  * `candidatesDigest` — those are backoffice and harness data.
@@ -21,7 +23,7 @@ final readonly class PlaylistOutput
         public string $name,
         public ?string $description,
         public ?string $externalUrl,
-        public ?string $resultKind,
+        public ?ResultKind $resultKind,
         public float $matchRate,
         public \DateTimeImmutable $createdAt,
         public array $report,
