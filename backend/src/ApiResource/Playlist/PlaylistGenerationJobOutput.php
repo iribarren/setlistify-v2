@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\ApiResource\Playlist;
 
+use App\Service\Playlist\Model\BlockedReason;
+use App\Service\Playlist\Model\FailureReason;
+use App\Service\Playlist\Model\JobState;
+use App\Service\Playlist\Model\ResultKind;
+
 /**
  * Deliberately flat (spec 14 §6) — polled up to ~20 times per generation. `playlistId` is null until
  * a `Playlist` row exists (matching started producing output); the various reason fields are null
@@ -17,15 +22,15 @@ final readonly class PlaylistGenerationJobOutput
         public string $provider,
         /** @var 'fast'|'normal' */
         public string $mode,
-        public string $state,
+        public JobState $state,
         public ?string $currentStage,
         public int $songsTotal,
         public int $songsProcessed,
         public ?int $estimatedSecondsRemaining,
-        public ?string $blockedReason,
+        public ?BlockedReason $blockedReason,
         public ?\DateTimeImmutable $resumableAfter,
-        public ?string $failureReason,
-        public ?string $resultKind,
+        public ?FailureReason $failureReason,
+        public ?ResultKind $resultKind,
         public ?int $playlistId,
         public int $matchedCount,
         public int $lowConfidenceCount,
