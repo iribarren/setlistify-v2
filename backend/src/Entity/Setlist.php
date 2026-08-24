@@ -56,6 +56,14 @@ class Setlist
     #[ORM\Column(name: 'fetched_at', type: 'datetime_immutable')]
     private \DateTimeImmutable $fetchedAt;
 
+    /**
+     * The setlist.fm canonical page for this show (D-186) — the payload's own `url` field, slug-based
+     * (`https://www.setlist.fm/setlist/<artist>/<year>/<venue-city>-<id>.html`); the id-only form
+     * 404s. `null` for any row cached before this column existed — never backfilled (D-59).
+     */
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $url = null;
+
     /** @var Collection<int, Song> */
     #[ORM\OneToMany(targetEntity: Song::class, mappedBy: 'setlist', cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['position' => 'ASC'])]
@@ -70,6 +78,7 @@ class Setlist
         ?string $venueCountry,
         ?string $tourName,
         \DateTimeImmutable $fetchedAt,
+        ?string $url = null,
     ) {
         $this->setlistfmId = $setlistfmId;
         $this->band = $band;
@@ -79,6 +88,7 @@ class Setlist
         $this->venueCountry = $venueCountry;
         $this->tourName = $tourName;
         $this->fetchedAt = $fetchedAt;
+        $this->url = $url;
         $this->songs = new ArrayCollection();
     }
 
@@ -135,6 +145,11 @@ class Setlist
     public function getFetchedAt(): \DateTimeImmutable
     {
         return $this->fetchedAt;
+    }
+
+    public function getUrl(): ?string
+    {
+        return $this->url;
     }
 
     /** @return Collection<int, Song> */

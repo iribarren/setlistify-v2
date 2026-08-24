@@ -73,6 +73,32 @@ describe("derivePlaylistView (T-1, D-166/D-170)", () => {
     expect(["degraded_band_unknown", "degraded_no_songs"]).toContain(view.kind);
   });
 
+  describe("no_source_material split by noSetlistCause (T-9, D-187, AC-1.5)", () => {
+    it("no_setlist_for_show → degraded_no_songs", () => {
+      const view = derivePlaylistView(
+        job({ state: "completed", resultKind: "no_source_material", noSetlistCause: "no_setlist_for_show" }),
+        null,
+      );
+      expect(view.kind).toBe("degraded_no_songs");
+    });
+
+    it.each(["band_unknown", "band_ambiguous", "identity_unavailable"] as const)(
+      "%s → degraded_band_unknown",
+      (noSetlistCause) => {
+        const view = derivePlaylistView(
+          job({ state: "completed", resultKind: "no_source_material", noSetlistCause }),
+          null,
+        );
+        expect(view.kind).toBe("degraded_band_unknown");
+      },
+    );
+
+    it("a null/absent cause preserves today's degraded_no_songs default (AC-1.5) — NOT lumped with the unknown causes", () => {
+      const view = derivePlaylistView(job({ state: "completed", resultKind: "no_source_material" }), null);
+      expect(view.kind).toBe("degraded_no_songs");
+    });
+  });
+
   it.each([
     ["setlistfm_budget", "blocked_budget"],
     ["provider_quota", "blocked_quota"],

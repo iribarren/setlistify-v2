@@ -104,6 +104,7 @@ final readonly class SetlistNormalizer
             venueCountry: \is_string($country['code'] ?? null) ? $country['code'] : null,
             tourName: \is_string($tour['name'] ?? null) && '' !== $tour['name'] ? $tour['name'] : null,
             fetchedAt: $fetchedAt,
+            url: \is_string($raw['url'] ?? null) ? $raw['url'] : null,
         );
 
         $position = 0;

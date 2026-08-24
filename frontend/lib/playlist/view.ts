@@ -70,17 +70,16 @@ function resultView(job: PlaylistGenerationJobOutput, playlist: PlaylistOutput |
     }
     case "no_tracks_matched":
       return view("result_nothing", job, playlist);
-    case "no_source_material":
-      // KNOWN SPEC DEVIATION: D-170/AC-6.6 asks this to be distinguished by cause (band unresolved
-      // vs. band known but no setlist for the show). The API's only signal here is the job-level
-      // `NO_SETLIST_FOR_BAND` report entry, whose params carry just `{ band }` — nothing that says
-      // *why* (see `backend/src/Service/Playlist/Stage/SetlistSelectionStage.php`). Both F-02 (band
-      // unresolved) and F-03 (setlist empty) collapse to the same signal on the wire, so this can't
-      // be derived client-side today. Defaults to the milder, more broadly-true framing
-      // ("no setlist logged for this show yet") rather than asserting a specific cause
-      // (misspelling) that may not hold. Flagged in the implementation report; the real fix is a
-      // backend field (e.g. a `bandKnown` boolean per report entry, or two distinct report codes).
-      return view("degraded_no_songs", job, playlist);
+    case "no_source_material": {
+      // D-187/AC-1.5: `noSetlistCause` (folded server-side, D-184) is the one signal this branch
+      // switches on. `no_setlist_for_show` means the band IS known on setlist.fm — `DegradedNoSongs`'s
+      // "Known on setlist.fm" badge and "check back in a few days" promise are both truthful there.
+      // `band_unknown`/`band_ambiguous`/`identity_unavailable` route to `degraded_band_unknown`. A
+      // `null` cause (an older server, or a fold that found nothing) is NOT lumped in with those three
+      // — it keeps today's `degraded_no_songs` default, so an older server can't break a newer client.
+      const isKnownUnknownCause = job.noSetlistCause != null && job.noSetlistCause !== "no_setlist_for_show";
+      return view(isKnownUnknownCause ? "degraded_band_unknown" : "degraded_no_songs", job, playlist);
+    }
     default:
       // A resultKind the client doesn't recognise yet, on an otherwise-completed job — treat as the
       // safest completed variant rather than crash: nothing matched is always an honest floor.

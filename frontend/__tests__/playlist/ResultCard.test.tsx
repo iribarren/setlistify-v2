@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
+import { Linking } from "react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { ResultCard } from "@/components/playlist";
 import type { PlaylistViewKind } from "@/lib/playlist";
@@ -76,5 +77,67 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
     );
     expect(screen.getByRole("button", { name: "See the full breakdown" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /open .* anyway/i })).toBeNull();
+  });
+
+  it("result_nothing renders 'View the setlist' and opens sourceSetlists[0].url (T-10, D-186/AC-2.5)", async () => {
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_nothing"
+        job={{ matchedCount: 0, lowConfidenceCount: 0, songsTotal: 12, skippedCount: 0 }}
+        playlist={{
+          "@id": "/api/playlists/1",
+          "@type": "Playlist",
+          sourceSetlists: [
+            { bandName: "Some Band", setlistfmId: "abc123", url: "https://www.setlist.fm/setlist/some-band/2026/venue-abc123.html" },
+          ],
+        }}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "View the setlist" });
+    expect(button).toBeTruthy();
+    fireEvent.press(button);
+    expect(openURLSpy).toHaveBeenCalledWith("https://www.setlist.fm/setlist/some-band/2026/venue-abc123.html");
+
+    openURLSpy.mockRestore();
+  });
+
+  it("result_nothing with an empty sourceSetlists renders no 'View the setlist' button — absent, never disabled (AC-2.5)", async () => {
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_nothing"
+        job={{ matchedCount: 0, lowConfidenceCount: 0, songsTotal: 12, skippedCount: 0 }}
+        playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", sourceSetlists: [] }}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "View the setlist" })).toBeNull();
+  });
+
+  it("result_nothing with a null sourceSetlists[0].url renders no 'View the setlist' button (a setlist cached before this branch, AC-2.5/AC-2.7)", async () => {
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_nothing"
+        job={{ matchedCount: 0, lowConfidenceCount: 0, songsTotal: 12, skippedCount: 0 }}
+        playlist={{
+          "@id": "/api/playlists/1",
+          "@type": "Playlist",
+          sourceSetlists: [{ bandName: "Some Band", setlistfmId: "abc123", url: null }],
+        }}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "View the setlist" })).toBeNull();
   });
 });

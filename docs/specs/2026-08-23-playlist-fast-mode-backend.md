@@ -783,7 +783,7 @@ entity binding, dedicated `Output` DTOs, a state provider per read and a state p
 ```
 id · concertId · provider · mode · state · currentStage
 songsTotal · songsProcessed · estimatedSecondsRemaining
-blockedReason · resumableAfter · failureReason · resultKind
+blockedReason · resumableAfter · failureReason · resultKind · noSetlistCause
 playlistId (null until a playlist exists) · matchedCount · lowConfidenceCount
 notFoundCount · skippedCount · regionRestrictedCount
 createdAt · startedAt · finishedAt
@@ -793,11 +793,20 @@ createdAt · startedAt · finishedAt
 
 ```
 id · concertId · provider · name · description · externalUrl
-state-derived resultKind · matchRate · createdAt
+state-derived resultKind · noSetlistCause · matchRate · createdAt
 report: [ { code, params } ]                          ← job-level (D-141)
 tracks: [ { ordinal, sourcePosition, segmentIndex, bandName, sourceTitle,
             providerTrackId, confidence, outcome, reasonCode, reasonParams } ]
+sourceSetlists: [ { bandName, setlistfmId, url } ]     ← one per distinct source setlist (added by
+                                                          docs/specs/2026-08-24-playlist-result-state-gaps.md, D-185)
 ```
+
+`noSetlistCause` (a `NoSetlistCause` backed enum, non-null only when `resultKind = no_source_material`)
+and `PlaylistOutput.sourceSetlists` were **added by
+`docs/specs/2026-08-24-playlist-result-state-gaps.md`** (D-183–D-186) — not part of this spec's original
+scope, which shipped without a way to distinguish *why* `no_source_material` happened or to link back to
+the setlist a `no_tracks_matched` result was built from. Both gaps had zero-migration/one-migration fixes
+respectively (`Setlist.url`); see that spec for the full rationale.
 
 Note what `PlaylistOutput` does **not** carry: no provider token, no raw candidate payload, no
 `candidatesDigest`. Those are backoffice and harness data.
