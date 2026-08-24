@@ -621,6 +621,30 @@ songs recorded, song absent from the provider's catalog, only live/cover version
 restriction, provider rate limit, token expired. Each has a defined user-facing behaviour. The spikes
 (prompts 12 and 13) exist to design this properly before any of it is written.
 
+### 8.1 The client's counterpart — Fast mode (prompt 16)
+
+The Expo client does not subscribe to the pipeline; it polls, on a cadence the server dictates —
+chosen (spec 16 §2) because it behaves identically on web/iOS/Android and survives backgrounding
+without a socket to reconnect. `GET /api/playlist-generation-jobs/{id}` carries `Retry-After` while
+active and omits it once the job reaches any terminal, blocked, or suspended state; the client's
+entire "stop polling" rule is *that header's absence* — never a list of eleven state names kept in
+sync with the backend. An `ETag` plus `If-None-Match` turns most polls into a 304. Backgrounding
+pauses the poll; foregrounding refetches immediately.
+
+One pure function, `derivePlaylistView()` (`frontend/lib/playlist/view.ts`), is the client's mirror
+of §8's pipeline states — it maps `state`/`resultKind`/`blockedReason`/`failureReason` to exactly one
+of sixteen screens (four result variants, six degraded states, two genuine failures), the same way
+`JobStateMachine` is the one writer of `state` server-side. The client never reaches an error
+presentation for a partial result or a `blocked` job — `ErrorState` is reserved for the two real
+`failed` reasons and transport failures, matching this document's "degrades, does not fail" framing
+one level up, in the UI.
+
+**Recorded gap**: the client cannot currently distinguish *why* `resultKind = no_source_material`
+(band unresolved on setlist.fm vs. band resolved but no setlist logged for the show) — the API's only
+signal, the job-level `NO_SETLIST_FOR_BAND` report entry, carries a band name and nothing else. A
+future backend change (a boolean or a second report code) would let the client render
+`DegradedBandUnknown` and `DegradedNoSongs` correctly instead of defaulting to the latter.
+
 ## 9. Backoffice
 
 Server-rendered EasyAdmin at `/admin`, inside the Symfony app, deliberately not in the Expo client:
