@@ -7,6 +7,7 @@ namespace App\ApiResource\Playlist;
 use App\Service\Playlist\Model\BlockedReason;
 use App\Service\Playlist\Model\FailureReason;
 use App\Service\Playlist\Model\JobState;
+use App\Service\Playlist\Model\NoSetlistCause;
 use App\Service\Playlist\Model\ResultKind;
 
 /**
@@ -31,6 +32,8 @@ final readonly class PlaylistGenerationJobOutput
         public ?\DateTimeImmutable $resumableAfter,
         public ?FailureReason $failureReason,
         public ?ResultKind $resultKind,
+        /** Non-null only when `resultKind === ResultKind::NoSourceMaterial` (D-184). */
+        public ?NoSetlistCause $noSetlistCause,
         public ?int $playlistId,
         public int $matchedCount,
         public int $lowConfidenceCount,

@@ -11,6 +11,7 @@ export type PlaylistOutput = components["schemas"]["Playlist.PlaylistOutput.json
 export type PlaylistTrackOutput = components["schemas"]["PlaylistTrackOutput.jsonld"];
 export type ReportEntryOutput = components["schemas"]["ReportEntryOutput.jsonld"];
 export type ProviderConfigOutput = components["schemas"]["ProviderConfig.ProviderConfigOutput.jsonld"];
+export type SourceSetlistOutput = components["schemas"]["SourceSetlistOutput.jsonld"];
 
 /**
  * D-167/AC-5.4/D-177: every literal union below is an alias of the corresponding generated schema
@@ -85,6 +86,15 @@ export const RESULT_KINDS = exhaustiveArray<ResultKind>()([
   "no_tracks_matched",
 ] as const);
 
+export type NoSetlistCause = NonNullable<PlaylistGenerationJobOutput["noSetlistCause"]>;
+
+export const NO_SETLIST_CAUSES = exhaustiveArray<NoSetlistCause>()([
+  "band_unknown",
+  "band_ambiguous",
+  "no_setlist_for_show",
+  "identity_unavailable",
+] as const);
+
 export type TrackOutcome = NonNullable<PlaylistTrackOutput["outcome"]>;
 
 export const TRACK_OUTCOMES = exhaustiveArray<TrackOutcome>()([
@@ -133,3 +143,4 @@ export const asFailureReason = makeNarrower(FAILURE_REASONS);
 export const asResultKind = makeNarrower(RESULT_KINDS);
 export const asTrackOutcome = makeNarrower(TRACK_OUTCOMES);
 export const asReportCode = makeNarrower(REPORT_CODES);
+export const asNoSetlistCause = makeNarrower(NO_SETLIST_CAUSES);

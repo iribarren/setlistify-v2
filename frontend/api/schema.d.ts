@@ -1,8 +1,8 @@
 /**
  * GENERATED FILE — do not edit by hand (AC-6.3, R-1).
  *
- * Produced by: npm run generate:api
- *   Source: backend/openapi.json (docker compose exec backend bin/console api:openapi:export --output=openapi.json)
+ * Produced by: npm run generate:api:live
+ *   Source: GET \${EXPO_PUBLIC_API_URL}/api/docs.jsonopenapi (a running backend)
  *
  * If this file looks wrong, the fix is in the backend's API Platform resource metadata, or in
  * frontend/scripts/generate-api.mjs's generator config — never a hand-edit here. See
@@ -881,11 +881,17 @@ export interface components {
             externalUrl?: string | null;
             /** @enum {string|null} */
             resultKind?: "complete" | "partial" | "no_source_material" | "no_tracks_matched" | null;
+            /**
+             * @description Non-null only when `resultKind === ResultKind::NoSourceMaterial` (D-184).
+             * @enum {string|null}
+             */
+            noSetlistCause?: "band_unknown" | "band_ambiguous" | "no_setlist_for_show" | "identity_unavailable" | null;
             matchRate?: number;
             /** Format: date-time */
             createdAt?: string;
             report?: components["schemas"]["ReportEntryOutput.jsonld"][];
             tracks?: components["schemas"]["PlaylistTrackOutput.jsonld"][];
+            sourceSetlists?: components["schemas"]["SourceSetlistOutput.jsonld"][];
         };
         /** @description Starts (or returns the already-live) playlist generation for a concert. Zero provider and zero setlist.fm calls happen on this request thread (AC-1.1); a second POST for the same live (concert, provider) returns 200 with the existing job, never a 409 (D-129). */
         "PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
@@ -907,6 +913,11 @@ export interface components {
             failureReason?: "creation_indeterminate" | "unknown_provider" | "block_cycles_exhausted" | null;
             /** @enum {string|null} */
             resultKind?: "complete" | "partial" | "no_source_material" | "no_tracks_matched" | null;
+            /**
+             * @description Non-null only when `resultKind === ResultKind::NoSourceMaterial` (D-184).
+             * @enum {string|null}
+             */
+            noSetlistCause?: "band_unknown" | "band_ambiguous" | "no_setlist_for_show" | "identity_unavailable" | null;
             playlistId?: number | null;
             matchedCount?: number;
             lowConfidenceCount?: number;
@@ -1010,6 +1021,11 @@ export interface components {
             withName?: string | null;
             info?: string | null;
             isTape?: boolean;
+        };
+        "SourceSetlistOutput.jsonld": {
+            bandName?: string;
+            setlistfmId?: string;
+            url?: string | null;
         };
         /** @description A user's link to one streaming provider — status, scopes and identity, never a token (US-2, US-3). */
         "StreamingAccount.StreamingAccountOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {

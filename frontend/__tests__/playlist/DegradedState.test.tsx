@@ -117,6 +117,20 @@ describe("PlaylistDegradedState (T-6, T-7, D-168/D-170)", () => {
     expect(screen.queryByRole("button", { name: "Check again" })).toBeNull();
   });
 
+  it.each(["degraded_band_unknown", "degraded_no_songs"] as PlaylistDegradedKind[])(
+    "%s carries no error token/icon/word (T-11, AC-4.3, extends spec 16's T-1)",
+    async (kind) => {
+      const view = await renderWithTheme(
+        <PlaylistDegradedState testID="degraded" kind={kind} job={job({ state: "completed", resultKind: "no_source_material" })} {...baseProps} />,
+      );
+      expect(view.queryByTestId("degraded-error-icon")).toBeNull();
+      for (const word of FORBIDDEN_WORDS) {
+        expect(view.queryByText(word)).toBeNull();
+      }
+      view.unmount();
+    },
+  );
+
   it("failed_generic is the one variant allowed to use ErrorState, with Retry (T-12)", async () => {
     await renderWithTheme(
       <PlaylistDegradedState testID="degraded" kind="failed_generic" job={job({ state: "failed", failureReason: "unknown_provider" })} {...baseProps} />,

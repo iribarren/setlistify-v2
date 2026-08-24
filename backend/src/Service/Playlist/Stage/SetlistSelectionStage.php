@@ -14,6 +14,7 @@ use App\Repository\PlaylistRepository;
 use App\Repository\SetlistRepository;
 use App\Service\Matching\MedleySplitter;
 use App\Service\Playlist\Exception\SetlistBudgetExhaustedException;
+use App\Service\Playlist\Model\NoSetlistCause;
 use App\Service\Playlist\Model\ReportCode;
 use App\Service\Playlist\Naming\PlaylistNamer;
 use App\Service\Playlist\SubstantialSetlistSelector;
@@ -96,7 +97,10 @@ final readonly class SetlistSelectionStage
             $result = $this->selector->select($candidates, $now);
 
             if (null === $result) {
-                $reportEntries[] = [ReportCode::NoSetlistForBand, ['band' => $band->getName()]];
+                $reportEntries[] = [ReportCode::NoSetlistForBand, [
+                    'band' => $band->getName(),
+                    'cause' => NoSetlistCause::forResolutionState($band->getSetlistfmResolutionState())->value,
+                ]];
                 continue;
             }
 

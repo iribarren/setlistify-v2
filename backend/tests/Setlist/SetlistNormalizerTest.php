@@ -63,6 +63,33 @@ final class SetlistNormalizerTest extends SetlistIntegrationTestCase
         self::assertSame($payload['id'], $setlist->getSetlistfmId());
     }
 
+    /** T-7: the payload's own `url` field is persisted onto `Setlist::$url`. */
+    public function testPersistsThePayloadsUrlFieldOntoSetlistUrl(): void
+    {
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode(self::fixture('setlist-detail-empty.json'), true, flags: \JSON_THROW_ON_ERROR);
+        $payload['id'] = self::uniqueSetlistfmId();
+        $band = $this->persistBand(self::uniqueBandName('Nirvana With Url'), self::uniqueMbid());
+
+        $setlist = $this->normalizer()->hydrateSetlistDetail($band, $payload, new \DateTimeImmutable());
+
+        self::assertSame($payload['url'], $setlist->getUrl());
+    }
+
+    /** T-7: a payload with no `url` key leaves it `null` rather than erroring. */
+    public function testAPayloadWithNoUrlKeyLeavesItNull(): void
+    {
+        /** @var array<string, mixed> $payload */
+        $payload = json_decode(self::fixture('setlist-detail-covers-tape-encores.json'), true, flags: \JSON_THROW_ON_ERROR);
+        unset($payload['url']);
+        $payload['id'] = self::uniqueSetlistfmId();
+        $band = $this->persistBand(self::uniqueBandName('Nirvana No Url'), self::uniqueMbid());
+
+        $setlist = $this->normalizer()->hydrateSetlistDetail($band, $payload, new \DateTimeImmutable());
+
+        self::assertNull($setlist->getUrl());
+    }
+
     public function testHydratingTheSameSetlistfmIdTwiceReturnsTheSameEntityWithoutReparsing(): void
     {
         /** @var array<string, mixed> $payload */

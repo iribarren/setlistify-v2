@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Playlist;
 
+use App\Entity\Playlist;
 use App\Entity\PlaylistGenerationJob;
 use App\Service\Playlist\JobStateMachine;
 use App\Service\Playlist\Model\BlockedReason;
 use App\Service\Playlist\Model\JobMode;
 use App\Service\Playlist\Model\JobState;
+use App\Service\Playlist\Model\ResultKind;
 use App\Tests\Support\Streaming\TestDoubleStreamingProvider;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -210,6 +212,60 @@ final class PlaylistGenerationApiTest extends PlaylistApiTestCase
         $data = self::decodeJsonObject((string) $client->getResponse()->getContent());
         self::assertSame('blocked', $data['state']);
         self::assertSame('provider_quota', $data['blockedReason']);
+    }
+
+    /** T-4: `noSetlistCause` is non-null exactly on a `no_source_material` job, folded from the report. */
+    public function testNoSetlistCauseIsPresentOnlyOnANoSourceMaterialJob(): void
+    {
+        $client = $this->prepare();
+        $user = $this->registerLoginAndLink($client);
+        $fixture = $this->createConcertWithBand($user['email']);
+        $job = $this->persistJob($user['email'], $fixture['concert']);
+        $playlist = $this->persistPlaylist($user['email'], $fixture['concert'], $job);
+        $this->addNoSetlistForBandEntry($playlist, $fixture['band']->getName(), 'band_unknown');
+        $this->freezeResultKind($job, ResultKind::NoSourceMaterial);
+        $jobId = $job->getId();
+
+        $client->request('GET', \sprintf('/api/playlist-generation-jobs/%d', $jobId), server: self::authHeaders($user['accessToken']));
+        self::assertResponseIsSuccessful();
+        $data = self::decodeJsonObject((string) $client->getResponse()->getContent());
+        self::assertSame('band_unknown', $data['noSetlistCause']);
+
+        foreach ([ResultKind::Partial, ResultKind::Complete, ResultKind::NoTracksMatched] as $otherResultKind) {
+            // A fresh concert per iteration — a Concert fetched before the PRECEDING GET request
+            // rebooted the kernel is a detached entity by now (see this class's own docblock).
+            $otherFixture = $this->createConcertWithBand($user['email']);
+            $otherJob = $this->persistJob($user['email'], $otherFixture['concert']);
+            $this->freezeResultKind($otherJob, $otherResultKind);
+            $otherJobId = $otherJob->getId();
+
+            $client->request('GET', \sprintf('/api/playlist-generation-jobs/%d', $otherJobId), server: self::authHeaders($user['accessToken']));
+            self::assertResponseIsSuccessful();
+            $otherData = self::decodeJsonObject((string) $client->getResponse()->getContent());
+            self::assertNull($otherData['noSetlistCause'], \sprintf('resultKind=%s must carry a null noSetlistCause.', $otherResultKind->value));
+        }
+    }
+
+    private function addNoSetlistForBandEntry(Playlist $playlist, string $bandName, string $cause): void
+    {
+        $playlist->addReportEntry('NO_SETLIST_FOR_BAND', ['band' => $bandName, 'cause' => $cause], new \DateTimeImmutable());
+        $this->entityManager()->flush();
+    }
+
+    /**
+     * Moves `$job` all the way to `completed` (the anti-starvation index forbids leaving it in a
+     * "live" state — `queued`/`resolving_setlist`/`matching`/`building` — for more than one job per
+     * user, D-144) and freezes `$resultKind` on it, exactly the order `ReportStage` itself uses.
+     */
+    private function freezeResultKind(PlaylistGenerationJob $job, ResultKind $resultKind): void
+    {
+        $stateMachine = static::getContainer()->get(JobStateMachine::class);
+        $stateMachine->startResolvingSetlist($job);
+        $stateMachine->enterMatching($job);
+        $stateMachine->enterBuilding($job);
+        $job->freezeCounters(0, 0, 0, 0, 0, null, null, [], $resultKind, new \DateTimeImmutable());
+        $stateMachine->complete($job);
+        $this->entityManager()->flush();
     }
 
     private function postStartGeneration(\Symfony\Bundle\FrameworkBundle\KernelBrowser $client, string $accessToken, int $concertId): void

@@ -9,6 +9,8 @@ use App\Entity\PlaylistGenerationJob;
 use App\Repository\PlaylistRepository;
 use App\Service\Playlist\GenerationEstimator;
 use App\Service\Playlist\Model\JobState;
+use App\Service\Playlist\Model\ResultKind;
+use App\Service\Playlist\NoSetlistCauseFolder;
 
 /** `PlaylistGenerationJob` entity -> `PlaylistGenerationJobOutput` DTO (spec 14 §6). */
 final readonly class PlaylistGenerationJobOutputMapper
@@ -16,6 +18,7 @@ final readonly class PlaylistGenerationJobOutputMapper
     public function __construct(
         private PlaylistRepository $playlistRepository,
         private GenerationEstimator $estimator,
+        private NoSetlistCauseFolder $noSetlistCauseFolder,
     ) {
     }
 
@@ -28,6 +31,10 @@ final readonly class PlaylistGenerationJobOutputMapper
             : null;
 
         $playlist = $this->playlistRepository->findOneBy(['job' => $job]);
+
+        $noSetlistCause = ResultKind::NoSourceMaterial === $job->getResultKind() && null !== $playlist
+            ? $this->noSetlistCauseFolder->fold($playlist->getReportSummary())
+            : null;
 
         return new PlaylistGenerationJobOutput(
             id: $jobId,
@@ -43,6 +50,7 @@ final readonly class PlaylistGenerationJobOutputMapper
             resumableAfter: $job->getResumableAfter(),
             failureReason: $job->getFailureReason(),
             resultKind: $job->getResultKind(),
+            noSetlistCause: $noSetlistCause,
             playlistId: $playlist?->getId(),
             matchedCount: $job->getMatchedCount(),
             lowConfidenceCount: $job->getLowConfidenceCount(),

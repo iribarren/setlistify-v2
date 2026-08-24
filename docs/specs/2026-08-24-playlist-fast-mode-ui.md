@@ -155,6 +155,11 @@ this branch**, not diverged from silently.
   each of the three partial variants (D-168).
 - **AC-4.4** The `0 / N` variant keeps "View the setlist" available — "we found what they played"
   succeeded even where "we found it on the provider" did not.
+  **Satisfied as of `docs/specs/2026-08-24-playlist-result-state-gaps.md`** (D-185/D-186's
+  `PlaylistOutput.sourceSetlists`) — half-wired at this spec's original merge because neither DTO
+  exposed the setlist.fm setlist the job resolved against; `ResultCard.tsx` now renders "View the
+  setlist" for `result_nothing` when `sourceSetlists[0].url` is non-null (absent, never disabled,
+  for a setlist cached before that branch — D-59's immutable-once-fetched rule, no backfill).
 - **AC-4.5** The result headline leads with what exists before naming what is missing, per
   `ResultMostly.dc.html` ("Playlist's ready — 5 songs need a pick", not "5 songs failed").
 
@@ -206,6 +211,9 @@ this branch**, not diverged from silently.
 - **AC-6.6** `no_source_material` is distinguished by cause: **band unknown** →
   `DegradedBandUnknown.dc.html`, **band known but no setlist for this show** → `DegradedNoSongs.dc.html`.
   Both are HTTP 200 `completed` jobs and neither is styled as an error.
+  **Satisfied as of `docs/specs/2026-08-24-playlist-result-state-gaps.md`** (D-183/D-184's
+  `noSetlistCause` field) — unsatisfiable at this spec's original merge because the wire carried no
+  cause; see that spec's D-187 and this document's own §3 table (now driven by `noSetlistCause`).
 
 ### US-7 — Retry and delete, safely
 
@@ -306,8 +314,14 @@ union. Pure, exhaustively tested, and the only place this mapping exists.
 | `resultKind = partial`, `matchRate ≥ 0.5` | `result_mostly` | `ResultMostly.dc.html` |
 | `resultKind = partial`, `0 < matchRate < 0.5` | `result_barely` | `ResultBarely.dc.html` |
 | `resultKind = no_tracks_matched` (`matchRate = 0`, no provider playlist) | `result_nothing` | `ResultNothing.dc.html` |
-| `resultKind = no_source_material`, band unresolved | `degraded_band_unknown` | `DegradedBandUnknown.dc.html` |
-| `resultKind = no_source_material`, band resolved, no setlist for the show | `degraded_no_songs` | `DegradedNoSongs.dc.html` |
+| `resultKind = no_source_material`, `noSetlistCause = band_unknown` \| `band_ambiguous` \| `identity_unavailable` \| absent | `degraded_band_unknown` | `DegradedBandUnknown.dc.html` |
+| `resultKind = no_source_material`, `noSetlistCause = no_setlist_for_show` | `degraded_no_songs` | `DegradedNoSongs.dc.html` |
+
+`noSetlistCause` is the driving field for this split (added by
+`docs/specs/2026-08-24-playlist-result-state-gaps.md`, D-183/D-184) — AC-6.6 and AC-4.4 of this spec,
+originally unsatisfiable because the wire carried no cause, are satisfied as of that branch. A `null`/
+absent cause (an older server, or nothing to fold) is **not** lumped in with the three "unknown" causes —
+it preserves this spec's original `degraded_no_songs` default (AC-1.5 of the result-state-gaps spec).
 
 The **0.5 boundary** is this spec's only new number, and it is a copy decision, not a quality one: at or
 above half, the honest headline is "playlist's ready, N need a pick"; below it, the honest headline

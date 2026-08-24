@@ -36,6 +36,7 @@ export function ResultCard({
   const hits = HITS(job);
   const denominator = DENOMINATOR(job);
   const externalUrl = playlist?.externalUrl ?? null;
+  const setlistUrl = playlist?.sourceSetlists?.[0]?.url ?? null;
 
   const palette = kind === "result_full" ? "success" : kind === "result_barely" ? "warning" : "info";
 
@@ -111,6 +112,17 @@ export function ResultCard({
                 variant="secondary"
                 onPress={() => externalUrl && void Linking.openURL(externalUrl)}
                 disabled={!externalUrl}
+              />
+            ) : null}
+            {/* D-186/AC-2.5: absent — never disabled — when there's nothing to link to (a setlist
+                cached before this branch, or an empty sourceSetlists). Pointing at a 404 would be
+                worse than not offering the button at all. */}
+            {kind === "result_nothing" && setlistUrl ? (
+              <Button
+                testID={testID ? `${testID}-view-setlist` : undefined}
+                label="View the setlist"
+                variant="secondary"
+                onPress={() => void Linking.openURL(setlistUrl)}
               />
             ) : null}
           </>

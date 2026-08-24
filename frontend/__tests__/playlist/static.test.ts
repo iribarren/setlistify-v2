@@ -54,3 +54,22 @@ describe("static: wire types are aliased from the generated schema, not hand-dec
     },
   );
 });
+
+// T-8/AC-2.6: no setlist.fm URL is ever constructed or templated client-side — the client only ever
+// renders a URL the backend already persisted (D-186). Prose mentioning "setlist.fm" (e.g. "Known
+// on setlist.fm") is fine and expected (D-170's degraded-state copy); what must never appear is an
+// actual URL/path literal or a template string building one — "www.setlist.fm", a "setlist.fm/…"
+// path, or a protocol-prefixed host.
+describe("static: no setlist.fm URL is constructed or templated client-side (T-8, AC-2.6)", () => {
+  const files = SCAN_DIRS.flatMap(collectSourceFiles);
+  const SETLISTFM_URL_LITERAL = /(www\.setlist\.fm|setlist\.fm\/|:\/\/[^\s"'`]*setlist\.fm)/i;
+
+  it("scanned at least one file in each directory", () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files.map((file) => [file.replace(ROOT + "/", "")]))("%s has no setlist.fm URL literal", (relativePath) => {
+    const content = readFileSync(join(ROOT, relativePath), "utf8");
+    expect(content).not.toMatch(SETLISTFM_URL_LITERAL);
+  });
+});
