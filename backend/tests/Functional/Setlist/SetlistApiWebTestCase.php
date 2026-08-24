@@ -50,7 +50,6 @@ abstract class SetlistApiWebTestCase extends AuthWebTestCase
         $container = static::getContainer();
 
         $redis = $container->get('setlistfm.redis');
-        \assert($redis instanceof \Redis);
         $keys = $redis->keys('setlistfm:*');
         if ([] !== $keys) {
             $redis->del($keys);

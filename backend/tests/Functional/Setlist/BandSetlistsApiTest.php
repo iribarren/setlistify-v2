@@ -99,6 +99,7 @@ final class BandSetlistsApiTest extends SetlistApiWebTestCase
         $data = self::decodeJsonObject((string) $client->getResponse()->getContent());
 
         self::assertSame('resolved', $data['state']);
+        self::assertIsArray($data['setlists']);
         self::assertSame(10, \count($data['setlists']));
         self::assertSame(20, $data['totalItems']);
         self::assertIsArray($data['freshness']);

@@ -36,7 +36,6 @@ abstract class SetlistIntegrationTestCase extends KernelTestCase
     protected function resetSetlistfmRedis(): void
     {
         $redis = self::getContainer()->get('setlistfm.redis');
-        \assert($redis instanceof \Redis);
         $keys = $redis->keys('setlistfm:*');
         if ([] !== $keys) {
             $redis->del($keys);
@@ -102,10 +101,7 @@ abstract class SetlistIntegrationTestCase extends KernelTestCase
 
     protected function redis(): \Redis
     {
-        $redis = self::getContainer()->get('setlistfm.redis');
-        \assert($redis instanceof \Redis);
-
-        return $redis;
+        return self::getContainer()->get('setlistfm.redis');
     }
 
     protected function clock(): ClockInterface

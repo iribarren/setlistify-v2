@@ -47,7 +47,27 @@ final class SetlistFmBudgetTest extends SetlistIntegrationTestCase
 
     public function testRateLimitDegradesWithinBoundedWaitInsteadOfBlockingForever(): void
     {
-        $budget = new SetlistFmBudget($this->redis(), $this->clock(), new NullLogger(), ratePerSecond: 1, dailyBudget: 1000, tokenWaitSeconds: 0.2);
+        // The rate-token bucket keys itself by the current whole second: without pinning time via
+        // the currentTimestamp/sleep seam, this test races the real wall clock — if the two
+        // acquire() calls below straddle a real second boundary, the "should be blocked" call lands
+        // in a fresh bucket and wrongly succeeds. Faking time keeps both calls in the same bucket
+        // deterministically, and makes the "never blocks beyond its bounded wait" assertion
+        // meaningful without an actual sleep.
+        $fakeNow = 1_700_000_000.0;
+        $budget = new SetlistFmBudget(
+            $this->redis(),
+            $this->clock(),
+            new NullLogger(),
+            ratePerSecond: 1,
+            dailyBudget: 1000,
+            tokenWaitSeconds: 0.2,
+            currentTimestamp: static function () use (&$fakeNow): float {
+                return $fakeNow;
+            },
+            sleep: static function (float $seconds) use (&$fakeNow): void {
+                $fakeNow += $seconds;
+            },
+        );
 
         self::assertTrue($budget->acquire()->allowed);
 

@@ -43,8 +43,10 @@ final class SetlistFmClientRetryTest extends \PHPUnit\Framework\TestCase
         ];
         $mock = new MockHttpClient(function () use (&$responses, &$attempts): MockResponse {
             ++$attempts;
+            $response = array_shift($responses);
+            self::assertNotNull($response, 'MockHttpClient exhausted its queued responses — the code under test made more outbound calls than the test expected.');
 
-            return array_shift($responses);
+            return $response;
         });
 
         $client = $this->makeClient($mock);

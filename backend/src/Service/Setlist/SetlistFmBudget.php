@@ -27,6 +27,12 @@ final class SetlistFmBudget
     private const int BREAKER_COOLDOWN_SECONDS = 60;
     private const float TOKEN_POLL_INTERVAL_SECONDS = 0.05;
 
+    /**
+     * @param (\Closure(): float)|null   $currentTimestamp seam for deterministic tests of the rate-token
+     *                                                      loop; defaults to the real wall clock (`microtime(true)`)
+     * @param (\Closure(float): void)|null $sleep           seam for deterministic tests of the rate-token
+     *                                                      loop; defaults to a real `usleep()`
+     */
     public function __construct(
         private readonly \Redis $redis,
         private readonly ClockInterface $clock,
@@ -34,6 +40,8 @@ final class SetlistFmBudget
         private readonly int $ratePerSecond,
         private readonly int $dailyBudget,
         private readonly float $tokenWaitSeconds,
+        private readonly ?\Closure $currentTimestamp = null,
+        private readonly ?\Closure $sleep = null,
     ) {
     }
 
@@ -158,10 +166,10 @@ final class SetlistFmBudget
 
     private function tryAcquireRateToken(float $waitSeconds): bool
     {
-        $deadline = microtime(true) + $waitSeconds;
+        $deadline = $this->currentTimestamp() + $waitSeconds;
 
         while (true) {
-            $second = (int) floor(microtime(true));
+            $second = (int) floor($this->currentTimestamp());
             $key = \sprintf('setlistfm:rate:%d', $second);
             $count = (int) $this->redis->incr($key);
             if (1 === $count) {
@@ -172,12 +180,28 @@ final class SetlistFmBudget
                 return true;
             }
 
-            if (microtime(true) >= $deadline) {
+            if ($this->currentTimestamp() >= $deadline) {
                 return false;
             }
 
-            usleep((int) (self::TOKEN_POLL_INTERVAL_SECONDS * 1_000_000));
+            $this->sleep(self::TOKEN_POLL_INTERVAL_SECONDS);
         }
+    }
+
+    private function currentTimestamp(): float
+    {
+        return null !== $this->currentTimestamp ? ($this->currentTimestamp)() : microtime(true);
+    }
+
+    private function sleep(float $seconds): void
+    {
+        if (null !== $this->sleep) {
+            ($this->sleep)($seconds);
+
+            return;
+        }
+
+        usleep((int) ($seconds * 1_000_000));
     }
 
     private function dailyKey(\DateTimeImmutable $now): string
