@@ -279,11 +279,6 @@ server's state actually describes — never a client-invented error.
 
 **Known gaps, recorded rather than hacked around** (see `lib/playlist/types.ts` and `view.ts` for the
 full comments):
-- The generated schema types `state`/`blockedReason`/`failureReason`/`resultKind`/`outcome`/
-  `reasonCode` as plain `string`, not a literal union — the backend's output DTOs declare these
-  properties as `?string` rather than the PHP enum type, so `openapi-typescript` has nothing to
-  narrow. The literal unions in `types.ts` are transcribed from the backend's own enums and
-  runtime-narrowed at the boundary; the real fix is a backend DTO change.
 - `no_source_material` can't be split into "band unknown to setlist.fm" vs. "band known, no setlist
   logged yet" client-side — the only signal, the job-level `NO_SETLIST_FOR_BAND` report entry, carries
   just `{ band }`, not *why*. `derivePlaylistView()` defaults to the milder `degraded_no_songs` framing.

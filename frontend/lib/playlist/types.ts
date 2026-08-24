@@ -13,29 +13,29 @@ export type ReportEntryOutput = components["schemas"]["ReportEntryOutput.jsonld"
 export type ProviderConfigOutput = components["schemas"]["ProviderConfig.ProviderConfigOutput.jsonld"];
 
 /**
- * KNOWN SPEC DEVIATION (flagged in the implementation report, not hacked around silently):
+ * D-167/AC-5.4/D-177: every literal union below is an alias of the corresponding generated schema
+ * field — `frontend/api/schema.d.ts` now carries a real `enum` for `state` / `blockedReason` /
+ * `failureReason` / `resultKind` / `outcome` / `reasonCode` / `code` (the backend's output DTOs were
+ * fixed in `bugfix/playlist-report-enum-typing` to declare the PHP backed enum types instead of plain
+ * `?string` — see `backend/src/ApiResource/Playlist/*.php`), so `openapi-typescript` narrows them
+ * itself. Nothing here is hand-transcribed any more.
  *
- * D-167/AC-5.4 ask for `reportCopy.ts` to be "typed against the generated `reasonCode` union, so an
- * unmapped code is a compile error." Spec 14 §1 says every one of these columns is a PHP backed enum
- * (`enumType: JobState` etc.) — but the *output DTOs* that API Platform reflects into the OpenAPI
- * document (`PlaylistTrackOutput::$reasonCode`, `PlaylistGenerationJobOutput::$state`, etc. — see
- * `backend/src/ApiResource/Playlist/*.php`) declare those properties as plain `?string`, not the enum
- * type. `openapi-typescript` therefore generates `string` for `state` / `blockedReason` /
- * `failureReason` / `resultKind` / `outcome` / `reasonCode` / `code` — no literal union survives into
- * `frontend/api/schema.d.ts` for the client to alias.
- *
- * Rather than silently widening the exhaustiveness check to `Record<string, ...>` (which would defeat
- * D-167's entire point — a new backend code would then be a silent runtime gap again, not a compile
- * error), the literal unions below are transcribed verbatim from the backend's own enum
- * declarations (`backend/src/Service/Playlist/Model/*.php`) and used as the compile-time contract.
- * They are runtime-narrowed at the one boundary where wire data enters (`asJobState`, `asReportCode`,
- * etc.) so an unrecognised runtime value degrades to a safe fallback instead of a type lie.
- *
- * The real fix belongs on the backend: type the output DTO properties with the PHP enum itself (or
- * add an explicit OpenAPI `enum:` annotation) so these unions come from `schema.d.ts` like everything
- * else in this file. Recorded here so it isn't rediscovered from scratch.
+ * `exhaustiveArray()` still gives each full enumeration a compile-time-checked runtime array: if the
+ * backend adds/removes/renames a case, the generated union changes and the corresponding array below
+ * fails to typecheck until it's updated — the same guarantee D-167 asks of `reportCopy.ts`'s
+ * `Record`, extended to every enum in this module. The `as*` narrowers still runtime-guard the one
+ * boundary where wire data enters, so a value the *client* doesn't know about yet (client older than
+ * server) degrades to a safe fallback instead of a type lie.
  */
-export const JOB_STATES = [
+function exhaustiveArray<T extends string>() {
+  return function <A extends readonly T[]>(array: [T] extends [A[number]] ? A : never): A {
+    return array;
+  };
+}
+
+export type JobState = NonNullable<PlaylistGenerationJobOutput["state"]>;
+
+export const JOB_STATES = exhaustiveArray<JobState>()([
   "queued",
   "resolving_setlist",
   "awaiting_setlist_choice",
@@ -47,8 +47,7 @@ export const JOB_STATES = [
   "failed",
   "expired",
   "cancelled",
-] as const;
-export type JobState = (typeof JOB_STATES)[number];
+] as const);
 
 export const ACTIVE_JOB_STATES: readonly JobState[] = [
   "queued",
@@ -58,33 +57,54 @@ export const ACTIVE_JOB_STATES: readonly JobState[] = [
 ];
 export const TERMINAL_JOB_STATES: readonly JobState[] = ["completed", "failed", "expired", "cancelled"];
 
-export const BLOCKED_REASONS = [
+export type BlockedReason = NonNullable<PlaylistGenerationJobOutput["blockedReason"]>;
+
+export const BLOCKED_REASONS = exhaustiveArray<BlockedReason>()([
   "setlistfm_budget",
   "provider_quota",
   "provider_rate_limit",
   "needs_reauth",
   "provider_disabled",
   "upstream_unavailable",
-] as const;
-export type BlockedReason = (typeof BLOCKED_REASONS)[number];
+] as const);
 
-export const FAILURE_REASONS = ["creation_indeterminate", "unknown_provider", "block_cycles_exhausted"] as const;
-export type FailureReason = (typeof FAILURE_REASONS)[number];
+export type FailureReason = NonNullable<PlaylistGenerationJobOutput["failureReason"]>;
 
-export const RESULT_KINDS = ["complete", "partial", "no_source_material", "no_tracks_matched"] as const;
-export type ResultKind = (typeof RESULT_KINDS)[number];
+export const FAILURE_REASONS = exhaustiveArray<FailureReason>()([
+  "creation_indeterminate",
+  "unknown_provider",
+  "block_cycles_exhausted",
+] as const);
 
-export const TRACK_OUTCOMES = [
+export type ResultKind = NonNullable<PlaylistGenerationJobOutput["resultKind"]>;
+
+export const RESULT_KINDS = exhaustiveArray<ResultKind>()([
+  "complete",
+  "partial",
+  "no_source_material",
+  "no_tracks_matched",
+] as const);
+
+export type TrackOutcome = NonNullable<PlaylistTrackOutput["outcome"]>;
+
+export const TRACK_OUTCOMES = exhaustiveArray<TrackOutcome>()([
   "pending",
   "matched",
   "matched_low_confidence",
   "skipped",
   "not_found",
   "region_restricted",
-] as const;
-export type TrackOutcome = (typeof TRACK_OUTCOMES)[number];
+] as const);
 
-export const REPORT_CODES = [
+/**
+ * The same backed enum drives both `PlaylistTrackOutput.reasonCode` (per-track, nullable) and
+ * `ReportEntryOutput.code` (job-level report rows, never null) — `ReportCode` aliases the former with
+ * `null` stripped, and a `satisfies`-style check isn't needed for the latter since it's a strict
+ * subset (in fact the same set) of this union.
+ */
+export type ReportCode = NonNullable<PlaylistTrackOutput["reasonCode"]>;
+
+export const REPORT_CODES = exhaustiveArray<ReportCode>()([
   "COVER_OF",
   "LIVE_VERSION_ONLY",
   "LOW_CONFIDENCE_MATCH",
@@ -100,8 +120,7 @@ export const REPORT_CODES = [
   "SETLIST_TRUNCATED",
   "RESUMED_MID_INSERTION",
   "FALLBACK_LONGEST_SETLIST",
-] as const;
-export type ReportCode = (typeof REPORT_CODES)[number];
+] as const);
 
 function makeNarrower<T extends string>(values: readonly T[]) {
   const set = new Set<string>(values);

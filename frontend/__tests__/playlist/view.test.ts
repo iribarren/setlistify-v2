@@ -26,7 +26,7 @@ describe("derivePlaylistView (T-1, D-166/D-170)", () => {
     expect(derivePlaylistView(null, null).kind).toBe("idle");
   });
 
-  it.each(["queued", "resolving_setlist", "matching", "building"])("active state %s → progress", (state) => {
+  it.each(["queued", "resolving_setlist", "matching", "building"] as const)("active state %s → progress", (state) => {
     expect(derivePlaylistView(job({ state }), null).kind).toBe("progress");
   });
 
@@ -80,7 +80,7 @@ describe("derivePlaylistView (T-1, D-166/D-170)", () => {
     ["needs_reauth", "blocked_reauth"],
     ["provider_disabled", "blocked_disabled"],
     ["upstream_unavailable", "blocked_upstream"],
-  ])("blocked/%s → %s", (blockedReason, expectedKind) => {
+  ] as const)("blocked/%s → %s", (blockedReason, expectedKind) => {
     expect(derivePlaylistView(job({ state: "blocked", blockedReason }), null).kind).toBe(expectedKind);
   });
 
@@ -90,7 +90,7 @@ describe("derivePlaylistView (T-1, D-166/D-170)", () => {
     );
   });
 
-  it.each(["unknown_provider", "block_cycles_exhausted"])("failed/%s → failed_generic", (failureReason) => {
+  it.each(["unknown_provider", "block_cycles_exhausted"] as const)("failed/%s → failed_generic", (failureReason) => {
     expect(derivePlaylistView(job({ state: "failed", failureReason }), null).kind).toBe("failed_generic");
   });
 

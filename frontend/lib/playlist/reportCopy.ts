@@ -8,11 +8,11 @@ function param(params: ReasonParams, key: string): string {
 }
 
 /**
- * D-167: total over `ReportCode` (the generated `reasonCode`/job-report-code union — see the
- * deviation note in `./types.ts`) so adding a case here is required to add a case to the enum, and
- * vice versa — TypeScript refuses to compile this file if either drifts from the other (AC-5.4).
- * Every sentence names a cause a non-technical person recognises, per `Report.dc.html`'s register —
- * never a mechanism, never the code itself (AC-5.3).
+ * D-167: total over `ReportCode` — an alias of the generated `reasonCode`/`code` union (see
+ * `./types.ts`) — so adding a case here is required to add a case to the enum, and vice versa;
+ * TypeScript refuses to compile this file if either drifts from the other (AC-5.4). Every sentence
+ * names a cause a non-technical person recognises, per `Report.dc.html`'s register — never a
+ * mechanism, never the code itself (AC-5.3).
  */
 const REPORT_COPY: Record<ReportCode, (params: ReasonParams) => string> = {
   // Per-song

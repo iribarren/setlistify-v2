@@ -879,7 +879,8 @@ export interface components {
             name?: string;
             description?: string | null;
             externalUrl?: string | null;
-            resultKind?: string | null;
+            /** @enum {string|null} */
+            resultKind?: "complete" | "partial" | "no_source_material" | "no_tracks_matched" | null;
             matchRate?: number;
             /** Format: date-time */
             createdAt?: string;
@@ -892,16 +893,20 @@ export interface components {
             concertId?: number;
             provider?: string;
             mode?: string;
-            state?: string;
+            /** @enum {string} */
+            state?: "queued" | "resolving_setlist" | "awaiting_setlist_choice" | "matching" | "awaiting_version_choice" | "building" | "blocked" | "completed" | "failed" | "expired" | "cancelled";
             currentStage?: string | null;
             songsTotal?: number;
             songsProcessed?: number;
             estimatedSecondsRemaining?: number | null;
-            blockedReason?: string | null;
+            /** @enum {string|null} */
+            blockedReason?: "setlistfm_budget" | "provider_quota" | "provider_rate_limit" | "needs_reauth" | "provider_disabled" | "upstream_unavailable" | null;
             /** Format: date-time */
             resumableAfter?: string | null;
-            failureReason?: string | null;
-            resultKind?: string | null;
+            /** @enum {string|null} */
+            failureReason?: "creation_indeterminate" | "unknown_provider" | "block_cycles_exhausted" | null;
+            /** @enum {string|null} */
+            resultKind?: "complete" | "partial" | "no_source_material" | "no_tracks_matched" | null;
             playlistId?: number | null;
             matchedCount?: number;
             lowConfidenceCount?: number;
@@ -928,8 +933,10 @@ export interface components {
             sourceTitle?: string;
             providerTrackId?: string | null;
             confidence?: number | null;
-            outcome?: string;
-            reasonCode?: string | null;
+            /** @enum {string} */
+            outcome?: "pending" | "matched" | "matched_low_confidence" | "skipped" | "not_found" | "region_restricted";
+            /** @enum {string|null} */
+            reasonCode?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | null;
             reasonParams?: {
                 [key: string]: string | null;
             } | null;
@@ -966,7 +973,8 @@ export interface components {
             refreshToken?: string | null;
         };
         "ReportEntryOutput.jsonld": {
-            code?: string;
+            /** @enum {string} */
+            code?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST";
             params?: {
                 [key: string]: string | null;
             };

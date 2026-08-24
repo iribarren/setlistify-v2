@@ -10,11 +10,11 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 function tracksFixture(): PlaylistTrackOutput[] {
-  const matched = Array.from({ length: 22 }, (_, index) => ({
+  const matched: PlaylistTrackOutput[] = Array.from({ length: 22 }, (_, index) => ({
     ordinal: index,
     sourcePosition: index,
     sourceTitle: `Matched song ${index}`,
-    outcome: "matched",
+    outcome: "matched" as const,
   }));
   const gaps: PlaylistTrackOutput[] = [
     { ordinal: 22, sourcePosition: 22, sourceTitle: "Talk Show Host", outcome: "matched_low_confidence", reasonCode: "LOW_CONFIDENCE_MATCH" },
