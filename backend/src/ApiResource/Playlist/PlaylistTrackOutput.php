@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\ApiResource\Playlist;
 
+use App\Service\Playlist\Model\ReportCode;
+use App\Service\Playlist\Model\TrackOutcome;
+
 /** One source song's row in the report (spec 14 §6) — including the ones that produced no track. */
 final readonly class PlaylistTrackOutput
 {
@@ -16,8 +19,8 @@ final readonly class PlaylistTrackOutput
         public string $sourceTitle,
         public ?string $providerTrackId,
         public ?float $confidence,
-        public string $outcome,
-        public ?string $reasonCode,
+        public TrackOutcome $outcome,
+        public ?ReportCode $reasonCode,
         public ?array $reasonParams,
     ) {
     }
