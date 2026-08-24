@@ -261,6 +261,174 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves the collection of Playlist resources.
+         * @description Retrieves the collection of Playlist resources.
+         */
+        get: operations["api_playlists_get_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a Playlist resource.
+         * @description Retrieves a Playlist resource.
+         */
+        get: operations["api_playlists_id_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Removes the Playlist resource.
+         * @description Removes the Playlist resource.
+         */
+        delete: operations["api_playlists_id_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves the collection of PlaylistGenerationJob resources.
+         * @description Retrieves the collection of PlaylistGenerationJob resources.
+         */
+        get: operations["api_playlist-generation-jobs_get_collection"];
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a PlaylistGenerationJob resource.
+         * @description Retrieves a PlaylistGenerationJob resource.
+         */
+        get: operations["api_playlist-generation-jobs_id_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_idcancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}/create-anyway": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_idcreate-anyway_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_idretry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves the collection of ProviderConfig resources.
+         * @description Retrieves the collection of ProviderConfig resources.
+         */
+        get: operations["api_configproviders_get_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/token/refresh": {
         parameters: {
             query?: never;
@@ -703,6 +871,78 @@ export interface components {
              */
             email: string;
         };
+        /** @description A generated playlist for a concert, with its per-song report (US-1, US-2). */
+        "Playlist.PlaylistOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            id?: number;
+            concertId?: number;
+            provider?: string;
+            name?: string;
+            description?: string | null;
+            externalUrl?: string | null;
+            resultKind?: string | null;
+            matchRate?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            report?: components["schemas"]["ReportEntryOutput.jsonld"][];
+            tracks?: components["schemas"]["PlaylistTrackOutput.jsonld"][];
+        };
+        /** @description Starts (or returns the already-live) playlist generation for a concert. Zero provider and zero setlist.fm calls happen on this request thread (AC-1.1); a second POST for the same live (concert, provider) returns 200 with the existing job, never a 409 (D-129). */
+        "PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            id?: number;
+            concertId?: number;
+            provider?: string;
+            mode?: string;
+            state?: string;
+            currentStage?: string | null;
+            songsTotal?: number;
+            songsProcessed?: number;
+            estimatedSecondsRemaining?: number | null;
+            blockedReason?: string | null;
+            /** Format: date-time */
+            resumableAfter?: string | null;
+            failureReason?: string | null;
+            resultKind?: string | null;
+            playlistId?: number | null;
+            matchedCount?: number;
+            lowConfidenceCount?: number;
+            notFoundCount?: number;
+            skippedCount?: number;
+            regionRestrictedCount?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /** Format: date-time */
+            finishedAt?: string | null;
+        };
+        /** @description Starts (or returns the already-live) playlist generation for a concert. Zero provider and zero setlist.fm calls happen on this request thread (AC-1.1); a second POST for the same live (concert, provider) returns 200 with the existing job, never a 409 (D-129). */
+        "PlaylistGenerationJob.StartGenerationInput": {
+            concertId: number | null;
+            provider?: string | null;
+        };
+        "PlaylistTrackOutput.jsonld": {
+            ordinal?: number;
+            sourcePosition?: number;
+            segmentIndex?: number | null;
+            bandName?: string;
+            sourceTitle?: string;
+            providerTrackId?: string | null;
+            confidence?: number | null;
+            outcome?: string;
+            reasonCode?: string | null;
+            reasonParams?: {
+                [key: string]: string | null;
+            } | null;
+        };
+        /** @description Which streaming providers are offered right now, and how playback should render — read by the client at startup (US-6). */
+        "ProviderConfig.ProviderConfigOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            key?: string;
+            displayName?: string;
+            enabled?: boolean;
+            /** @enum {string} */
+            playbackMode?: "embed" | "deeplink" | "off";
+            isDefault?: boolean;
+        };
         /**
          * @description `POST /api/token/refresh` (US-4). Every call rotates the presented refresh token — it is marked
          *     used and a new one takes its place, sharing the same family (AC-4.1). Reuse of an
@@ -724,6 +964,12 @@ export interface components {
             expiresIn?: number;
             /** @description Present only for `X-Client-Platform: native` requests — see {@see LoginOutput}. */
             refreshToken?: string | null;
+        };
+        "ReportEntryOutput.jsonld": {
+            code?: string;
+            params?: {
+                [key: string]: string | null;
+            };
         };
         /** @description One show's full song list, in playing order (US-4). */
         "Setlist.SetlistDetailOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
@@ -1509,6 +1755,458 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ConstraintViolation"];
                     "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_playlists_get_collection: {
+        parameters: {
+            query?: {
+                /** @description The collection page number */
+                page?: number;
+                /** @description Filter to playlists for one concert. */
+                concertId?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["HydraCollectionBaseSchema"] & {
+                        member: components["schemas"]["Playlist.PlaylistOutput.jsonld"][];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_playlists_id_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Playlist identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["Playlist.PlaylistOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_playlists_id_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Playlist identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Playlist resource deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_get_collection": {
+        parameters: {
+            query?: {
+                /** @description The collection page number */
+                page?: number;
+                /** @description Filter to jobs for one concert. */
+                concertId?: number;
+                /** @description Filter to jobs in one state. */
+                state?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["HydraCollectionBaseSchema"] & {
+                        member: components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"][];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The new PlaylistGenerationJob resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["PlaylistGenerationJob.StartGenerationInput"];
+            };
+        };
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_id_get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_idcancel_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_idcreate-anyway_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_idretry_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_configproviders_get_collection: {
+        parameters: {
+            query?: {
+                /** @description The collection page number */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ProviderConfig collection */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["HydraCollectionBaseSchema"] & {
+                        member: components["schemas"]["ProviderConfig.ProviderConfigOutput.jsonld"][];
+                    };
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

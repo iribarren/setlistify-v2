@@ -221,14 +221,78 @@ a URL the backend produced and later resolves the opaque, one-time reference the
   single-use reference again (AC-8.7). The native leg gets the same reference directly from
   `openAuthSessionAsync`'s result URL — no route/query-param involvement.
 
-**Not consumed yet, on purpose (D-101):** the backend's `docs/specs/2026-08-22-backoffice-provider-configuration.md`
-ships a public, unauthenticated `GET /api/config/providers` — the future startup read for which
-providers are enabled and how playback should render, so a backoffice change reaches the app without
-a build. No frontend code reads it yet; that lands with prompts 16 (playlist fast-mode UI) and 19
-(playback surface), once there is a screen to hang the "temporarily unavailable" state on.
-- **Out of scope here** (later prompts): which providers are enabled and playback mode (prompt 11 —
-  this branch hardcodes Spotify as the one connectable provider, `SUPPORTED_PROVIDERS` in
-  `lib/streaming/index.ts`), track matching, playlist generation, and the concert page player embed.
+**Now consumed by prompt 16 (playlist fast-mode UI):** the backend's
+`docs/specs/2026-08-22-backoffice-provider-configuration.md` ships a public, unauthenticated
+`GET /api/config/providers` (`key`, `displayName`, `enabled`, `playbackMode`, `isDefault`) —
+`lib/playlist/queries.ts`'s `useProviderConfigs` reads it with a 60s `staleTime` (D-169) so an
+operator's mid-incident toggle reaches an open app quickly, and it is the *only* place a
+provider's `displayName` (the one provider-specific string allowed into the UI) comes from.
+- **Still out of scope here**: playback mode driving an in-app player embed (prompt 19).
+  `lib/streaming/index.ts`'s `SUPPORTED_PROVIDERS`/`providerDisplayName` remain the streaming-account
+  linking feature's own (unrelated) provider list — the playlist feature never imports them.
+
+## Playlist generation — Fast mode (`feature/playlist-fast-mode-ui`)
+
+`docs/specs/2026-08-24-playlist-fast-mode-ui.md` (D-161–D-181) turns prompt 14's seven playlist
+endpoints and prompt 15's canvas into the concert detail screen's **Playlist** section plus two
+routes. One tap on **Generate playlist** posts a job; the client polls it, then renders whichever of
+sixteen designed screens (four result variants, six degraded states, two genuine failures) the
+server's state actually describes — never a client-invented error.
+
+- **`lib/playlist/`** — the only module that calls the playlist endpoints:
+  - `queries.ts` — `useProviderConfigs`, `useConcertPlaylistJobs`/`pickCurrentJob` (AC-3.2's
+    "resolve the current job on entry" priority: active > blocked > most recent terminal),
+    `useConcertPlaylists` (the *only* source for the concert page's playlist section — AC-8.4),
+    `usePlaylistDetail`, `useStartGeneration`/`useRetryGeneration`/`useCreateAnyway`/`useDeletePlaylist`.
+  - `polling.ts` — `usePlaylistJobPolling`: `refetchInterval` seeded from the response's
+    `Retry-After` header; its absence is the *entire* termination rule (D-163) — no list of state
+    names to keep in sync with the backend. Sends `If-None-Match` once an `ETag` has been seen; a
+    304 keeps the cached job untouched (D-164). `AppState` pauses polling in the background and
+    refetches immediately on foreground (D-165) — one hook covers web (via React Native Web's own
+    `visibilitychange` bridge) and native, no platform fork needed.
+  - `view.ts` — `derivePlaylistView(job, playlist, providers, accounts)`: the ONE place server state
+    maps to a screen (D-166/D-170), pure and exhaustively tested. `MOSTLY_MATCHED_FLOOR = 0.5` is
+    the spec's one new number.
+  - `reportCopy.ts` — `describeReportCode(code, params)`: a `Record` typed against the report-code
+    union, total over every code, with a safe fallback for a genuinely unknown runtime code (never
+    the raw code itself — D-167/AC-5.3). See the file-level comment for why that union is hand-kept
+    rather than schema-derived (a documented backend gap, not an oversight).
+  - `providerChoice.ts` — `selectProviderCandidates`/`chooseProvider`: `providers ∩ connected
+    accounts`, then none/single/default+alternatives/ask-the-user (D-169). No provider key literal
+    anywhere in this directory or `components/playlist/` — enforced by a static test.
+  - `types.ts` — every wire shape is an alias of `frontend/api/schema.d.ts`.
+- **`components/playlist/`** — `GenerateTrigger`, `GenerationProgress`, `ResultCard` (the four result
+  variants), `ReportList` (only the songs needing a look — matched rows never render), `DegradedState`
+  (the six degraded screens plus the two genuine failures; `ErrorState` is used ONLY for
+  `failed_generic`/`failed_indeterminate`), `PlaylistSection` (the concert detail screen's Playlist
+  card — trigger / compact in-progress status / the permanent tracklist card), and
+  `DeletePlaylistConfirmation` (states plainly that the provider-side playlist survives — D-151/D-173).
+- **Routes**: `app/(app)/concerts/[id]/playlist.tsx` — ONE route for progress + all sixteen result/
+  degraded/failure screens, state-driven via `derivePlaylistView()` rather than four separate routes
+  (D-162); `app/(app)/concerts/[id]/playlist-report.tsx` — the report. Row actions ("Pick a version",
+  "Skip") are **not wired** here — the report is read-only in Fast mode; they arrive with prompt 17
+  (D-171), which is also why the primary CTA on a partial result is "See what's missing", not "Review
+  the N songs".
+- **Colour discipline (D-168/AC-4.3)**: partial results and blocked states use only `info`/`warning`
+  tokens — never `error`/`destructive`, never the words "error"/"failed"/"problem"/"sorry". A static
+  component test asserts this against the rendered tree for every partial and blocked view.
+
+**Known gaps, recorded rather than hacked around** (see `lib/playlist/types.ts` and `view.ts` for the
+full comments):
+- The generated schema types `state`/`blockedReason`/`failureReason`/`resultKind`/`outcome`/
+  `reasonCode` as plain `string`, not a literal union — the backend's output DTOs declare these
+  properties as `?string` rather than the PHP enum type, so `openapi-typescript` has nothing to
+  narrow. The literal unions in `types.ts` are transcribed from the backend's own enums and
+  runtime-narrowed at the boundary; the real fix is a backend DTO change.
+- `no_source_material` can't be split into "band unknown to setlist.fm" vs. "band known, no setlist
+  logged yet" client-side — the only signal, the job-level `NO_SETLIST_FOR_BAND` report entry, carries
+  just `{ band }`, not *why*. `derivePlaylistView()` defaults to the milder `degraded_no_songs` framing.
+- `ResultNothing.dc.html`'s "View the setlist" action isn't wired — neither `PlaylistGenerationJobOutput`
+  nor `PlaylistOutput` exposes the selected setlist's `setlistfmId`, so there's nothing to link to yet.
+
+**Not built here, on purpose (D-171/D-179, spec 16 §7):** the "choose it yourself" mode-chooser sheet,
+the report's per-row actions (version selection), a cancel affordance, and push notifications on
+completion. All are prompt 17+ or explicitly undesigned.
 
 ## What's here
 
@@ -241,7 +305,7 @@ frontend/
 │  ├─ (auth)/           login, register, forgot-password, reset-password — redirects in if already signed in
 │  └─ (app)/            breakpoint-driven shell (tab bar / sidebar) around:
 │     ├─ index.tsx        redirects to /concerts
-│     ├─ concerts/        list, add, detail, edit — the app's real home (prompt 07)
+│     ├─ concerts/        list, add, detail, edit, playlist, playlist-report (prompts 07, 16)
 │     └─ account.tsx      identity, email verification, log out, Connections (prompt 10)
 ├─ api/               GENERATED — openapi-typescript output, committed, never hand-edited
 ├─ theme/             colors · typography · spacing · radius · elevation · ThemeProvider
@@ -250,11 +314,14 @@ frontend/
 │  ├─ concert/         ConcertCard, SkeletonCard, LineupList, BandEntryRow, DisclosureSection,
 │  │                    ReservedSection, ConcertForm, DeleteConfirmation
 │  ├─ streaming/       ConnectionsSection, StreamingAccountRow, DisconnectConfirmation
+│  ├─ playlist/        GenerateTrigger, GenerationProgress, ResultCard, ReportList, DegradedState,
+│  │                    PlaylistSection, DeletePlaylistConfirmation (prompt 16)
 │  └─ nav/             BottomTabBar, Sidebar, breakpoint
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
 ├─ lib/concerts/      concert query hooks, DTO mapping, client validation, RFC 7807 violation mapping
 ├─ lib/streaming/     account-linking query hooks, linkAccount.native/web, error copy
+├─ lib/playlist/      playlist query hooks, polling, state→screen mapping, report copy, provider choice
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```
@@ -263,7 +330,9 @@ frontend/
 
 Modals/bottom sheets and toasts are still specified on the canvas but not built as generic
 components — the concert feature's delete/discard confirmations and disclosure sections are
-inline, purpose-built pieces rather than a general sheet/toast primitive. Playlist flows, notes UI
-and sharing remain out of scope — see `docs/specs/2026-08-21-concert-tracker-ui.md`, "Out of Scope".
+inline, purpose-built pieces rather than a general sheet/toast primitive. Notes UI and sharing
+remain out of scope. Playlist generation (Fast mode) is now built — see above; Normal mode
+(setlist/version selection), in-app playback and the mode-chooser sheet are still out of scope
+(prompts 17/19) — see `docs/specs/2026-08-24-playlist-fast-mode-ui.md`, "Out of Scope".
 Tabs and date inputs, previously deferred here, shipped with this branch (D-34/D-39) as their first
 real consumer.
