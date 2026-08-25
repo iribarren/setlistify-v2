@@ -60,6 +60,9 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
     /** @var list<list<string>> */
     private array $addTracksCallLog = [];
 
+    /** When true, `playlistEmbedUrl()` returns null — scripts "the adapter has no embed" (D-211). */
+    private bool $embedUrlIsNull = false;
+
     /** Clears every scripted behaviour and call counter — call between tests sharing one kernel boot. */
     public function reset(): void
     {
@@ -78,6 +81,13 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
         $this->noCandidateTitles = [];
         $this->candidateOverrides = [];
         $this->addTracksCallLog = [];
+        $this->embedUrlIsNull = false;
+    }
+
+    /** `playlistEmbedUrl()` returns null on every subsequent call (D-211's "adapter returns null" case). */
+    public function scriptEmbedUrlNull(): void
+    {
+        $this->embedUrlIsNull = true;
     }
 
     /**
@@ -267,8 +277,12 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
         }
     }
 
-    public function playlistEmbedUrl(string $playlistId): string
+    public function playlistEmbedUrl(string $playlistId): ?string
     {
+        if ($this->embedUrlIsNull) {
+            return null;
+        }
+
         return \sprintf('https://double.invalid/embed/%s', $playlistId);
     }
 

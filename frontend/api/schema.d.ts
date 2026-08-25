@@ -1015,6 +1015,11 @@ export interface components {
             name?: string;
             description?: string | null;
             externalUrl?: string | null;
+            /**
+             * @description The provider's embeddable player URL, or null when the provider offers none, the playlist
+             *     has no provider-side id yet, or the provider cannot be resolved (D-211).
+             */
+            embedUrl?: string | null;
             /** @enum {string|null} */
             resultKind?: "complete" | "partial" | "no_source_material" | "no_tracks_matched" | null;
             /**

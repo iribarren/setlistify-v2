@@ -25,6 +25,11 @@ final readonly class PlaylistOutput
         public string $name,
         public ?string $description,
         public ?string $externalUrl,
+        /**
+         * The provider's embeddable player URL, or null when the provider offers none, the playlist
+         * has no provider-side id yet, or the provider cannot be resolved (D-211).
+         */
+        public ?string $embedUrl,
         public ?ResultKind $resultKind,
         /** Non-null only when `resultKind === ResultKind::NoSourceMaterial` (D-184). */
         public ?NoSetlistCause $noSetlistCause,

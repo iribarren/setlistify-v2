@@ -14,12 +14,15 @@ use App\Service\Playlist\Model\ReportCode;
 use App\Service\Playlist\Model\ResultKind;
 use App\Service\Playlist\Model\TrackOutcome;
 use App\Service\Playlist\NoSetlistCauseFolder;
+use App\Service\Streaming\StreamingProviderLocator;
+use App\Service\Streaming\UnknownProviderException;
 
 /** `Playlist` entity -> `PlaylistOutput` DTO (spec 14 §6). Carries no provider token or raw digest. */
 final readonly class PlaylistOutputMapper
 {
     public function __construct(
         private NoSetlistCauseFolder $noSetlistCauseFolder,
+        private StreamingProviderLocator $streamingProviderLocator,
     ) {
     }
 
@@ -78,13 +81,16 @@ final readonly class PlaylistOutputMapper
 
         $matchRate = $denominator > 0 ? $hits / $denominator : 0.0;
 
+        [$embedUrl, $externalUrl] = $this->resolvePlaybackUrls($playlist);
+
         return new PlaylistOutput(
             id: $playlistId,
             concertId: $playlist->getConcert()->getId() ?? 0,
             provider: $playlist->getProviderKey(),
             name: $playlist->getName(),
             description: $playlist->getDescription(),
-            externalUrl: $playlist->getExternalUrl(),
+            externalUrl: $externalUrl,
+            embedUrl: $embedUrl,
             resultKind: $resultKind,
             noSetlistCause: $noSetlistCause,
             matchRate: $matchRate,
@@ -93,5 +99,38 @@ final readonly class PlaylistOutputMapper
             tracks: $tracks,
             sourceSetlists: array_values($sourceSetlistsByKey),
         );
+    }
+
+    /**
+     * `embedUrl` is computed at map time by calling the port; never stored, never built by the
+     * client (D-211). `externalUrl` is the deep link: the stored value if creation completed, else
+     * the port's `playlistDeepLink()` fallback (D-212) — that is how `playlistDeepLink()` finally
+     * acquires a consumer (spec 10, AC-9.7).
+     *
+     * Degrades, does not fail: a playlist with no provider-side id yet, an adapter that returns
+     * null, or an unresolvable provider (`UnknownProviderException`, e.g. a retired provider) all
+     * fold to `[null, $playlist->getExternalUrl()]` rather than throwing.
+     *
+     * @return array{0: ?string, 1: ?string} [embedUrl, externalUrl]
+     */
+    private function resolvePlaybackUrls(Playlist $playlist): array
+    {
+        $providerPlaylistId = $playlist->getProviderPlaylistId();
+        $storedExternalUrl = $playlist->getExternalUrl();
+
+        if (null === $providerPlaylistId) {
+            return [null, $storedExternalUrl];
+        }
+
+        try {
+            $provider = $this->streamingProviderLocator->get($playlist->getProviderKey());
+        } catch (UnknownProviderException) {
+            return [null, $storedExternalUrl];
+        }
+
+        $embedUrl = $provider->playlistEmbedUrl($providerPlaylistId);
+        $externalUrl = $storedExternalUrl ?? $provider->playlistDeepLink($providerPlaylistId);
+
+        return [$embedUrl, $externalUrl];
     }
 }
