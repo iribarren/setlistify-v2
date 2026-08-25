@@ -130,7 +130,7 @@
         {% endif %}
     </div>
 
-    <div>
+    <div style="margin-bottom:1em;">
         <strong>Top 5 unmatched (artist, title) pairs:</strong>
         {% if playlist_metrics.topUnmatchedPairs is empty %}
             <div>none</div>
@@ -141,5 +141,39 @@
                 {% endfor %}
             </ol>
         {% endif %}
+    </div>
+
+    <h4>Normal mode — decision count (D-209, docs/specs/2026-08-25-playlist-normal-mode.md)</h4>
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:1.5em; {{ playlist_metrics.investigate.decisionCount ? 'color:#b00020;' : '' }}">
+                {{ playlist_metrics.normalMode.medianDecisionCount is null ? '—' : playlist_metrics.normalMode.medianDecisionCount|round }}
+            </div>
+            <div>Median decisions required per job (investigate above 5)</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.normalMode.p95DecisionCount is null ? '—' : playlist_metrics.normalMode.p95DecisionCount|round }}
+            </div>
+            <div>p95 decisions required per job</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.normalMode.zeroTapShare is null ? '—' : (playlist_metrics.normalMode.zeroTapShare * 100)|round(1) ~ '%' }}
+            </div>
+            <div>Completed with zero taps</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.normalMode.abandonmentByState.awaiting_setlist_choice is null ? '—' : (playlist_metrics.normalMode.abandonmentByState.awaiting_setlist_choice * 100)|round(1) ~ '%' }}
+            </div>
+            <div>Abandoned at setlist choice</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">
+                {{ playlist_metrics.normalMode.abandonmentByState.awaiting_version_choice is null ? '—' : (playlist_metrics.normalMode.abandonmentByState.awaiting_version_choice * 100)|round(1) ~ '%' }}
+            </div>
+            <div>Abandoned at version choice</div>
+        </div>
     </div>
 {% endblock %}

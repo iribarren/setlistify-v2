@@ -30,6 +30,13 @@ final class PlaylistDashboardMetrics
     /** A blocked share above this fraction of jobs is worth investigating. */
     public const float BLOCKED_SHARE_THRESHOLD = 0.10;
 
+    /**
+     * D-209/AC-9.3 (docs/specs/2026-08-25-playlist-normal-mode.md): a median decision count above
+     * this means spec 12's `CHOICE`-band threshold needs revisiting — a legitimate outcome of that
+     * work, not a defect of the version-selection UI.
+     */
+    public const int DECISION_BUDGET = 5;
+
     public function __construct(
         private readonly Connection $connection,
         private readonly ClockInterface $clock,
@@ -48,7 +55,13 @@ final class PlaylistDashboardMetrics
      *     notFoundRate: float|null,
      *     blockedReasonBreakdown: array<string, int>,
      *     topUnmatchedPairs: list<array{artist: string, title: string, count: int}>,
-     *     investigate: array{p95Duration: bool, matchRate: bool, blockedShare: bool},
+     *     investigate: array{p95Duration: bool, matchRate: bool, blockedShare: bool, decisionCount: bool},
+     *     normalMode: array{
+     *         medianDecisionCount: float|null,
+     *         p95DecisionCount: float|null,
+     *         zeroTapShare: float|null,
+     *         abandonmentByState: array{awaiting_setlist_choice: float|null, awaiting_version_choice: float|null},
+     *     },
      * }
      */
     public function sevenDaySummary(): array
@@ -71,6 +84,12 @@ final class PlaylistDashboardMetrics
 
         $blockedShare = $jobsStarted > 0 ? $jobsBlocked / $jobsStarted : 0.0;
 
+        $decisionCounts = $this->normalModeDecisionCounts($since);
+        $medianDecisionCount = self::percentile($decisionCounts, 0.50);
+        $p95DecisionCount = self::percentile($decisionCounts, 0.95);
+        $zeroTapShare = $this->normalModeZeroTapShare($since);
+        $abandonmentByState = $this->normalModeAbandonmentByState($since);
+
         return [
             'jobsStarted' => $jobsStarted,
             'jobsCompleted' => $jobsCompleted,
@@ -86,8 +105,104 @@ final class PlaylistDashboardMetrics
                 'p95Duration' => null !== $p95 && $p95 > self::P95_DURATION_THRESHOLD_MS,
                 'matchRate' => null !== $meanMatchRate && $meanMatchRate < self::MATCH_RATE_THRESHOLD,
                 'blockedShare' => $blockedShare > self::BLOCKED_SHARE_THRESHOLD,
+                'decisionCount' => null !== $medianDecisionCount && $medianDecisionCount > self::DECISION_BUDGET,
+            ],
+            'normalMode' => [
+                'medianDecisionCount' => $medianDecisionCount,
+                'p95DecisionCount' => $p95DecisionCount,
+                'zeroTapShare' => $zeroTapShare,
+                'abandonmentByState' => $abandonmentByState,
             ],
         ];
+    }
+
+    /**
+     * D-209/AC-9.1: `choicesRequiredCount` on every Normal-mode job that reached the version step and
+     * completed — "how many decisions did this setlist actually demand," the number the whole
+     * pre-resolution design (spec 12's `CHOICE` band) exists to keep small.
+     *
+     * @return list<int>
+     */
+    private function normalModeDecisionCounts(\DateTimeImmutable $since): array
+    {
+        $rows = $this->connection->fetchFirstColumn(
+            "SELECT choices_required_count FROM playlist_generation_jobs
+             WHERE created_at >= :since AND mode = 'normal' AND state = 'completed' AND choices_required_count IS NOT NULL
+             ORDER BY choices_required_count ASC",
+            ['since' => $since->format('Y-m-d H:i:s')],
+        );
+
+        return array_map(static fn (mixed $v): int => self::toInt($v), $rows);
+    }
+
+    /**
+     * AC-9.2: of the Normal-mode jobs that reached a version step and completed, the share that
+     * needed zero real decisions — every song was left at its pre-selected default or, per D-198,
+     * resolved from a remembered preference. `choicesMadeCount` counts only choices that actually
+     * differ from the default (`VersionChoiceApplier`), so this is a genuine "submitted with no taps"
+     * measure, not just "a submission happened".
+     */
+    private function normalModeZeroTapShare(\DateTimeImmutable $since): ?float
+    {
+        $total = $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM playlist_generation_jobs
+             WHERE created_at >= :since AND mode = 'normal' AND state = 'completed' AND choices_required_count IS NOT NULL",
+            ['since' => $since->format('Y-m-d H:i:s')],
+        );
+        $totalCount = self::toInt($total);
+        if (0 === $totalCount) {
+            return null;
+        }
+
+        $zeroTap = $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM playlist_generation_jobs
+             WHERE created_at >= :since AND mode = 'normal' AND state = 'completed'
+               AND choices_required_count IS NOT NULL AND choices_made_count = 0",
+            ['since' => $since->format('Y-m-d H:i:s')],
+        );
+
+        return self::toInt($zeroTap) / $totalCount;
+    }
+
+    /**
+     * AC-9.2/R-6: the share of jobs that reached each suspension and never came back, versus stayed
+     * suspended or completed from it. `choicesRequiredCount` is the only surviving signal once a job
+     * expires (spec 13 §6 drops the suspension payloads but keeps this column) — `NULL` means it
+     * expired before ever reaching the version step (abandoned at `awaiting_setlist_choice`);
+     * non-`NULL` means it had already reached `awaiting_version_choice` at least once.
+     *
+     * @return array{awaiting_setlist_choice: float|null, awaiting_version_choice: float|null}
+     */
+    private function normalModeAbandonmentByState(\DateTimeImmutable $since): array
+    {
+        return [
+            'awaiting_setlist_choice' => $this->abandonmentRate($since, requiredCountIsNull: true),
+            'awaiting_version_choice' => $this->abandonmentRate($since, requiredCountIsNull: false),
+        ];
+    }
+
+    private function abandonmentRate(\DateTimeImmutable $since, bool $requiredCountIsNull): ?float
+    {
+        $nullCheck = $requiredCountIsNull ? 'IS NULL' : 'IS NOT NULL';
+        $currentState = $requiredCountIsNull ? 'awaiting_setlist_choice' : 'awaiting_version_choice';
+
+        $expired = $this->connection->fetchOne(
+            "SELECT COUNT(*) FROM playlist_generation_jobs
+             WHERE created_at >= :since AND mode = 'normal' AND state = 'expired' AND choices_required_count {$nullCheck}",
+            ['since' => $since->format('Y-m-d H:i:s')],
+        );
+        $stillSuspended = $this->connection->fetchOne(
+            'SELECT COUNT(*) FROM playlist_generation_jobs WHERE created_at >= :since AND mode = :mode AND state = :state',
+            ['since' => $since->format('Y-m-d H:i:s'), 'mode' => 'normal', 'state' => $currentState],
+        );
+
+        $expiredCount = self::toInt($expired);
+        $denominator = $expiredCount + self::toInt($stillSuspended);
+        if (0 === $denominator) {
+            return null;
+        }
+
+        return $expiredCount / $denominator;
     }
 
     private function countJobs(\DateTimeImmutable $since, ?string $state = null): int

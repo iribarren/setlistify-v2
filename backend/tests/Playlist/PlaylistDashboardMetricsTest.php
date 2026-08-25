@@ -180,6 +180,101 @@ final class PlaylistDashboardMetricsTest extends KernelTestCase
         self::assertFalse($summary['investigate']['p95Duration']);
         self::assertFalse($summary['investigate']['matchRate']);
         self::assertFalse($summary['investigate']['blockedShare']);
+        self::assertFalse($summary['investigate']['decisionCount']);
+        self::assertNull($summary['normalMode']['medianDecisionCount']);
+        self::assertNull($summary['normalMode']['p95DecisionCount']);
+        self::assertNull($summary['normalMode']['zeroTapShare']);
+        self::assertNull($summary['normalMode']['abandonmentByState']['awaiting_setlist_choice']);
+        self::assertNull($summary['normalMode']['abandonmentByState']['awaiting_version_choice']);
+    }
+
+    /**
+     * D-209/AC-9.2 (docs/specs/2026-08-25-playlist-normal-mode.md): median/p95 decision count, the
+     * zero-tap share, and abandonment by suspended state — all read off the same frozen columns as
+     * the rest of this panel, no new tracking.
+     */
+    public function testSevenDaySummaryComputesNormalModeDecisionMetrics(): void
+    {
+        $em = $this->entityManager();
+        $now = new \DateTimeImmutable();
+        $unique = uniqid('normal-metrics-', true);
+
+        $user = new User(\sprintf('normal-metrics-%s@example.com', $unique), 'hash');
+        $em->persist($user);
+
+        $band = new Band(\sprintf('Normal Metrics Band %s', $unique), \sprintf('normal metrics band %s', $unique), $now);
+        $em->persist($band);
+
+        // Terminal-state (completed/expired) fixtures can share one concert; the two still-suspended
+        // ("live") fixtures each need their own, per `uniq_live_generation` (one live job per
+        // concert+provider).
+        $terminalConcert = new Concert($user, $now, 'Europe/Madrid', $now, $now);
+        $terminalConcert->addLineupEntry($band, 0);
+        $em->persist($terminalConcert);
+
+        $concertForSetlistSuspended = new Concert($user, $now, 'Europe/Madrid', $now, $now);
+        $concertForSetlistSuspended->addLineupEntry($band, 0);
+        $em->persist($concertForSetlistSuspended);
+
+        $concertForVersionSuspended = new Concert($user, $now, 'Europe/Madrid', $now, $now);
+        $concertForVersionSuspended->addLineupEntry($band, 0);
+        $em->persist($concertForVersionSuspended);
+
+        $account = new StreamingAccount($user, TestDoubleStreamingProvider::KEY, 'token', null, null, [], 'acct-'.$unique, null, $now);
+        $em->persist($account);
+        $em->flush();
+
+        // H, I, J: completed, reached the version step — decision counts 3, 7, 5 (median 5, p95 7).
+        // H needed zero taps (all defaults accepted); I and J had real decisions.
+        $jobH = $this->makeNormalJob($user, $terminalConcert, $account, $now->modify('-1 days'));
+        $jobH->setChoiceCounts(3, 0, $now);
+        $jobH->setStateInternal(JobState::Completed, $now);
+        $em->persist($jobH);
+
+        $jobI = $this->makeNormalJob($user, $terminalConcert, $account, $now->modify('-2 days'));
+        $jobI->setChoiceCounts(7, 2, $now);
+        $jobI->setStateInternal(JobState::Completed, $now);
+        $em->persist($jobI);
+
+        $jobJ = $this->makeNormalJob($user, $terminalConcert, $account, $now->modify('-2 days'));
+        $jobJ->setChoiceCounts(5, 5, $now);
+        $jobJ->setStateInternal(JobState::Completed, $now);
+        $em->persist($jobJ);
+
+        // K: still suspended at setlist choice — never reached the version step.
+        $jobK = $this->makeNormalJob($user, $concertForSetlistSuspended, $account, $now->modify('-1 days'));
+        $jobK->setStateInternal(JobState::AwaitingSetlistChoice, $now);
+        $em->persist($jobK);
+
+        // L: expired before ever reaching the version step (choicesRequiredCount stays null).
+        $jobL = $this->makeNormalJob($user, $terminalConcert, $account, $now->modify('-1 days'));
+        $jobL->setStateInternal(JobState::Expired, $now);
+        $em->persist($jobL);
+
+        // M: still suspended at version choice — already reached it once (choicesRequiredCount set).
+        $jobM = $this->makeNormalJob($user, $concertForVersionSuspended, $account, $now->modify('-1 days'));
+        $jobM->setChoiceCounts(4, 0, $now);
+        $jobM->setStateInternal(JobState::AwaitingVersionChoice, $now);
+        $em->persist($jobM);
+
+        // N: expired after having reached the version step at least once.
+        $jobN = $this->makeNormalJob($user, $terminalConcert, $account, $now->modify('-1 days'));
+        $jobN->setChoiceCounts(6, 1, $now);
+        $jobN->setStateInternal(JobState::Expired, $now);
+        $em->persist($jobN);
+
+        $em->flush();
+
+        $summary = $this->metrics()->sevenDaySummary();
+
+        self::assertSame(5.0, $summary['normalMode']['medianDecisionCount'], 'median of [3, 5, 7].');
+        self::assertSame(7.0, $summary['normalMode']['p95DecisionCount']);
+        self::assertEqualsWithDelta(1 / 3, $summary['normalMode']['zeroTapShare'], 0.0001, 'only H needed zero taps, of H/I/J.');
+        self::assertEqualsWithDelta(0.5, $summary['normalMode']['abandonmentByState']['awaiting_setlist_choice'], 0.0001, 'L expired / (K still suspended + L expired).');
+        self::assertEqualsWithDelta(0.5, $summary['normalMode']['abandonmentByState']['awaiting_version_choice'], 0.0001, 'N expired / (M still suspended + N expired).');
+
+        // Median (5) is not strictly above DECISION_BUDGET (5) — the boundary is exclusive.
+        self::assertFalse($summary['investigate']['decisionCount']);
     }
 
     private function makeJob(User $user, Concert $concert, StreamingAccount $account, \DateTimeImmutable $createdAt): PlaylistGenerationJob
@@ -190,6 +285,20 @@ final class PlaylistDashboardMetricsTest extends KernelTestCase
             TestDoubleStreamingProvider::KEY,
             $account,
             JobMode::Fast,
+            bin2hex(random_bytes(32)),
+            1,
+            $createdAt,
+        );
+    }
+
+    private function makeNormalJob(User $user, Concert $concert, StreamingAccount $account, \DateTimeImmutable $createdAt): PlaylistGenerationJob
+    {
+        return new PlaylistGenerationJob(
+            $user,
+            $concert,
+            TestDoubleStreamingProvider::KEY,
+            $account,
+            JobMode::Normal,
             bin2hex(random_bytes(32)),
             1,
             $createdAt,

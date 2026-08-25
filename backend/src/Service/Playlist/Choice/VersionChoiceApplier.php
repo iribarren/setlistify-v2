@@ -71,6 +71,7 @@ final readonly class VersionChoiceApplier
 
         $now = \DateTimeImmutable::createFromInterface($this->clock->now());
         $seen = [];
+        $madeCount = 0;
 
         foreach ($choices as $choice) {
             $key = self::key($choice['sourcePosition'], $choice['segmentIndex'] ?? null);
@@ -83,6 +84,16 @@ final readonly class VersionChoiceApplier
             $seen[$key] = true;
 
             $providerTrackId = $choice['providerTrackId'];
+
+            // D-209/AC-9.2: "made" means the user actually decided something — declined, or picked
+            // something other than the pre-selected default (`candidates[0]`, per `ReviewStage`).
+            // `choices` is always a full replacement (D-192) — accepting every default in silence
+            // still submits one entry per decision, so this is the only way to tell a real tap from
+            // a zero-tap submission.
+            $default = null !== $decision ? ($decision['candidates'][0]['providerTrackId'] ?? null) : null;
+            if ($providerTrackId !== $default) {
+                ++$madeCount;
+            }
 
             if (null === $providerTrackId) {
                 // AC-2.6: an explicit decline — a success path, not a miss.
