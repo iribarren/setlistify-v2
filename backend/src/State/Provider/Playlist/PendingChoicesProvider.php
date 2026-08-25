@@ -11,7 +11,9 @@ use App\ApiResource\Playlist\PendingChoiceCandidateOutput;
 use App\ApiResource\Playlist\PendingChoiceDecisionOutput;
 use App\ApiResource\Playlist\PendingChoicesOutput;
 use App\Security\Voter\PlaylistGenerationJobVoter;
+use App\Service\Playlist\Model\ConfidenceLabel;
 use App\Service\Playlist\Model\JobState;
+use App\Service\Playlist\Model\ReportCode;
 use App\State\PlaylistGenerationJobLocator;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -56,8 +58,8 @@ final readonly class PendingChoicesProvider implements ProviderInterface
             bandName: $row['bandName'],
             sourceTitle: $row['sourceTitle'],
             providerTrackId: $row['providerTrackId'],
-            label: $row['label'],
-            reasonCode: $row['reasonCode'],
+            label: ConfidenceLabel::from($row['label']),
+            reasonCode: null !== $row['reasonCode'] ? ReportCode::from($row['reasonCode']) : null,
             reasonParams: $row['reasonParams'],
         ), $autoResolvedJson);
 
@@ -70,7 +72,7 @@ final readonly class PendingChoicesProvider implements ProviderInterface
                 albumName: $candidate['albumName'],
                 releaseYear: $candidate['releaseYear'],
                 durationMs: $candidate['durationMs'],
-                label: $candidate['label'],
+                label: ConfidenceLabel::from($candidate['label']),
             ), $row['candidates']);
 
             return new PendingChoiceDecisionOutput(
@@ -78,7 +80,7 @@ final readonly class PendingChoicesProvider implements ProviderInterface
                 segmentIndex: $row['segmentIndex'],
                 bandName: $row['bandName'],
                 sourceTitle: $row['sourceTitle'],
-                reasonCode: $row['reasonCode'],
+                reasonCode: null !== $row['reasonCode'] ? ReportCode::from($row['reasonCode']) : null,
                 reasonParams: $row['reasonParams'],
                 candidates: $candidates,
             );

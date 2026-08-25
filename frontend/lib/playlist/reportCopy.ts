@@ -41,6 +41,13 @@ const REPORT_COPY: Record<ReportCode, (params: ReasonParams) => string> = {
   SETLIST_TRUNCATED: () => "This setlist was trimmed to keep the playlist a reasonable length.",
   RESUMED_MID_INSERTION: () => "This generation resumed partway through — nothing already added was redone.",
   FALLBACK_LONGEST_SETLIST: () => "No single \"most recent\" setlist stood out, so we used the longest one available.",
+
+  // Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md)
+  USED_YOUR_PREVIOUS_CHOICE: () => "We used the version you picked last time for this song — tap it above to change it.",
+  USER_DECLINED: () => "You said none of the options were right for this one.",
+  SETLIST_CORRECTED_SINCE_SELECTION: () => "The setlist for this show was corrected while your playlist was paused — we re-checked the affected songs.",
+  RESCORED_AFTER_ALGORITHM_UPDATE: () => "We improved our matching since you paused — the songs you hadn't decided yet were re-checked.",
+  SELECTED_SETLIST_UNAVAILABLE: () => "The setlist you chose is no longer available — we used the show's best available setlist instead.",
 };
 
 /** AC-5.3: an unrecognised runtime code never renders as a code — a specific, honest fallback instead. */

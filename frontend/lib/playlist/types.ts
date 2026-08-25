@@ -14,6 +14,22 @@ export type ProviderConfigOutput = components["schemas"]["ProviderConfig.Provide
 export type SourceSetlistOutput = components["schemas"]["SourceSetlistOutput.jsonld"];
 
 /**
+ * D-190/§2's four operations (docs/specs/2026-08-25-playlist-normal-mode.md). Every shape here is,
+ * per D-177, an alias of the generated schema — no field is re-declared by hand.
+ */
+export type CandidateSetlistsOutput = components["schemas"]["PlaylistGenerationJob.CandidateSetlistsOutput.jsonld"];
+export type CandidateSetlistBandOutput = components["schemas"]["CandidateSetlistBandOutput.jsonld"];
+export type CandidateSetlistOutput = components["schemas"]["CandidateSetlistOutput.jsonld"];
+export type SetlistChoiceInput = components["schemas"]["PlaylistGenerationJob.SetlistChoiceInput"];
+export type SetlistChoiceItemInput = components["schemas"]["SetlistChoiceItemInput"];
+export type PendingChoicesOutput = components["schemas"]["PlaylistGenerationJob.PendingChoicesOutput.jsonld"];
+export type PendingChoiceAutoResolvedOutput = components["schemas"]["PendingChoiceAutoResolvedOutput.jsonld"];
+export type PendingChoiceDecisionOutput = components["schemas"]["PendingChoiceDecisionOutput.jsonld"];
+export type PendingChoiceCandidateOutput = components["schemas"]["PendingChoiceCandidateOutput.jsonld"];
+export type VersionChoicesInput = components["schemas"]["PlaylistGenerationJob.VersionChoicesInput"];
+export type VersionChoiceItemInput = components["schemas"]["VersionChoiceItemInput"];
+
+/**
  * D-167/AC-5.4/D-177: every literal union below is an alias of the corresponding generated schema
  * field — `frontend/api/schema.d.ts` now carries a real `enum` for `state` / `blockedReason` /
  * `failureReason` / `resultKind` / `outcome` / `reasonCode` / `code` (the backend's output DTOs were
@@ -130,6 +146,26 @@ export const REPORT_CODES = exhaustiveArray<ReportCode>()([
   "SETLIST_TRUNCATED",
   "RESUMED_MID_INSERTION",
   "FALLBACK_LONGEST_SETLIST",
+  // Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md, Model/ReportCode.php's new cases).
+  "USED_YOUR_PREVIOUS_CHOICE",
+  "USER_DECLINED",
+  "SETLIST_CORRECTED_SINCE_SELECTION",
+  "RESCORED_AFTER_ALGORITHM_UPDATE",
+  "SELECTED_SETLIST_UNAVAILABLE",
+] as const);
+
+/**
+ * D-204/AC-2.5: the closed vocabulary a version-choice candidate's `label` is drawn from — computed
+ * backend-side from the confidence band. **No raw confidence number is ever aliased here or anywhere
+ * else in this module** — that is the entire point of this type existing.
+ */
+export type ConfidenceLabel = NonNullable<PendingChoiceCandidateOutput["label"]>;
+
+export const CONFIDENCE_LABELS = exhaustiveArray<ConfidenceLabel>()([
+  "top_pick",
+  "only_match",
+  "alternative",
+  "your_previous_choice",
 ] as const);
 
 function makeNarrower<T extends string>(values: readonly T[]) {
@@ -144,3 +180,4 @@ export const asResultKind = makeNarrower(RESULT_KINDS);
 export const asTrackOutcome = makeNarrower(TRACK_OUTCOMES);
 export const asReportCode = makeNarrower(REPORT_CODES);
 export const asNoSetlistCause = makeNarrower(NO_SETLIST_CAUSES);
+export const asConfidenceLabel = makeNarrower(CONFIDENCE_LABELS);

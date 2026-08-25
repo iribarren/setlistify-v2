@@ -15,6 +15,10 @@ export const MOSTLY_MATCHED_FLOOR = 0.5;
 export type PlaylistViewKind =
   | "idle"
   | "progress"
+  // Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md, D-202): the two suspension points.
+  | "choose_setlist"
+  | "choose_versions"
+  | "expired"
   | "result_full"
   | "result_mostly"
   | "result_barely"
@@ -153,18 +157,23 @@ export function derivePlaylistView(
     case "resolving_setlist":
     case "matching":
     case "building":
-    // Fast mode never reaches these two (D-125/AC-6.1), but a live job in either state should still
-    // read as "in progress" rather than crash the mapping if it somehow occurs.
-    case "awaiting_setlist_choice":
-    case "awaiting_version_choice":
       return view("progress", job, playlist);
+    // D-202: Normal mode's two suspension points get their own screens now that they're reachable.
+    case "awaiting_setlist_choice":
+      return view("choose_setlist", job, playlist);
+    case "awaiting_version_choice":
+      return view("choose_versions", job, playlist);
     case "blocked":
       return blockedView(job, playlist, providers, accounts);
     case "completed":
       return resultView(job, playlist);
     case "failed":
       return failedView(job, playlist);
+    // AC-4.2: `expired` gets its own info-family screen (a divergence from spec 16's original
+    // expired -> idle mapping, made deliberately by this spec — a Normal-mode session that lapsed is
+    // not "nothing happened", it's "something happened and stopped", which deserves an explanation).
     case "expired":
+      return view("expired", job, playlist);
     case "cancelled":
       return view("idle", job, playlist);
     default:

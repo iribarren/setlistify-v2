@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\ApiResource\Playlist;
 
+use App\Service\Playlist\Model\ConfidenceLabel;
+
 /**
- * `label` is a closed vocabulary (`top_pick`|`only_match`|`alternative`|`your_previous_choice`) —
- * **a raw confidence score never appears here** (D-204, AC-2.5).
+ * `label` is a closed vocabulary — **a raw confidence score never appears here** (D-204, AC-2.5).
  */
 final readonly class PendingChoiceCandidateOutput
 {
@@ -17,7 +18,7 @@ final readonly class PendingChoiceCandidateOutput
         public ?string $albumName,
         public ?int $releaseYear,
         public ?int $durationMs,
-        public string $label,
+        public ConfidenceLabel $label,
     ) {
     }
 }

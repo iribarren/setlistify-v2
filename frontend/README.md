@@ -270,9 +270,8 @@ server's state actually describes — never a client-invented error.
 - **Routes**: `app/(app)/concerts/[id]/playlist.tsx` — ONE route for progress + all sixteen result/
   degraded/failure screens, state-driven via `derivePlaylistView()` rather than four separate routes
   (D-162); `app/(app)/concerts/[id]/playlist-report.tsx` — the report. Row actions ("Pick a version",
-  "Skip") are **not wired** here — the report is read-only in Fast mode; they arrive with prompt 17
-  (D-171), which is also why the primary CTA on a partial result is "See what's missing", not "Review
-  the N songs".
+  "Skip") are **not wired** here — the report is read-only in Fast mode; they were declined for
+  Normal mode too (D-205) — see below.
 - **Colour discipline (D-168/AC-4.3)**: partial results and blocked states use only `info`/`warning`
   tokens — never `error`/`destructive`, never the words "error"/"failed"/"problem"/"sorry". A static
   component test asserts this against the rendered tree for every partial and blocked view.
@@ -285,9 +284,40 @@ full comments):
 - `ResultNothing.dc.html`'s "View the setlist" action isn't wired — neither `PlaylistGenerationJobOutput`
   nor `PlaylistOutput` exposes the selected setlist's `setlistfmId`, so there's nothing to link to yet.
 
-**Not built here, on purpose (D-171/D-179, spec 16 §7):** the "choose it yourself" mode-chooser sheet,
-the report's per-row actions (version selection), a cancel affordance, and push notifications on
-completion. All are prompt 17+ or explicitly undesigned.
+## Playlist generation — Normal mode (`feature/playlist-normal-mode`)
+
+`docs/specs/2026-08-25-playlist-normal-mode.md` (D-188–D-209) wires the mode-chooser sheet spec 16
+parked (its Q-2) and adds the two suspension steps spec 13 designed into the *same* route and the
+*same* pipeline as Fast mode — no second implementation.
+
+- **`components/playlist/`** gains: `ModeSheet` (the "Generate playlist" / "Or choose it yourself →"
+  entry sheet — the words "Fast mode"/"Normal mode" never appear in its copy), `SetlistPicker`
+  (US-1: one section per qualifying band, "Same night" pre-selected, a band with `noSetlistCause`
+  renders as an explanatory row, not a question — AC-1.8), `VersionPicker` (US-2: auto-resolved songs
+  collapse into one reviewable, never-mandatory band; each decision pre-selects the top candidate so
+  submitting with zero taps is a legitimate path — AC-2.3), `ConfirmSummary` (D-194: a **client-side**
+  sub-step — "Build the playlist" literally calls `POST …/version-choices`, there is no third server
+  state), and `ResumeBanner` (D-207: rendered in place of `GenerateTrigger` for a suspended job — no
+  inbox, no notification; "Start over" is visually demoted and confirms what it discards — D-208).
+- **`lib/playlist/`** gains: `choices.ts` (`usePlaylistChoiceDraft` — the in-progress setlist/version
+  choices, persisted per job id via `choicesStorage.native.ts`/`choicesStorage.web.ts` so backgrounding
+  or a reload before submission never loses them — D-206), `confidence.ts` (`describeConfidence`: the
+  closed label vocabulary → a rendered chip and reason, **no raw confidence number, percentage or
+  star ever rendered** — D-204/AC-2.5, asserted by test).
+- `view.ts` gains two view states, `choose_setlist` and `choose_versions`, inside the same route
+  (D-202) — splitting them into separate routes would turn a server-side suspension into a navigation
+  event, the same argument spec 16 made for the result/degraded screens.
+- **An empty `CHOICE` band skips both the version step and the confirm screen** (D-195/AC-2.7) — a
+  deliberate divergence from the `Confirm.dc.html` artboard, traded for the one property AC-7.1
+  demands: a Normal-mode job with nothing ambiguous is state-sequence-identical to Fast mode.
+- **The report's per-row actions stay declined** (D-205, closing spec 16's Q-1 the other way from what
+  it anticipated): acting on them after a playlist exists is editing a playlist, out of scope for this
+  prompt and unsupported by the nine-method streaming port. `ResultMostly`'s CTA stays "See what's
+  missing" permanently — decisions belong to `VersionPicker`, before the playlist is built.
+
+**Not built here, on purpose:** a cancel affordance outside "Start over", push notifications on
+completion, and a preference-management screen for `UserTrackPreference` (D-198's Q-3) — all
+explicitly undesigned or deferred.
 
 ## What's here
 
@@ -310,7 +340,8 @@ frontend/
 │  │                    ReservedSection, ConcertForm, DeleteConfirmation
 │  ├─ streaming/       ConnectionsSection, StreamingAccountRow, DisconnectConfirmation
 │  ├─ playlist/        GenerateTrigger, GenerationProgress, ResultCard, ReportList, DegradedState,
-│  │                    PlaylistSection, DeletePlaylistConfirmation (prompt 16)
+│  │                    PlaylistSection, DeletePlaylistConfirmation (prompt 16); ModeSheet,
+│  │                    SetlistPicker, VersionPicker, ConfirmSummary, ResumeBanner (prompt 17)
 │  └─ nav/             BottomTabBar, Sidebar, breakpoint
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters

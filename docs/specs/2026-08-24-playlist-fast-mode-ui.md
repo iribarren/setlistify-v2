@@ -383,11 +383,15 @@ token, no error icon `testID`, and none of the forbidden words appears in the tr
   "Use the live version", "Add anyway"). Those actions are version selection — prompt 17's
   `POST …/version-choices`. This prompt renders the rows, the reasons and the counts; the row actions
   arrive with Normal mode. `ResultMostly`'s primary CTA is therefore **"See what's missing"** rather than
-  "Review the 5 songs" until prompt 17 makes reviewing actionable. Open question **Q-1**.
+  "Review the 5 songs" until prompt 17 makes reviewing actionable. Open question **Q-1** —
+  **resolved by `docs/specs/2026-08-25-playlist-normal-mode.md` (D-205): declined, the other way from
+  what was anticipated here.** The row actions belong to Normal mode's pre-build version-selection
+  screen, not to a post-build report; `ResultMostly`'s CTA stays "See what's missing" permanently.
 - **The mode chooser is not built.** `Main.dc.html` shows "Or choose it yourself →" opening a sheet with
   Fast and Choose-it-yourself. Choose-it-yourself is prompt 17. The trigger ships as the one-tap primary
   button the design already makes the default; the sheet lands with the mode it introduces. Open
-  question **Q-2**.
+  question **Q-2** — **resolved by `docs/specs/2026-08-25-playlist-normal-mode.md` (D-203): shipped as
+  `ModeSheet`, per this section's own recommendation.**
 - **No cancel UI.** `POST …/cancel` exists server-side; prompt 15 drew no cancel affordance, and inventing
   one here would be design done in code. It stays unused until designed. **D-179.**
 - **No push notification** for a long generation. Recorded as a risk, not built.

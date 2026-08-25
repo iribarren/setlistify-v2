@@ -10,6 +10,7 @@ import {
   derivePlaylistView,
   pickCurrentJob,
   selectProviderCandidates,
+  useCancelGeneration,
   useConcertPlaylistJobs,
   useConcertPlaylists,
   useDeletePlaylist,
@@ -21,6 +22,8 @@ import { useTheme } from "@/theme";
 
 import { DeletePlaylistConfirmation } from "./DeletePlaylistConfirmation";
 import { GenerateTrigger } from "./GenerateTrigger";
+import { ModeSheet } from "./ModeSheet";
+import { ResumeBanner } from "./ResumeBanner";
 
 export interface PlaylistSectionProps {
   concertId: string;
@@ -41,6 +44,7 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
   const theme = useTheme();
   const router = useRouter();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [choosingMode, setChoosingMode] = useState(false);
 
   const providersQuery = useProviderConfigs();
   const accountsQuery = useStreamingAccounts();
@@ -48,6 +52,9 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
   const playlistsQuery = useConcertPlaylists(concertId);
   const startGeneration = useStartGeneration();
   const deletePlaylist = useDeletePlaylist(concertId);
+  // Computed ahead of the loading early-return so this hook is always called unconditionally.
+  const jobForCancel = pickCurrentJob(jobsQuery.data ?? []);
+  const cancelGeneration = useCancelGeneration(jobForCancel?.id ? String(jobForCancel.id) : "");
 
   if (jobsQuery.isLoading || playlistsQuery.isLoading) {
     return (
@@ -63,9 +70,19 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
 
   const providerName = displayNameFor(providersQuery.data, playlist?.provider ?? currentJob?.provider);
 
-  async function handleGenerate(provider?: string): Promise<void> {
-    await startGeneration.mutateAsync({ concertId, provider });
+  async function handleGenerate(provider?: string, mode?: "fast" | "normal"): Promise<void> {
+    await startGeneration.mutateAsync({ concertId, provider, mode });
     router.push(`/concerts/${concertId}/playlist`);
+  }
+
+  async function handleStartOver(): Promise<void> {
+    if (!currentJob?.id) {
+      return;
+    }
+    // D-208: cancel the suspended job, then create a fresh one covering the same (concert, provider) —
+    // never a server-side reset, so D-129's partial unique index stays obviously satisfied.
+    await cancelGeneration.mutateAsync();
+    await handleGenerate(currentJob.provider ?? undefined, currentJob.mode === "normal" ? "normal" : undefined);
   }
 
   async function handleDelete(): Promise<void> {
@@ -80,7 +97,13 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
   // — while its originating job record is still there) reads as "nothing to show" too: the trigger,
   // not a stale status card pointing at a playlist that no longer exists.
   const hasLiveOrRecoverableJob =
-    view.kind === "progress" || view.kind.startsWith("blocked") || view.kind === "failed_generic" || view.kind === "failed_indeterminate";
+    view.kind === "progress" ||
+    view.kind === "choose_setlist" ||
+    view.kind === "choose_versions" ||
+    view.kind === "expired" ||
+    view.kind.startsWith("blocked") ||
+    view.kind === "failed_generic" ||
+    view.kind === "failed_indeterminate";
 
   if (!playlist && !hasLiveOrRecoverableJob) {
     const candidates = selectProviderCandidates(providersQuery.data, accountsQuery.data);
@@ -99,22 +122,55 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
             onGenerate={(provider) => void handleGenerate(provider)}
             onLinkAccount={() => router.push("/account")}
           />
+          {/* D-203: closes spec 16's Q-2 — "Generate playlist" stays the one-tap default. */}
+          {choice.kind !== "none" && !choosingMode ? (
+            <Button
+              testID="playlist-choose-yourself-link"
+              label="Or choose it yourself →"
+              variant="secondary"
+              onPress={() => setChoosingMode(true)}
+            />
+          ) : null}
+          {choosingMode ? (
+            <ModeSheet
+              testID="playlist-mode-sheet"
+              generating={startGeneration.isPending}
+              onSelectFast={() => void handleGenerate(undefined, "fast")}
+              onSelectChooseYourself={() => void handleGenerate(undefined, "normal")}
+              onDismiss={() => setChoosingMode(false)}
+            />
+          ) : null}
         </View>
       </Card>
     );
   }
 
   if (!playlist) {
-    // A job exists (in progress, blocked, or failed/expired) but no playlist yet — compact status
-    // linking to the full progress/degraded screen (AC-3.2).
+    // A job exists (in progress, awaiting a choice, blocked, expired, or failed/expired) but no
+    // playlist yet. D-207: a suspended Normal-mode job gets the resume banner IN PLACE of a generic
+    // status card — no inbox, reopening the concert IS the re-entry path.
+    if ((view.kind === "choose_setlist" || view.kind === "choose_versions") && currentJob) {
+      return (
+        <ResumeBanner
+          testID="playlist-resume-banner"
+          job={currentJob}
+          onResume={() => router.push(`/concerts/${concertId}/playlist`)}
+          onStartOver={() => void handleStartOver()}
+          startingOver={cancelGeneration.isPending || startGeneration.isPending}
+        />
+      );
+    }
+
     const label =
       view.kind === "progress"
         ? "Generating your playlist…"
-        : view.kind.startsWith("blocked")
-          ? "Playlist generation is paused"
-          : view.kind.startsWith("failed")
-            ? "Playlist generation didn't complete"
-            : "Playlist";
+        : view.kind === "expired"
+          ? "Your paused session lapsed"
+          : view.kind.startsWith("blocked")
+            ? "Playlist generation is paused"
+            : view.kind.startsWith("failed")
+              ? "Playlist generation didn't complete"
+              : "Playlist";
 
     return (
       <Card testID={testID}>
@@ -124,7 +180,7 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
           </Text>
           <Button
             testID="view-playlist-progress"
-            label="View progress"
+            label={view.kind === "expired" ? "See what changed" : "View progress"}
             variant="secondary"
             onPress={() => router.push(`/concerts/${concertId}/playlist`)}
           />
