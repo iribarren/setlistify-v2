@@ -12,6 +12,7 @@ use App\Service\Playlist\Exception\SetlistBudgetExhaustedException;
 use App\Service\Playlist\Exception\UnknownProviderInPipelineException;
 use App\Service\Playlist\Model\BlockedReason;
 use App\Service\Playlist\Model\FailureReason;
+use App\Service\Playlist\Model\JobState;
 use App\Service\Playlist\Model\PipelineStage;
 use App\Service\Playlist\Model\ResultKind;
 use App\Service\Playlist\Naming\PlaylistNamer;
@@ -79,6 +80,14 @@ final readonly class PlaylistPipeline
         }
         $stageTimings['selection'] = self::elapsedMs($stageStart);
 
+        if (null === $playlist) {
+            // T-04 (Normal mode, docs/specs/2026-08-25-playlist-normal-mode.md): the stage already
+            // suspended the job for a setlist choice — a return-value check, not a mode check
+            // (AC-7.2). Nothing left to do until `App\Service\Playlist\Choice\SetlistChoiceApplier`
+            // resumes it.
+            return;
+        }
+
         if (0 === $job->getSongsTotal()) {
             // T-10: no band on the lineup had a usable setlist. No provider playlist is ever
             // created (D-135) — the row above exists only to carry the per-band report.
@@ -88,7 +97,13 @@ final readonly class PlaylistPipeline
             return;
         }
 
-        $this->stateMachine->enterMatching($job);
+        if (JobState::ResolvingSetlist === $job->getState()) {
+            // A fresh pass (Fast mode always, Normal mode's first pass). A Normal-mode job resumed
+            // after `SubmitSetlistChoiceProcessor` already transitioned to `matching` itself (T-05) —
+            // re-entering here would be an illegal `matching -> matching` edge, so this is a state
+            // check, not a mode check (AC-7.2).
+            $this->stateMachine->enterMatching($job);
+        }
 
         $provider = $this->locator->get($job->getProviderKey());
 
@@ -96,7 +111,7 @@ final readonly class PlaylistPipeline
         $tokens = $this->usableTokens($job, PipelineStage::Matching);
 
         $stageStart = microtime(true);
-        $this->matchingStage->run($job, $playlist, $provider, $tokens);
+        $choiceDigestsByOrdinal = $this->matchingStage->run($job, $playlist, $provider, $tokens);
         $stageTimings['matching'] = self::elapsedMs($stageStart);
 
         $hits = self::countHits($playlist);
@@ -108,10 +123,18 @@ final readonly class PlaylistPipeline
             return;
         }
 
-        $this->reviewStage->run($job);
+        if ($this->reviewStage->run($job, $playlist, $choiceDigestsByOrdinal)) {
+            // T-07 (Normal mode): the stage already suspended the job for version choices — a
+            // boolean check, not a mode check (AC-7.2).
+            return;
+        }
 
         $this->assertProviderAvailable($job, PipelineStage::Creation);
-        $this->stateMachine->enterBuilding($job);
+        if (JobState::Matching === $job->getState()) {
+            // Symmetric to the `enterMatching` guard above: a Normal-mode job resumed after
+            // `SubmitVersionChoiceProcessor` is already `building` by the time this line runs.
+            $this->stateMachine->enterBuilding($job);
+        }
 
         $stageStart = microtime(true);
         $tokens = $this->usableTokens($job, PipelineStage::Creation);

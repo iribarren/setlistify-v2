@@ -112,7 +112,7 @@ final readonly class TrackMatcher
         if ([] === $candidates) {
             $this->resolutionStore->save($provider->key(), $algorithmVersion, $normalizedArtist, $normalizedSong->comparisonCore, null, 0.0, MatchOutcome::NotFound->value, []);
 
-            return new MatchResult(MatchOutcome::NotFound, null, 0.0, false, $isCover, $isCover ? $expectedArtist : null, []);
+            return new MatchResult(MatchOutcome::NotFound, null, 0.0, false, $isCover, $isCover ? $expectedArtist : null, [], $normalizedArtist, $normalizedSong->comparisonCore);
         }
 
         // §4: version fit is absent from the formula entirely when EVERY candidate carries a
@@ -162,6 +162,11 @@ final readonly class TrackMatcher
                     'providerTrackId' => $candidate->providerTrackId,
                     'title' => $candidate->title,
                     'artist' => $candidate->artist,
+                    // Additive fields (docs/specs/2026-08-25-playlist-normal-mode.md) — a version
+                    // choice card needs album/duration to distinguish candidates; absent from an
+                    // older cached digest, where they simply decode as null.
+                    'album' => $candidate->album,
+                    'durationMs' => $candidate->durationMs,
                     'confidence' => round($confidence, 4),
                     'signals' => [
                         'title' => round($titleScore, 4),
@@ -222,6 +227,8 @@ final readonly class TrackMatcher
             isCover: $isCover,
             coverArtist: $isCover ? $expectedArtist : null,
             candidatesDigest: $digest,
+            normalizedArtist: $normalizedArtist,
+            normalizedTitle: $normalizedSong->comparisonCore,
         );
     }
 
@@ -242,6 +249,8 @@ final readonly class TrackMatcher
             isCover: $isCover,
             coverArtist: $isCover ? $expectedArtist : null,
             candidatesDigest: $cached->candidatesDigest,
+            normalizedArtist: $cached->normalizedArtist,
+            normalizedTitle: $cached->normalizedTitle,
         );
     }
 

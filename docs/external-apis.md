@@ -164,6 +164,24 @@ YouTube API data unless non-YouTube content on that same page carries "sufficien
 (Setlistify's concert records, notes and reviews plausibly qualify; a bare playlist page may not).
 YouTube's own ads may not be suppressed in embeds.
 
+**Normal mode's added cost** (`docs/specs/2026-08-25-playlist-normal-mode.md`, D-200/D-201). Setlist
+selection itself spends nothing — both suspensions read cached rows, `SetlistGateway` gains no new
+caller. The only added provider cost is one bounded, scripted second search per job for CHOICE-band
+songs resolved via a cover attribution (`MAX_COVER_RESEARCH = 5`), never an on-demand or free-text
+search:
+
+| | Searches | Units | Share of daily quota |
+|---|---|---|---|
+| Fast, 25-song setlist, cold cache | 25 | 2,500 | 25% |
+| Normal, same setlist, no preferences | 25 + ≤5 | ≤3,000 | ≤30% |
+| Normal, same setlist, warm `TrackResolution`/`UserTrackPreference` | ~0–5 | ≤500 | ≤5% |
+| **Application ceiling, cold** | — | 10,000 | **~3 Normal generations/day, application-wide** |
+
+Three cold Normal-mode generations exhaust YouTube's entire daily quota for every user of the
+product — not a Normal-mode defect (Fast mode is already four), and not solved here; flagged for
+prompt 18 to design against, alongside the `blocked`/`provider_quota` path above, which already
+absorbs exhaustion without failing a job.
+
 ---
 
 ## Apple Music (MusicKit)

@@ -12,6 +12,7 @@ use App\Entity\Song;
 use App\Service\Matching\Model\MatchOutcome;
 use App\Service\Matching\Model\MatchResult;
 use App\Service\Matching\TrackMatcher;
+use App\Service\Playlist\Choice\PreferenceRecorder;
 use App\Service\Playlist\Exception\GenerationBlockedException;
 use App\Service\Playlist\JobProgressWriter;
 use App\Service\Playlist\Model\BlockedReason;
@@ -28,18 +29,34 @@ use Psr\Clock\ClockInterface;
  * `TrackMatcher::match()` per song, cache-first, sequential (spec 14 §3). Writes each song's
  * `PlaylistTrack` row and `songsProcessed++` in one small transaction per song via
  * `JobProgressWriter`. F-04/F-05/F-09/F-10 are handled here (spec 14 §5).
+ *
+ * `PreferenceRecorder` is consulted for every CHOICE-band song, in **both modes** — deliberately not
+ * gated by `$job->getMode()` (docs/specs/2026-08-25-playlist-normal-mode.md, D-188/AC-7.2): a
+ * preference is a per-user override of matching itself, harmless and beneficial regardless of which
+ * mode produced it, and consulting it unconditionally is what keeps this file free of the
+ * `JobMode::Normal` branch the static test (AC-7.2) forbids outside `SetlistSelectionStage` and
+ * `ReviewStage`.
  */
 final readonly class MatchingStage
 {
     public function __construct(
         private TrackMatcher $trackMatcher,
         private JobProgressWriter $progressWriter,
+        private PreferenceRecorder $preferenceRecorder,
         private ClockInterface $clock,
         private int $rateLimitInlineRetries,
     ) {
     }
 
-    public function run(PlaylistGenerationJob $job, Playlist $playlist, StreamingProviderInterface $provider, ProviderTokens $tokens): void
+    /**
+     * @return array<int, list<array<string, mixed>>> the persisted candidates digest for every song
+     *                                                 still in the CHOICE band (i.e. NOT resolved by
+     *                                                 a preference), keyed by `PlaylistTrack::$ordinal`
+     *                                                 — `ReviewStage`'s only source for `pendingChoices`
+     *                                                 (spec 13 §6, D-200): no second search is ever
+     *                                                 issued to rebuild it.
+     */
+    public function run(PlaylistGenerationJob $job, Playlist $playlist, StreamingProviderInterface $provider, ProviderTokens $tokens): array
     {
         /** @var list<PlaylistTrack> $tracks */
         $tracks = array_values($playlist->getTracks()->toArray());
@@ -57,6 +74,9 @@ final readonly class MatchingStage
 
         $boundaries = self::computeSetBoundaries($tracks);
 
+        /** @var array<int, list<array<string, mixed>>> $digestsByOrdinal */
+        $digestsByOrdinal = [];
+
         foreach ($bySong as $rows) {
             /** @var list<PlaylistTrack> $rows */
             $first = $rows[0];
@@ -70,9 +90,14 @@ final readonly class MatchingStage
             foreach ($rows as $index => $row) {
                 $result = $results[$index] ?? end($results);
                 \assert($result instanceof MatchResult);
-                $this->writeResult($job, $row, $result);
+                $digest = $this->writeResult($job, $row, $result);
+                if ([] !== $digest) {
+                    $digestsByOrdinal[$row->getOrdinal()] = $digest;
+                }
             }
         }
+
+        return $digestsByOrdinal;
     }
 
     /** @return list<MatchResult> */
@@ -97,11 +122,48 @@ final readonly class MatchingStage
         }
     }
 
-    private function writeResult(PlaylistGenerationJob $job, PlaylistTrack $track, MatchResult $result): void
+    /**
+     * @return list<array<string, mixed>> the digest to carry into `pendingChoices` if this song is
+     *                                    still a decision after the preference check — empty when it
+     *                                    is not (auto-resolved, or not a CHOICE-band song at all)
+     */
+    private function writeResult(PlaylistGenerationJob $job, PlaylistTrack $track, MatchResult $result): array
     {
         [$outcome, $reasonCode, $reasonParams] = self::toTrackOutcome($result);
+        $providerTrackId = $result->providerTrackId;
+        $confidence = MatchOutcome::Skipped === $result->outcome ? null : $result->confidence;
+        $digestForReview = [];
 
-        $this->progressWriter->recordSongResolution($job, $track, $outcome, $result->providerTrackId, MatchOutcome::Skipped === $result->outcome ? null : $result->confidence, $reasonCode, $reasonParams);
+        if (TrackOutcome::MatchedLowConfidence === $outcome) {
+            $candidateIds = array_values(array_filter(array_map(
+                static fn (array $entry): ?string => \is_string($entry['providerTrackId'] ?? null) ? $entry['providerTrackId'] : null,
+                $result->candidatesDigest,
+            )));
+
+            $preference = $this->preferenceRecorder->findApplicable(
+                $job->getOwner(),
+                $job->getProviderKey(),
+                $job->getAlgorithmVersion(),
+                $result->normalizedArtist,
+                $result->normalizedTitle,
+                $candidateIds,
+            );
+
+            if (null !== $preference) {
+                // AC-5.2/AC-5.3: resolved, never a decision, but never silent either.
+                $outcome = TrackOutcome::Matched;
+                $providerTrackId = $preference->getProviderTrackId();
+                $reasonCode = ReportCode::UsedYourPreviousChoice;
+                $reasonParams = [];
+                $this->preferenceRecorder->markUsed($preference);
+            } else {
+                $digestForReview = $result->candidatesDigest;
+            }
+        }
+
+        $this->progressWriter->recordSongResolution($job, $track, $outcome, $providerTrackId, $confidence, $reasonCode, $reasonParams);
+
+        return $digestForReview;
     }
 
     /** @return array{0: TrackOutcome, 1: ?ReportCode, 2: ?array<string, mixed>} */

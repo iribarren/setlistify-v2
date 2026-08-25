@@ -488,9 +488,22 @@ Resolved on approval — 2026-08-24. All recommendations accepted as written.
 
 1. **Report row actions — resolved: not shipped at all until prompt 17.** `ResultMostly`'s primary CTA
    is "See what's missing"; prompt 17 restores the designed row actions and copy. *(D-171.)*
+   **Closed by prompt 17 (`docs/specs/2026-08-25-playlist-normal-mode.md`, D-205): the other way, on
+   the backend side shipped so far.** The report's row actions are declined outright, not restored —
+   acting on them post-build is playlist editing, out of scope for that prompt and unsupported by the
+   frozen nine-method streaming port. The actions belong on the pre-build version-selection screen
+   instead; prompt 17's backend (`POST …/version-choices` and its candidates) is what that screen
+   would call. `ResultMostly`'s CTA stays "See what's missing" permanently. **The client screen itself
+   (`VersionSelect`/`Confirm` wiring, `frontend/lib/playlist/`, `frontend/components/playlist/`) is
+   not part of the backend work that closed this question and remains open for a client-side pass.**
 
 2. **Mode chooser sheet — resolved: not shipped.** Fast mode ships as the one-tap trigger only; the
    "choose it yourself" link and sheet land with prompt 17.
+   **Backend closed by prompt 17 (D-203): the four operations a mode sheet would call
+   (`candidate-setlists`, `setlist-choice`, `pending-choices`, `version-choices`) are live.** The sheet
+   itself (`ModeSheet.tsx`, `frontend/lib/playlist/view.ts`'s two new view states) is frontend work not
+   included in that backend change and remains to be built before this question is fully closed
+   end-to-end.
 
 3. **`upstream_unavailable` artboard — resolved: reuse `DegradedQuotaExhausted`'s layout** with its own
    sentence ("we're having trouble reaching \<Provider\> — we'll keep trying"). Revisit with a dedicated

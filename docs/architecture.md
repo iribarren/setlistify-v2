@@ -621,6 +621,18 @@ songs recorded, song absent from the provider's catalog, only live/cover version
 restriction, provider rate limit, token expired. Each has a defined user-facing behaviour. The spikes
 (prompts 12 and 13) exist to design this properly before any of it is written.
 
+**Both suspension points are reachable** (`docs/specs/2026-08-25-playlist-normal-mode.md`): spec 13
+designed `awaiting_setlist_choice` and `awaiting_version_choice` into the state machine and spec 14
+shipped the guards, but Fast mode's `mode` is always `fast`, so until prompt 17 neither guard ever
+evaluated true — dead code with a state name, not a reachable path. Normal mode sets `mode = normal`
+and makes both guards real: `Stage/SetlistSelectionStage` suspends when a band offers two or more
+usable setlists (T-04), `Stage/ReviewStage` suspends when spec 12's CHOICE band is non-empty (T-07).
+No new stage, state or pipeline was added — the mode is branched on in exactly those two places, and
+a static test (`ModeIsBranchedOnInExactlyTwoPlacesTest`) keeps it that way. Four new sub-resource
+operations on `PlaylistGenerationJob` (`candidate-setlists`, `setlist-choice`, `pending-choices`,
+`version-choices`) read and write the two suspension payloads; the client never sees a raw confidence
+number on either read.
+
 ### 8.1 The client's counterpart — Fast mode (prompt 16)
 
 The Expo client does not subscribe to the pipeline; it polls, on a cadence the server dictates —
@@ -730,7 +742,18 @@ SetlistCacheEntry (cacheKey [UNIQUE], endpoint, payload JSONB, fetchedAt, staleA
 Playlist ──< PlaylistTrack (song ref, provider track id, match confidence, outcome)
 
 ProviderSetting (provider, enabled, playbackMode, isDefault, notes)
+
+User ─< UserTrackPreference (provider, algorithmVersion, normalizedArtist, normalizedTitle,
+        providerTrackId, chosenAt, usedCount — UNIQUE(owner, provider, algorithmVersion,
+        normalizedArtist, normalizedTitle))
 ```
+
+`UserTrackPreference` is built (`docs/specs/2026-08-25-playlist-normal-mode.md`, D-198) — a per-user
+override of the global `TrackResolution` cache, keyed the same way plus `owner`, so a version a user
+picked once is remembered the next time any concert produces that song. It never writes to or mutates
+`TrackResolution` (a global, unowned cache would otherwise leak one user's taste into every other
+user's match), has no `Song`/`Band` foreign key, and has no management endpoint — it is visible only
+where it acts, in the reviewable auto-band, via report code `USED_YOUR_PREVIOUS_CHOICE`.
 
 `PlaylistTrack.outcome` is what makes the "what we couldn't match" report possible — every song in
 the source setlist has a row, including the ones that produced no track.
