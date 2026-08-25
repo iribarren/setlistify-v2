@@ -4,16 +4,28 @@ declare(strict_types=1);
 
 namespace App\Service\Playlist\Choice;
 
+use App\Entity\Band;
+use App\Entity\Playlist;
+use App\Entity\PlaylistGenerationJob;
 use App\Entity\PlaylistTrack;
 use App\Entity\Setlist;
+use App\Repository\SetlistRepository;
 use App\Repository\TrackResolutionRepository;
+use App\Service\Matching\MatchProfileRegistry;
 use App\Service\Playlist\Model\ReportCode;
+use App\Service\Playlist\Model\TrackOutcome;
+use App\Service\Playlist\PlaylistSkeletonBuilder;
+use App\Service\Playlist\SubstantialSetlistSelector;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Spec 13 §6's staleness-on-resume table, one method per row (docs/specs/
  * 2026-08-25-playlist-normal-mode.md, AC-8.1). **No case here may produce `failed`, and none may
  * produce an HTTP error on the suspension endpoints (AC-8.2)** — every method below returns a report
  * code and a decided, non-error outcome, never throws for a stale-but-recoverable condition.
+ * `reconcileResume()` is the one method actually called from the pipeline (`MatchingStage::run()`,
+ * every attempt); everything else below it is either a pure per-row decision that `reconcileResume()`
+ * calls, or (`reconcileVanishedCandidate()`) a row wired in elsewhere (`InsertionStage`, F-13).
  *
  * Two rows of the table need no code here at all, because they are already handled generically,
  * outside Normal mode's own files:
@@ -29,7 +41,153 @@ final readonly class StalenessReconciler
 {
     public function __construct(
         private TrackResolutionRepository $trackResolutionRepository,
+        private SetlistRepository $setlistRepository,
+        private SubstantialSetlistSelector $substantialSelector,
+        private PlaylistSkeletonBuilder $skeletonBuilder,
+        private MatchProfileRegistry $profileRegistry,
+        private EntityManagerInterface $entityManager,
     ) {
+    }
+
+    /**
+     * `MatchingStage::run()`'s single entry point into this class (AC-8.1) — called at the START of
+     * every attempt, resumed or not, BEFORE any song is (re-)matched. Idempotent on a fresh
+     * first pass: the fingerprint was just computed from the same `Setlist` row, the algorithm
+     * version was just read from the same registry, and the row was just inserted, so every check
+     * below is a no-op until real time has actually passed. Covers rows 1, 2 and 6 of spec 13 §6's
+     * table (docs/specs/2026-08-25-playlist-normal-mode.md, AC-8.3: the fingerprint recompute
+     * genuinely happens here, at resume time, never at submission time in `SetlistChoiceApplier`).
+     * Rows 3 (vanished candidate, F-13) and 5 (concert deleted, FK cascade) are handled elsewhere;
+     * row 4 (provider disabled/token expired) by `PlaylistPipeline`'s own pre-flight re-check.
+     */
+    public function reconcileResume(PlaylistGenerationJob $job, Playlist $playlist, \DateTimeImmutable $now): void
+    {
+        $selected = $job->getSelectedSetlists();
+        $changed = false;
+
+        if (null !== $selected) {
+            foreach ($selected as $entry) {
+                $bandTracks = array_values(array_filter(
+                    $playlist->getTracks()->toArray(),
+                    static fn (PlaylistTrack $t): bool => $t->getSourceSetlistfmId() === $entry['setlistfmId'],
+                ));
+
+                if ([] === $bandTracks) {
+                    continue; // Nothing of this band's survived the song-length cap — nothing to reconcile.
+                }
+
+                $setlist = $this->setlistRepository->findOneBySetlistfmId($entry['setlistfmId']);
+
+                $changed = (null === $setlist
+                    ? $this->applyPurgedSetlistFallback($job, $playlist, $bandTracks, $now)
+                    : $this->applyCorrectedSetlist($playlist, $setlist, $entry, $bandTracks, $now)
+                ) || $changed;
+            }
+        }
+
+        $changed = $this->applyAlgorithmVersionBump($job, $playlist, $now) || $changed;
+
+        if ($changed) {
+            $this->entityManager->flush();
+        }
+    }
+
+    /**
+     * @param array{bandId: int, setlistfmId: string, selectionReason: string, fingerprint: string, songCount: int} $entry
+     * @param list<PlaylistTrack>                                                                                   $bandTracks
+     */
+    private function applyCorrectedSetlist(Playlist $playlist, Setlist $setlist, array $entry, array $bandTracks, \DateTimeImmutable $now): bool
+    {
+        $result = $this->reconcileCorrectedSetlist($setlist, $entry['fingerprint']);
+        if (null === $result) {
+            return false;
+        }
+
+        $titlesBySongId = [];
+        foreach ($setlist->getSongs() as $song) {
+            $titlesBySongId[$song->getId()] = $song->getTitle();
+        }
+
+        $anyReset = false;
+        foreach ($bandTracks as $track) {
+            $song = $track->getSourceSong();
+            if (null === $song) {
+                continue; // Row 3's (vanished candidate) territory, not row 1's — leave it be.
+            }
+
+            $currentTitle = $titlesBySongId[$song->getId()] ?? $song->getTitle();
+            if ($currentTitle === $track->getSourceTitle()) {
+                continue; // Unchanged — whatever it already resolved to (or hasn't) stands.
+            }
+
+            $track->resetForStalenessReconciliation($currentTitle);
+            $anyReset = true;
+        }
+
+        if (!$anyReset) {
+            return false;
+        }
+
+        [$code, $params] = $result;
+        $playlist->addReportEntry($code->value, $params, $now);
+
+        return true;
+    }
+
+    /** @param list<PlaylistTrack> $oldTracks this band's existing rows — orphaned, `sourceSong` already null */
+    private function applyPurgedSetlistFallback(PlaylistGenerationJob $job, Playlist $playlist, array $oldTracks, \DateTimeImmutable $now): bool
+    {
+        /** @var Band $band all rows for one band share the same `sourceBand`, set once by `PlaylistSkeletonBuilder` */
+        $band = $oldTracks[0]->getSourceBand();
+        [$code, $params] = $this->reconcileSelectedSetlistUnavailable($band->getName());
+
+        /** @var list<Setlist> $candidates */
+        $candidates = $this->setlistRepository->createBandSetlistsQueryBuilder($band)->getQuery()->getResult();
+        $selection = $this->substantialSelector->select($candidates, $now);
+
+        $removedCount = \count($oldTracks);
+        foreach ($oldTracks as $track) {
+            $playlist->removeTrack($track);
+        }
+
+        // The removed rows must actually be DELETEd before any replacement is INSERTed reusing the
+        // same ordinal — Doctrine orders a single flush's inserts before its deletes, which would
+        // otherwise collide on `uniq_playlist_track_ordinal` even though the in-memory collection
+        // already looks empty.
+        $this->entityManager->flush();
+
+        $addedCount = null !== $selection ? $this->skeletonBuilder->appendBandTracks($playlist, $band, $selection->setlist) : 0;
+
+        $job->setSongsTotal($job->getSongsTotal() - $removedCount + $addedCount, $now);
+        $playlist->addReportEntry($code->value, $params, $now);
+
+        return true;
+    }
+
+    private function applyAlgorithmVersionBump(PlaylistGenerationJob $job, Playlist $playlist, \DateTimeImmutable $now): bool
+    {
+        $current = $this->profileRegistry->algorithmVersion();
+        $stored = $job->getAlgorithmVersion();
+
+        if ($stored === $current) {
+            return false;
+        }
+
+        /** @var list<PlaylistTrack> $pending */
+        $pending = array_values(array_filter(
+            $playlist->getTracks()->toArray(),
+            static fn (PlaylistTrack $t): bool => TrackOutcome::Pending === $t->getOutcome() && null !== $t->getSourceSong(),
+        ));
+
+        $result = $this->reconcileAlgorithmVersionBump($stored, $current, $pending);
+        $job->setAlgorithmVersion($current);
+
+        if (null !== $result) {
+            [$code, $params] = $result;
+            $playlist->addReportEntry($code->value, $params, $now);
+        }
+
+        return true;
     }
 
     /**

@@ -225,4 +225,16 @@ class Playlist
     {
         $this->tracks->add($track);
     }
+
+    /**
+     * Spec 13 §6's staleness-on-resume row 6 (`SELECTED_SETLIST_UNAVAILABLE`): drops a band's
+     * orphaned rows (their `sourceSong` already nulled by the cache purge's `ON DELETE SET NULL`)
+     * before `PlaylistSkeletonBuilder::appendBandTracks()` rebuilds that band from the D-132
+     * fallback. `orphanRemoval: true` on `$tracks` means this alone schedules the DELETE — no
+     * explicit `EntityManager::remove()` needed.
+     */
+    public function removeTrack(PlaylistTrack $track): void
+    {
+        $this->tracks->removeElement($track);
+    }
 }

@@ -11,6 +11,7 @@ use App\Entity\PlaylistTrack;
 use App\Entity\Setlist;
 use App\Repository\PlaylistRepository;
 use App\Service\Matching\MedleySplitter;
+use App\Service\Playlist\Choice\StalenessReconciler;
 use App\Service\Playlist\Model\ReportCode;
 use App\Service\Playlist\Naming\PlaylistNamer;
 
@@ -50,7 +51,10 @@ final readonly class PlaylistSkeletonBuilder
             'bandId' => $selection['band']->getId() ?? 0,
             'setlistfmId' => $selection['setlist']->getSetlistfmId(),
             'selectionReason' => $selection['reason']->value,
-            'fingerprint' => $selection['setlist']->getSetlistfmId(),
+            // Spec 13 §6 row 1: the CONTENT fingerprint (sha256 of ordered song titles), distinct
+            // from `setlistfmId` above — `StalenessReconciler::reconcileCorrectedSetlist()` recomputes
+            // this at resume time and compares against the value stored here at selection time.
+            'fingerprint' => StalenessReconciler::fingerprint($selection['setlist']),
             'songCount' => $selection['setlist']->getSongCount(),
         ], $selections);
 
@@ -69,29 +73,8 @@ final readonly class PlaylistSkeletonBuilder
             $setlist = $selection['setlist'];
 
             $songLimit = $songLimitBySetlistId[$setlist->getId()] ?? null;
-            $songIndex = 0;
-            foreach ($setlist->getSongs() as $song) {
-                if (null !== $songLimit && $songIndex++ >= $songLimit) {
-                    break;
-                }
-                $segments = $this->medleySplitter->split($song->getTitle());
-                $segmentCount = \count($segments);
-
-                foreach (array_keys($segments) as $index) {
-                    $track = new PlaylistTrack(
-                        $playlist,
-                        $ordinal++,
-                        $song,
-                        $band,
-                        $setlist->getSetlistfmId(),
-                        $song->getPosition(),
-                        $song->getTitle(),
-                        $segmentCount > 1 ? $index : null,
-                    );
-                    $playlist->addTrack($track);
-                    ++$songsTotal;
-                }
-            }
+            [$ordinal, $added] = $this->appendTracksForBand($playlist, $band, $setlist, $ordinal, $songLimit);
+            $songsTotal += $added;
         }
 
         foreach ($reportEntries as [$code, $params]) {
@@ -104,6 +87,71 @@ final readonly class PlaylistSkeletonBuilder
         $this->playlistRepository->save($playlist);
 
         return $playlist;
+    }
+
+    /**
+     * Spec 13 §6 row 6 (`SELECTED_SETLIST_UNAVAILABLE`) — `Choice\StalenessReconciler`'s resume-time
+     * fallback, called after it has already removed the band's orphaned rows (their `sourceSong`
+     * nulled by the cache purge) via `Playlist::removeTrack()`. Appends fresh rows for the D-132
+     * fallback setlist at ordinals continuing after the playlist's current maximum — deliberately NOT
+     * reusing the old ordinal range, which would require shifting every other band's rows just to
+     * keep the sequence dense. A gap or a fallback band landing out of original stage order is an
+     * acceptable trade for never touching an unrelated band's row on this rare path. The song-length
+     * cap (`applySongCap()`) is intentionally NOT reapplied here — a resume-time fallback is expected
+     * to be smaller than the original selection window, and re-capping would need every other band's
+     * counts recomputed for a case spec 13 §6 doesn't ask for.
+     *
+     * @return int the number of `PlaylistTrack` rows added — the caller applies this (minus the
+     *             removed count) to `PlaylistGenerationJob::$songsTotal` itself, since this method
+     *             has no reason to know the job at all
+     */
+    public function appendBandTracks(Playlist $playlist, Band $band, Setlist $setlist): int
+    {
+        $nextOrdinal = 0;
+        foreach ($playlist->getTracks() as $existing) {
+            $nextOrdinal = max($nextOrdinal, $existing->getOrdinal() + 1);
+        }
+
+        [, $added] = $this->appendTracksForBand($playlist, $band, $setlist, $nextOrdinal, null);
+
+        return $added;
+    }
+
+    /**
+     * Shared by `build()` (fresh selection) and `appendBandTracks()` (staleness fallback) — the one
+     * place a `Setlist`'s songs become `PlaylistTrack` rows, medley splitting included (D-114).
+     *
+     * @return array{0: int, 1: int} the next free ordinal, and how many rows were added
+     */
+    private function appendTracksForBand(Playlist $playlist, Band $band, Setlist $setlist, int $ordinal, ?int $songLimit): array
+    {
+        $added = 0;
+        $songIndex = 0;
+
+        foreach ($setlist->getSongs() as $song) {
+            if (null !== $songLimit && $songIndex++ >= $songLimit) {
+                break;
+            }
+            $segments = $this->medleySplitter->split($song->getTitle());
+            $segmentCount = \count($segments);
+
+            foreach (array_keys($segments) as $index) {
+                $track = new PlaylistTrack(
+                    $playlist,
+                    $ordinal++,
+                    $song,
+                    $band,
+                    $setlist->getSetlistfmId(),
+                    $song->getPosition(),
+                    $song->getTitle(),
+                    $segmentCount > 1 ? $index : null,
+                );
+                $playlist->addTrack($track);
+                ++$added;
+            }
+        }
+
+        return [$ordinal, $added];
     }
 
     /**

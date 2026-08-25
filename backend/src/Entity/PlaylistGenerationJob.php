@@ -267,6 +267,17 @@ class PlaylistGenerationJob
         return $this->algorithmVersion;
     }
 
+    /**
+     * Spec 13 §6's staleness-on-resume row 2: `Choice\StalenessReconciler` calls this once it has
+     * detected a bump and appended the `RESCORED_AFTER_ALGORITHM_UPDATE` report entry, so every
+     * subsequent read of this job (cache keys, `UserTrackPreference` lookups, the backoffice) sees
+     * the version generation actually used, not the stale one recorded at job creation.
+     */
+    public function setAlgorithmVersion(int $algorithmVersion): void
+    {
+        $this->algorithmVersion = $algorithmVersion;
+    }
+
     /** @return array<int, array<string, mixed>>|null */
     public function getCandidateSetlists(): ?array
     {

@@ -13,6 +13,7 @@ use App\Service\Matching\Model\MatchOutcome;
 use App\Service\Matching\Model\MatchResult;
 use App\Service\Matching\TrackMatcher;
 use App\Service\Playlist\Choice\PreferenceRecorder;
+use App\Service\Playlist\Choice\StalenessReconciler;
 use App\Service\Playlist\Exception\GenerationBlockedException;
 use App\Service\Playlist\JobProgressWriter;
 use App\Service\Playlist\Model\BlockedReason;
@@ -36,6 +37,10 @@ use Psr\Clock\ClockInterface;
  * mode produced it, and consulting it unconditionally is what keeps this file free of the
  * `JobMode::Normal` branch the static test (AC-7.2) forbids outside `SetlistSelectionStage` and
  * `ReviewStage`.
+ *
+ * `run()` opens with `StalenessReconciler::reconcileResume()` (AC-8.1/AC-8.3) — same reasoning as
+ * `PreferenceRecorder` above: staleness is a resume-time fact about the job, not a mode, so it is
+ * consulted unconditionally rather than gated on `JobMode::Normal`.
  */
 final readonly class MatchingStage
 {
@@ -43,6 +48,7 @@ final readonly class MatchingStage
         private TrackMatcher $trackMatcher,
         private JobProgressWriter $progressWriter,
         private PreferenceRecorder $preferenceRecorder,
+        private StalenessReconciler $stalenessReconciler,
         private ClockInterface $clock,
         private int $rateLimitInlineRetries,
     ) {
@@ -58,6 +64,10 @@ final readonly class MatchingStage
      */
     public function run(PlaylistGenerationJob $job, Playlist $playlist, StreamingProviderInterface $provider, ProviderTokens $tokens): array
     {
+        // AC-8.1/AC-8.3: every attempt — first pass or resumed — reconciles staleness rows 1, 2 and 6
+        // of spec 13 §6's table BEFORE any song below is (re-)matched. A no-op on a fresh first pass.
+        $this->stalenessReconciler->reconcileResume($job, $playlist, \DateTimeImmutable::createFromInterface($this->clock->now()));
+
         /** @var list<PlaylistTrack> $tracks */
         $tracks = array_values($playlist->getTracks()->toArray());
 
