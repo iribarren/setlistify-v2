@@ -29,4 +29,16 @@ enum ReportCode: string
     case SetlistTruncated = 'SETLIST_TRUNCATED';
     case ResumedMidInsertion = 'RESUMED_MID_INSERTION';
     case FallbackLongestSetlist = 'FALLBACK_LONGEST_SETLIST';
+
+    // Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md)
+    /** A song was auto-resolved from a live `UserTrackPreference` rather than by scoring (D-199). */
+    case UsedYourPreviousChoice = 'USED_YOUR_PREVIOUS_CHOICE';
+    /** The user explicitly declined every candidate for a song (AC-2.6) — a success path, not a miss. */
+    case UserDeclined = 'USER_DECLINED';
+    /** Staleness on resume (spec 13 §6) — the setlist was corrected on setlist.fm since selection. */
+    case SetlistCorrectedSinceSelection = 'SETLIST_CORRECTED_SINCE_SELECTION';
+    /** Staleness on resume — `algorithmVersion` was bumped while the job slept. */
+    case RescoredAfterAlgorithmUpdate = 'RESCORED_AFTER_ALGORITHM_UPDATE';
+    /** Staleness on resume — the chosen setlist was purged from cache; fell back to D-132's rule. */
+    case SelectedSetlistUnavailable = 'SELECTED_SETLIST_UNAVAILABLE';
 }

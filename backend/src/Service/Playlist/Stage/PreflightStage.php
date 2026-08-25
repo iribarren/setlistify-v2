@@ -10,6 +10,7 @@ use App\Service\Playlist\Exception\GenerationBlockedException;
 use App\Service\Playlist\Exception\UnknownProviderInPipelineException;
 use App\Service\Playlist\JobStateMachine;
 use App\Service\Playlist\Model\BlockedReason;
+use App\Service\Playlist\Model\JobState;
 use App\Service\Playlist\Model\PipelineStage;
 use App\Service\Provider\ProviderAvailability;
 use App\Service\Streaming\StreamingProviderLocator;
@@ -19,6 +20,14 @@ use Psr\Clock\ClockInterface;
  * Provider enabled? Adapter registered? `StreamingAccount` connected? (spec 14 §3). F-15's
  * unknown-provider defect and F-07's disabled-provider block both originate here, before the
  * message ever advances the job to `resolving_setlist`.
+ *
+ * Re-run on EVERY pipeline pass, including a Normal-mode resume after a suspension (docs/specs/
+ * 2026-08-25-playlist-normal-mode.md, T-19) — a provider disabled or a token expired while the job
+ * slept is caught right here, generically, with no Normal-mode-specific code. The one addition for
+ * that resume path: `T-02 (queued -> resolving_setlist)` only fires from `queued` — a job already
+ * past it (`matching`/`building`, transitioned there directly by `Choice\SetlistChoiceApplier` /
+ * `Choice\VersionChoiceApplier`) re-enters this stage's checks without attempting an illegal
+ * `matching -> resolving_setlist` edge (a state check, not a mode check).
  */
 final readonly class PreflightStage
 {
@@ -50,6 +59,8 @@ final readonly class PreflightStage
             throw new GenerationBlockedException('Streaming account needs reconnecting.', BlockedReason::NeedsReauth, null, PipelineStage::Preflight);
         }
 
-        $this->stateMachine->startResolvingSetlist($job);
+        if (JobState::Queued === $job->getState()) {
+            $this->stateMachine->startResolvingSetlist($job);
+        }
     }
 }

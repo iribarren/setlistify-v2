@@ -21,6 +21,17 @@ final readonly class MatchResult
         public bool $isCover,
         public ?string $coverArtist,
         public array $candidatesDigest,
+        /**
+         * `App\Service\Concert\BandResolver::normalize()`d expected artist and
+         * `SongNormalizer`'s `comparisonCore` for this (segment of a) song — the same key
+         * `TrackResolutionStore` caches under (D-121), exposed so
+         * `App\Service\Playlist\Choice\PreferenceRecorder` can look up a `UserTrackPreference`
+         * without re-deriving TrackMatcher's internal normalization (docs/specs/
+         * 2026-08-25-playlist-normal-mode.md, D-198). Read-only metadata — never fed back into
+         * matching itself.
+         */
+        public string $normalizedArtist = '',
+        public string $normalizedTitle = '',
     ) {
     }
 }

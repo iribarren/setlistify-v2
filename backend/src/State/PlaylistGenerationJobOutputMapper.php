@@ -60,6 +60,8 @@ final readonly class PlaylistGenerationJobOutputMapper
             createdAt: $job->getCreatedAt(),
             startedAt: $job->getStartedAt(),
             finishedAt: $job->getFinishedAt(),
+            choicesRequiredCount: $job->getChoicesRequiredCount(),
+            choicesMadeCount: $job->getChoicesMadeCount(),
         );
     }
 

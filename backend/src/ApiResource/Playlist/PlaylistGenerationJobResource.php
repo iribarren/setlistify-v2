@@ -13,6 +13,10 @@ use App\State\Processor\Playlist\CancelGenerationProcessor;
 use App\State\Processor\Playlist\CreateAnywayProcessor;
 use App\State\Processor\Playlist\RetryGenerationProcessor;
 use App\State\Processor\Playlist\StartGenerationProcessor;
+use App\State\Processor\Playlist\SubmitSetlistChoiceProcessor;
+use App\State\Processor\Playlist\SubmitVersionChoicesProcessor;
+use App\State\Provider\Playlist\CandidateSetlistsProvider;
+use App\State\Provider\Playlist\PendingChoicesProvider;
 use App\State\Provider\Playlist\PlaylistGenerationJobCollectionProvider;
 use App\State\Provider\Playlist\PlaylistGenerationJobItemProvider;
 use Symfony\Component\HttpFoundation\Response;
@@ -83,6 +87,39 @@ use Symfony\Component\HttpFoundation\Response;
             processor: CreateAnywayProcessor::class,
             security: "is_granted('IS_AUTHENTICATED_FULLY')",
             description: 'F-14 recovery (P-3): clears the creation marker and re-queues. 422 unless failureReason is creation_indeterminate. Never creates silently.',
+        ),
+        // --- Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md, D-190) -------------------
+        new Get(
+            uriTemplate: '/playlist-generation-jobs/{id}/candidate-setlists',
+            output: CandidateSetlistsOutput::class,
+            provider: CandidateSetlistsProvider::class,
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+            description: 'Normal mode, step 1. 422 unless state = awaiting_setlist_choice. Zero setlist.fm calls — a pure projection of the persisted candidateSetlists.',
+        ),
+        new Post(
+            uriTemplate: '/playlist-generation-jobs/{id}/setlist-choice',
+            status: Response::HTTP_ACCEPTED,
+            input: SetlistChoiceInput::class,
+            output: PlaylistGenerationJobOutput::class,
+            processor: SubmitSetlistChoiceProcessor::class,
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+            description: 'T-05: awaiting_setlist_choice -> matching. 422 on wrong state, an unknown bandId, a setlistfmId not among that band\'s candidates, or a qualifying band left unanswered.',
+        ),
+        new Get(
+            uriTemplate: '/playlist-generation-jobs/{id}/pending-choices',
+            output: PendingChoicesOutput::class,
+            provider: PendingChoicesProvider::class,
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+            description: 'Normal mode, step 2. 422 unless state = awaiting_version_choice. No provider search — a pure projection of the persisted pendingChoices; no raw confidence number is ever exposed here.',
+        ),
+        new Post(
+            uriTemplate: '/playlist-generation-jobs/{id}/version-choices',
+            status: Response::HTTP_ACCEPTED,
+            input: VersionChoicesInput::class,
+            output: PlaylistGenerationJobOutput::class,
+            processor: SubmitVersionChoicesProcessor::class,
+            security: "is_granted('IS_AUTHENTICATED_FULLY')",
+            description: 'T-08: awaiting_version_choice -> building. Full replacement, idempotent while still suspended (D-192). 422 on wrong state, an unknown sourcePosition, or a providerTrackId not among that song\'s persisted candidates.',
         ),
     ],
 )]

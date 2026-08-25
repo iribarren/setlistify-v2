@@ -166,6 +166,22 @@ class PlaylistGenerationJob
     #[ORM\Column(name: 'updated_at', type: 'datetimetz_immutable')]
     private \DateTimeImmutable $updatedAt;
 
+    /**
+     * Normal mode's decision-count instrumentation (D-209, AC-9.1) — written at version suspension
+     * and at submission. Null for a job that never reached `awaiting_version_choice` (Fast mode, or
+     * a Normal-mode job with an empty CHOICE band, D-195).
+     */
+    #[ORM\Column(name: 'choices_required_count', type: 'integer', nullable: true)]
+    private ?int $choicesRequiredCount = null;
+
+    #[ORM\Column(name: 'choices_made_count', type: 'integer', nullable: true)]
+    private ?int $choicesMadeCount = null;
+
+    /** AC-4.3: the expired job this one pre-fills from (D-197). Null for a fresh job. */
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'resumed_from_job_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $resumedFromJob = null;
+
     public function __construct(
         User $owner,
         Concert $concert,
@@ -249,6 +265,17 @@ class PlaylistGenerationJob
     public function getAlgorithmVersion(): int
     {
         return $this->algorithmVersion;
+    }
+
+    /**
+     * Spec 13 §6's staleness-on-resume row 2: `Choice\StalenessReconciler` calls this once it has
+     * detected a bump and appended the `RESCORED_AFTER_ALGORITHM_UPDATE` report entry, so every
+     * subsequent read of this job (cache keys, `UserTrackPreference` lookups, the backoffice) sees
+     * the version generation actually used, not the stale one recorded at job creation.
+     */
+    public function setAlgorithmVersion(int $algorithmVersion): void
+    {
+        $this->algorithmVersion = $algorithmVersion;
     }
 
     /** @return array<int, array<string, mixed>>|null */
@@ -520,6 +547,36 @@ class PlaylistGenerationJob
     public function getUpdatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function getChoicesRequiredCount(): ?int
+    {
+        return $this->choicesRequiredCount;
+    }
+
+    public function getChoicesMadeCount(): ?int
+    {
+        return $this->choicesMadeCount;
+    }
+
+    /** Written at version suspension (T-07) and refined at submission (T-08) — D-209/AC-9.1. */
+    public function setChoiceCounts(int $required, int $made, \DateTimeImmutable $now): void
+    {
+        $this->choicesRequiredCount = $required;
+        $this->choicesMadeCount = $made;
+        $this->touch($now);
+    }
+
+    public function getResumedFromJob(): ?self
+    {
+        return $this->resumedFromJob;
+    }
+
+    /** AC-4.3: set once, on the fresh job created from an expired one's pre-fill. */
+    public function setResumedFromJob(self $job, \DateTimeImmutable $now): void
+    {
+        $this->resumedFromJob = $job;
+        $this->touch($now);
     }
 
     private function touch(\DateTimeImmutable $now): void

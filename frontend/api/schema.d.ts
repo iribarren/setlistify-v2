@@ -1,8 +1,8 @@
 /**
  * GENERATED FILE — do not edit by hand (AC-6.3, R-1).
  *
- * Produced by: npm run generate:api:live
- *   Source: GET \${EXPO_PUBLIC_API_URL}/api/docs.jsonopenapi (a running backend)
+ * Produced by: npm run generate:api
+ *   Source: backend/openapi.json (docker compose exec backend bin/console api:openapi:export --output=openapi.json)
  *
  * If this file looks wrong, the fix is in the backend's API Platform resource metadata, or in
  * frontend/scripts/generate-api.mjs's generator config — never a hand-edit here. See
@@ -369,6 +369,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlist-generation-jobs/{id}/candidate-setlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a PlaylistGenerationJob resource.
+         * @description Retrieves a PlaylistGenerationJob resource.
+         */
+        get: operations["api_playlist-generation-jobs_idcandidate-setlists_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playlist-generation-jobs/{id}/create-anyway": {
         parameters: {
             query?: never;
@@ -389,6 +409,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlist-generation-jobs/{id}/pending-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a PlaylistGenerationJob resource.
+         * @description Retrieves a PlaylistGenerationJob resource.
+         */
+        get: operations["api_playlist-generation-jobs_idpending-choices_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/playlist-generation-jobs/{id}/retry": {
         parameters: {
             query?: never;
@@ -403,6 +443,46 @@ export interface paths {
          * @description Creates a PlaylistGenerationJob resource.
          */
         post: operations["api_playlist-generation-jobs_idretry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}/setlist-choice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_idsetlist-choice_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlist-generation-jobs/{id}/version-choices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a PlaylistGenerationJob resource.
+         * @description Creates a PlaylistGenerationJob resource.
+         */
+        post: operations["api_playlist-generation-jobs_idversion-choices_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -598,6 +678,27 @@ export interface components {
             page?: number;
             itemsPerPage?: number;
             freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
+        };
+        "CandidateSetlistBandOutput.jsonld": {
+            bandId?: number;
+            bandName?: string;
+            billingOrder?: number;
+            recommendedSetlistfmId?: string | null;
+            recommendedReason?: string | null;
+            /** @description Non-null only when this band has nothing (D-183) — an explanatory row, not a question. */
+            noSetlistCause?: string | null;
+            candidates?: components["schemas"]["CandidateSetlistOutput.jsonld"][];
+        };
+        "CandidateSetlistOutput.jsonld": {
+            setlistfmId?: string;
+            eventDate?: string;
+            venueName?: string | null;
+            cityName?: string | null;
+            countryCode?: string | null;
+            tourName?: string | null;
+            songCount?: number;
+            isSameNight?: boolean;
+            url?: string | null;
         };
         /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
         "Concert.ConcertInput": {
@@ -871,6 +972,41 @@ export interface components {
              */
             email: string;
         };
+        "PendingChoiceAutoResolvedOutput.jsonld": {
+            sourcePosition?: number;
+            bandName?: string;
+            sourceTitle?: string;
+            providerTrackId?: string | null;
+            /** @enum {string} */
+            label?: "top_pick" | "only_match" | "alternative" | "your_previous_choice";
+            /** @enum {string|null} */
+            reasonCode?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | "USED_YOUR_PREVIOUS_CHOICE" | "USER_DECLINED" | "SETLIST_CORRECTED_SINCE_SELECTION" | "RESCORED_AFTER_ALGORITHM_UPDATE" | "SELECTED_SETLIST_UNAVAILABLE" | null;
+            reasonParams?: {
+                [key: string]: string | null;
+            } | null;
+        };
+        "PendingChoiceCandidateOutput.jsonld": {
+            providerTrackId?: string;
+            title?: string | null;
+            artistName?: string | null;
+            albumName?: string | null;
+            releaseYear?: number | null;
+            durationMs?: number | null;
+            /** @enum {string} */
+            label?: "top_pick" | "only_match" | "alternative" | "your_previous_choice";
+        };
+        "PendingChoiceDecisionOutput.jsonld": {
+            sourcePosition?: number;
+            segmentIndex?: number | null;
+            bandName?: string;
+            sourceTitle?: string;
+            /** @enum {string|null} */
+            reasonCode?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | "USED_YOUR_PREVIOUS_CHOICE" | "USER_DECLINED" | "SETLIST_CORRECTED_SINCE_SELECTION" | "RESCORED_AFTER_ALGORITHM_UPDATE" | "SELECTED_SETLIST_UNAVAILABLE" | null;
+            reasonParams?: {
+                [key: string]: string | null;
+            } | null;
+            candidates?: components["schemas"]["PendingChoiceCandidateOutput.jsonld"][];
+        };
         /** @description A generated playlist for a concert, with its per-song report (US-1, US-2). */
         "Playlist.PlaylistOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             id?: number;
@@ -892,6 +1028,25 @@ export interface components {
             report?: components["schemas"]["ReportEntryOutput.jsonld"][];
             tracks?: components["schemas"]["PlaylistTrackOutput.jsonld"][];
             sourceSetlists?: components["schemas"]["SourceSetlistOutput.jsonld"][];
+        };
+        /** @description Normal mode, step 1. 422 unless state = awaiting_setlist_choice. Zero setlist.fm calls — a pure projection of the persisted candidateSetlists. */
+        "PlaylistGenerationJob.CandidateSetlistsOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            jobId?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            concertId?: number;
+            bands?: components["schemas"]["CandidateSetlistBandOutput.jsonld"][];
+        };
+        /** @description Normal mode, step 2. 422 unless state = awaiting_version_choice. No provider search — a pure projection of the persisted pendingChoices; no raw confidence number is ever exposed here. */
+        "PlaylistGenerationJob.PendingChoicesOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            jobId?: number;
+            /** Format: date-time */
+            expiresAt?: string;
+            songsTotal?: number;
+            autoResolvedCount?: number;
+            choicesRequiredCount?: number;
+            autoResolved?: components["schemas"]["PendingChoiceAutoResolvedOutput.jsonld"][];
+            decisions?: components["schemas"]["PendingChoiceDecisionOutput.jsonld"][];
         };
         /** @description Starts (or returns the already-live) playlist generation for a concert. Zero provider and zero setlist.fm calls happen on this request thread (AC-1.1); a second POST for the same live (concert, provider) returns 200 with the existing job, never a 409 (D-129). */
         "PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
@@ -930,11 +1085,26 @@ export interface components {
             startedAt?: string | null;
             /** Format: date-time */
             finishedAt?: string | null;
+            /** @description D-209/AC-9.1: null until the job's version step has been reached at least once. */
+            choicesRequiredCount?: number | null;
+            choicesMadeCount?: number | null;
+        };
+        /** @description T-05: awaiting_setlist_choice -> matching. 422 on wrong state, an unknown bandId, a setlistfmId not among that band's candidates, or a qualifying band left unanswered. */
+        "PlaylistGenerationJob.SetlistChoiceInput": {
+            choices: components["schemas"]["SetlistChoiceItemInput"][];
         };
         /** @description Starts (or returns the already-live) playlist generation for a concert. Zero provider and zero setlist.fm calls happen on this request thread (AC-1.1); a second POST for the same live (concert, provider) returns 200 with the existing job, never a 409 (D-129). */
         "PlaylistGenerationJob.StartGenerationInput": {
             concertId: number | null;
             provider?: string | null;
+            /** @enum {string|null} */
+            mode?: "fast" | "normal" | null;
+            /** @description AC-4.3: only meaningful against an `expired` job — enforced in the processor (422 otherwise). */
+            resumeFromJobId?: number | null;
+        };
+        /** @description T-08: awaiting_version_choice -> building. Full replacement, idempotent while still suspended (D-192). 422 on wrong state, an unknown sourcePosition, or a providerTrackId not among that song's persisted candidates. */
+        "PlaylistGenerationJob.VersionChoicesInput": {
+            choices: components["schemas"]["VersionChoiceItemInput"][];
         };
         "PlaylistTrackOutput.jsonld": {
             ordinal?: number;
@@ -947,7 +1117,7 @@ export interface components {
             /** @enum {string} */
             outcome?: "pending" | "matched" | "matched_low_confidence" | "skipped" | "not_found" | "region_restricted";
             /** @enum {string|null} */
-            reasonCode?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | null;
+            reasonCode?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | "USED_YOUR_PREVIOUS_CHOICE" | "USER_DECLINED" | "SETLIST_CORRECTED_SINCE_SELECTION" | "RESCORED_AFTER_ALGORITHM_UPDATE" | "SELECTED_SETLIST_UNAVAILABLE" | null;
             reasonParams?: {
                 [key: string]: string | null;
             } | null;
@@ -985,7 +1155,7 @@ export interface components {
         };
         "ReportEntryOutput.jsonld": {
             /** @enum {string} */
-            code?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST";
+            code?: "COVER_OF" | "LIVE_VERSION_ONLY" | "LOW_CONFIDENCE_MATCH" | "TAPE_NOT_PERFORMED" | "PERFORMANCE_ARTIFACT" | "TRACK_NOT_IN_CATALOG" | "TRACK_VANISHED" | "NOT_AVAILABLE_IN_REGION" | "NO_SETLIST_FOR_BAND" | "SETLIST_MAY_BE_STALE" | "SELECTED_FROM" | "BANDS_OMITTED_FOR_LENGTH" | "SETLIST_TRUNCATED" | "RESUMED_MID_INSERTION" | "FALLBACK_LONGEST_SETLIST" | "USED_YOUR_PREVIOUS_CHOICE" | "USER_DECLINED" | "SETLIST_CORRECTED_SINCE_SELECTION" | "RESCORED_AFTER_ALGORITHM_UPDATE" | "SELECTED_SETLIST_UNAVAILABLE";
             params?: {
                 [key: string]: string | null;
             };
@@ -1002,6 +1172,10 @@ export interface components {
             isEmpty?: boolean;
             songs?: components["schemas"]["SongOutput.jsonld"][];
             freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
+        };
+        SetlistChoiceItemInput: {
+            bandId: number | null;
+            setlistfmId: string | null;
         };
         "SetlistSummaryOutput.jsonld": {
             setlistfmId?: string;
@@ -1084,6 +1258,11 @@ export interface components {
             name?: string | null;
             city?: string | null;
             countryCode?: string | null;
+        };
+        VersionChoiceItemInput: {
+            sourcePosition: number | null;
+            segmentIndex?: number | null;
+            providerTrackId?: string | null;
         };
     };
     responses: never;
@@ -2094,6 +2273,49 @@ export interface operations {
             };
         };
     };
+    "api_playlist-generation-jobs_idcandidate-setlists_get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.CandidateSetlistsOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "api_playlist-generation-jobs_idcreate-anyway_post": {
         parameters: {
             query?: never;
@@ -2147,6 +2369,49 @@ export interface operations {
             };
         };
     };
+    "api_playlist-generation-jobs_idpending-choices_get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PendingChoicesOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     "api_playlist-generation-jobs_idretry_post": {
         parameters: {
             query?: never;
@@ -2158,6 +2423,122 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_idsetlist-choice_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description The new PlaylistGenerationJob resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["PlaylistGenerationJob.SetlistChoiceInput"];
+            };
+        };
+        responses: {
+            /** @description PlaylistGenerationJob resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["PlaylistGenerationJob.PlaylistGenerationJobOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_playlist-generation-jobs_idversion-choices_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description PlaylistGenerationJob identifier */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description The new PlaylistGenerationJob resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["PlaylistGenerationJob.VersionChoicesInput"];
+            };
+        };
         responses: {
             /** @description PlaylistGenerationJob resource created */
             202: {

@@ -8,15 +8,17 @@ use App\Entity\Band;
 use App\Entity\ConcertBand;
 use App\Entity\Playlist;
 use App\Entity\PlaylistGenerationJob;
-use App\Entity\PlaylistTrack;
 use App\Entity\Setlist;
 use App\Repository\PlaylistRepository;
 use App\Repository\SetlistRepository;
-use App\Service\Matching\MedleySplitter;
 use App\Service\Playlist\Exception\SetlistBudgetExhaustedException;
+use App\Service\Playlist\JobStateMachine;
+use App\Service\Playlist\Model\JobMode;
 use App\Service\Playlist\Model\NoSetlistCause;
 use App\Service\Playlist\Model\ReportCode;
-use App\Service\Playlist\Naming\PlaylistNamer;
+use App\Service\Playlist\Model\SelectionReason;
+use App\Service\Playlist\PlaylistSkeletonBuilder;
+use App\Service\Playlist\SelectionResult;
 use App\Service\Playlist\SubstantialSetlistSelector;
 use App\Service\Setlist\BandIdentityResolver;
 use App\Service\Setlist\SetlistGateway;
@@ -29,6 +31,14 @@ use Psr\Clock\ClockInterface;
  * (D-131). Applies the multi-band caps (P-1, D-133) and creates the up-front `PlaylistTrack`
  * skeleton, one row per source song (segment, for a medley) — D-139/D-140.
  *
+ * **Normal mode's setlist-choice guard lives here (T-04, D-188, docs/specs/
+ * 2026-08-25-playlist-normal-mode.md)** — the only other guard is `ReviewStage`'s (T-07); nowhere
+ * else in `App\Service\Playlist\` may branch on `$job->getMode()` (AC-7.2). When at least one kept
+ * band offers two or more usable candidates, this stage persists `candidateSetlists`, suspends the
+ * job via `JobStateMachine::suspendForSetlistChoice()` and returns `null` — `PlaylistPipeline` reads
+ * that `null` (a return-value check, not a mode check) and stops. A single usable setlist per band
+ * (AC-1.5), or Fast mode, never suspends: T-03's `only_one_available` still applies automatically.
+ *
  * When no band on the lineup has any usable setlist (F-02/F-03), the returned `Playlist` simply
  * carries zero tracks and a `NO_SETLIST_FOR_BAND` report entry per band — `PlaylistPipeline` reads
  * `songsTotal === 0` and completes as `no_source_material` (T-10) without ever entering `matching`.
@@ -37,6 +47,9 @@ use Psr\Clock\ClockInterface;
  */
 final readonly class SetlistSelectionStage
 {
+    /** AC-1.3, spec 13 §9: up to this many candidates are offered per band. */
+    private const int SELECTION_WINDOW = 20;
+
     public function __construct(
         private SetlistRepository $setlistRepository,
         private PlaylistRepository $playlistRepository,
@@ -44,26 +57,25 @@ final readonly class SetlistSelectionStage
         private SetlistGateway $setlistGateway,
         private SetlistNormalizer $setlistNormalizer,
         private SubstantialSetlistSelector $selector,
-        private MedleySplitter $medleySplitter,
-        private PlaylistNamer $namer,
+        private PlaylistSkeletonBuilder $skeletonBuilder,
+        private JobStateMachine $stateMachine,
         private ClockInterface $clock,
         private int $maxBands,
-        private int $maxSongs,
         private int $setlistPages,
+        private int $suspendedSetlistChoiceTtlSeconds,
     ) {
     }
 
-    public function run(PlaylistGenerationJob $job): Playlist
+    public function run(PlaylistGenerationJob $job): ?Playlist
     {
-        // Idempotency (spec 14 §5, spec 13 §5): a resumed run (T-13 blocked -> queued) or a retry
-        // (T-16 failed -> queued) re-enters the pipeline from `queued`, which re-runs THIS stage —
-        // but the `Playlist` and its up-front `PlaylistTrack` skeleton (D-139/D-140) must be created
-        // exactly once per job, not once per attempt. Recreating them on every resume would silently
-        // orphan a Playlist that may already carry a confirmed `providerPlaylistId` (D-136) or a
-        // partially advanced insertion watermark (D-137), defeating both idempotency mechanisms one
-        // stage upstream of where they are enforced. A prior attempt that never got this far (e.g.
-        // blocked mid-selection by F-01) has no Playlist row yet, so this is a no-op precisely when
-        // it should be.
+        // Idempotency (spec 14 §5, spec 13 §5): a resumed run (T-13 blocked -> queued, T-05
+        // awaiting_setlist_choice -> matching, T-08 awaiting_version_choice -> building) or a retry
+        // (T-16 failed -> queued) re-enters the pipeline from the top — but the `Playlist` and its
+        // up-front `PlaylistTrack` skeleton (D-139/D-140) must be created exactly once per job, not
+        // once per attempt. A prior attempt that suspended for a setlist choice has no Playlist row
+        // yet (this method returned `null` without creating one), so this is a no-op precisely when
+        // it should be: `App\Service\Playlist\Choice\SetlistChoiceApplier` builds the skeleton once
+        // the user answers, and every subsequent resume short-circuits here.
         $existing = $this->playlistRepository->findOneBy(['job' => $job]);
         if (null !== $existing) {
             return $existing;
@@ -82,10 +94,8 @@ final readonly class SetlistSelectionStage
         // Stage order for playback: earliest support act first, headliner last (billingOrder DESC).
         $stageOrder = array_reverse($kept);
 
-        $selections = [];
-        $reportEntries = [];
-        $selectedSetlistsJson = [];
-
+        /** @var list<array{concertBand: ConcertBand, candidates: list<Setlist>, result: ?SelectionResult}> $perBand */
+        $perBand = [];
         foreach ($stageOrder as $concertBand) {
             $band = $concertBand->getBand();
             $candidates = $this->cachedCandidates($band);
@@ -94,7 +104,114 @@ final readonly class SetlistSelectionStage
                 $candidates = $this->fetchOnePage($band, $now);
             }
 
-            $result = $this->selector->select($candidates, $now);
+            $perBand[] = [
+                'concertBand' => $concertBand,
+                'candidates' => $candidates,
+                'result' => $this->selector->select($candidates, $now),
+            ];
+        }
+
+        if (JobMode::Normal === $job->getMode() && self::anyBandOffersAChoice($perBand)) {
+            $this->suspendForSetlistChoice($job, $perBand, $now, $this->resumedSetlistChoices($job));
+
+            return null;
+        }
+
+        return $this->buildSkeleton($job, $perBand, $omittedBands, $now);
+    }
+
+    /** @param list<array{concertBand: ConcertBand, candidates: list<Setlist>, result: ?SelectionResult}> $perBand */
+    private static function anyBandOffersAChoice(array $perBand): bool
+    {
+        foreach ($perBand as $entry) {
+            $usable = array_filter($entry['candidates'], static fn (Setlist $s): bool => !$s->isEmpty() && $s->getSongCount() > 0);
+            if (\count($usable) >= 2) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * T-04: persists `candidateSetlists` (bands ordered `billingOrder` ASC — headliner first, D-25)
+     * and suspends. Zero setlist.fm calls happen here — every candidate was already fetched above,
+     * from cached rows or the single page-1 fetch `fetchOnePage()` already spent (AC-1.2).
+     *
+     * @param list<array{concertBand: ConcertBand, candidates: list<Setlist>, result: ?SelectionResult}> $perBand
+     * @param array<int, string>                                                                         $resumedChoices bandId => setlistfmId (AC-4.3)
+     */
+    private function suspendForSetlistChoice(PlaylistGenerationJob $job, array $perBand, \DateTimeImmutable $now, array $resumedChoices = []): void
+    {
+        $concertDate = $job->getConcert()->getDate()->format('Y-m-d');
+
+        $bandsJson = [];
+        foreach ($perBand as $entry) {
+            $concertBand = $entry['concertBand'];
+            $band = $concertBand->getBand();
+            $result = $entry['result'];
+
+            $candidatesJson = [];
+            foreach (\array_slice($entry['candidates'], 0, self::SELECTION_WINDOW) as $setlist) {
+                $candidatesJson[] = [
+                    'setlistfmId' => $setlist->getSetlistfmId(),
+                    'eventDate' => $setlist->getEventDate()->format('Y-m-d'),
+                    'venueName' => $setlist->getVenueName(),
+                    'cityName' => $setlist->getVenueCity(),
+                    'countryCode' => $setlist->getVenueCountry(),
+                    'tourName' => $setlist->getTourName(),
+                    'songCount' => $setlist->getSongCount(),
+                    'isSameNight' => $setlist->getEventDate()->format('Y-m-d') === $concertDate,
+                    'url' => $setlist->getUrl(),
+                ];
+            }
+
+            $recommendedSetlistfmId = $result?->setlist->getSetlistfmId();
+            $recommendedReason = $result?->reason->value;
+
+            // AC-4.3: a resumed job's previous choice is recommended again, but only when it is
+            // still among THIS job's candidates — otherwise the default recommendation stands and
+            // the band surfaces as an ordinary, unprefilled decision (AC-4.4's spirit, applied to
+            // the setlist step: nothing is silently carried over that no longer exists).
+            $resumedSetlistfmId = $resumedChoices[$band->getId() ?? 0] ?? null;
+            if (null !== $resumedSetlistfmId && \in_array($resumedSetlistfmId, array_column($candidatesJson, 'setlistfmId'), true)) {
+                $recommendedSetlistfmId = $resumedSetlistfmId;
+                $recommendedReason = SelectionReason::ResumedFromPreviousChoice->value;
+            }
+
+            $bandsJson[] = [
+                'bandId' => $band->getId() ?? 0,
+                'bandName' => $band->getName(),
+                'billingOrder' => $concertBand->getBillingOrder(),
+                'recommendedSetlistfmId' => $recommendedSetlistfmId,
+                'recommendedReason' => $recommendedReason,
+                'noSetlistCause' => null === $result ? NoSetlistCause::forResolutionState($band->getSetlistfmResolutionState())->value : null,
+                'candidates' => $candidatesJson,
+            ];
+        }
+
+        usort($bandsJson, static fn (array $a, array $b): int => $a['billingOrder'] <=> $b['billingOrder']);
+
+        $job->setCandidateSetlists($bandsJson);
+        $expiresAt = $now->modify(\sprintf('+%d seconds', $this->suspendedSetlistChoiceTtlSeconds));
+        $this->stateMachine->suspendForSetlistChoice($job, $expiresAt);
+    }
+
+    /**
+     * The automatic path (Fast mode, or Normal mode where every band has at most one usable
+     * setlist, T-03) — unchanged from the pre-Normal-mode behaviour.
+     *
+     * @param list<array{concertBand: ConcertBand, candidates: list<Setlist>, result: ?SelectionResult}> $perBand
+     * @param list<ConcertBand>                                                                          $omittedBands
+     */
+    private function buildSkeleton(PlaylistGenerationJob $job, array $perBand, array $omittedBands, \DateTimeImmutable $now): Playlist
+    {
+        $selections = [];
+        $reportEntries = [];
+
+        foreach ($perBand as $entry) {
+            $band = $entry['concertBand']->getBand();
+            $result = $entry['result'];
 
             if (null === $result) {
                 $reportEntries[] = [ReportCode::NoSetlistForBand, [
@@ -105,13 +222,6 @@ final readonly class SetlistSelectionStage
             }
 
             $selections[] = ['band' => $band, 'setlist' => $result->setlist, 'reason' => $result->reason];
-            $selectedSetlistsJson[] = [
-                'bandId' => $band->getId() ?? 0,
-                'setlistfmId' => $result->setlist->getSetlistfmId(),
-                'selectionReason' => $result->reason->value,
-                'fingerprint' => $result->setlist->getSetlistfmId(),
-                'songCount' => $result->setlist->getSongCount(),
-            ];
             $reportEntries[] = [ReportCode::SelectedFrom, [
                 'band' => $band->getName(),
                 'date' => $result->setlist->getEventDate()->format('Y-m-d'),
@@ -127,61 +237,37 @@ final readonly class SetlistSelectionStage
             ]];
         }
 
-        // T-10 (no band has any usable setlist) is NOT thrown here: the Playlist row below is
-        // still created, with zero tracks, so the per-band NO_SETLIST_FOR_BAND report entries are
-        // not lost. `PlaylistPipeline` reads `songsTotal === 0` after this stage and completes as
-        // `no_source_material` without ever entering `matching`.
+        // T-10 (no band has any usable setlist) is NOT thrown here: `PlaylistSkeletonBuilder` still
+        // creates the Playlist row, with zero tracks, so the per-band NO_SETLIST_FOR_BAND report
+        // entries are not lost. `PlaylistPipeline` reads `songsTotal === 0` after this stage and
+        // completes as `no_source_material` without ever entering `matching`.
+        return $this->skeletonBuilder->build($job, $selections, $reportEntries, $now);
+    }
 
-        // P-1: GENERATION_MAX_SONGS, cutting whole bands from the lowest-billed end (the front of
-        // stage order) until the total fits; last resort, truncate the sole remaining band.
-        [$selections, $songLimitBySetlistId] = $this->applySongCap($selections, $reportEntries);
-
-        $playlist = new Playlist($job->getOwner(), $concert, $job, $job->getProviderKey(), $this->namer->name($concert), $now);
-
-        $ordinal = 0;
-        $songsTotal = 0;
-        foreach ($selections as $selection) {
-            /** @var Band $band */
-            $band = $selection['band'];
-            /** @var Setlist $setlist */
-            $setlist = $selection['setlist'];
-
-            $songLimit = $songLimitBySetlistId[$setlist->getId()] ?? null;
-            $songIndex = 0;
-            foreach ($setlist->getSongs() as $song) {
-                if (null !== $songLimit && $songIndex++ >= $songLimit) {
-                    break;
-                }
-                $segments = $this->medleySplitter->split($song->getTitle());
-                $segmentCount = \count($segments);
-
-                foreach (array_keys($segments) as $index) {
-                    $track = new PlaylistTrack(
-                        $playlist,
-                        $ordinal++,
-                        $song,
-                        $band,
-                        $setlist->getSetlistfmId(),
-                        $song->getPosition(),
-                        $song->getTitle(),
-                        $segmentCount > 1 ? $index : null,
-                    );
-                    $playlist->addTrack($track);
-                    ++$songsTotal;
-                }
-            }
+    /**
+     * AC-4.3: the bandId => setlistfmId map from the job this one resumes, if any — read from
+     * `userChoices['setlistChoices']`, which `SetlistChoiceApplier` writes at submission and which
+     * survives expiry (`JobStateMachine::expire()` never clears `userChoices`).
+     *
+     * @return array<int, string>
+     */
+    private function resumedSetlistChoices(PlaylistGenerationJob $job): array
+    {
+        $resumedFrom = $job->getResumedFromJob();
+        if (null === $resumedFrom) {
+            return [];
         }
 
-        foreach ($reportEntries as [$code, $params]) {
-            $playlist->addReportEntry($code->value, $params, $now);
+        /** @var array{setlistChoices?: list<array{bandId: int, setlistfmId: string}>} $userChoices */
+        $userChoices = $resumedFrom->getUserChoices() ?? [];
+        $setlistChoices = $userChoices['setlistChoices'] ?? [];
+
+        $map = [];
+        foreach ($setlistChoices as $choice) {
+            $map[(int) $choice['bandId']] = (string) $choice['setlistfmId'];
         }
 
-        $job->setSelectedSetlists($selectedSetlistsJson);
-        $job->setSongsTotal($songsTotal, $now);
-
-        $this->playlistRepository->save($playlist);
-
-        return $playlist;
+        return $map;
     }
 
     /** @return list<Setlist> ordered by eventDate DESC */
@@ -238,37 +324,5 @@ final readonly class SetlistSelectionStage
         }
 
         return $hydrated['setlists'];
-    }
-
-    /**
-     * @param list<array{band: Band, setlist: Setlist, reason: \App\Service\Playlist\Model\SelectionReason}> $selections
-     * @param list<array{0: ReportCode, 1: array<string, mixed>}>                                            $reportEntries
-     *
-     * @return array{0: list<array{band: Band, setlist: Setlist, reason: \App\Service\Playlist\Model\SelectionReason}>, 1: array<int, int>}
-     */
-    private function applySongCap(array $selections, array &$reportEntries): array
-    {
-        $total = array_sum(array_map(static fn (array $s): int => $s['setlist']->getSongCount(), $selections));
-
-        while ($total > $this->maxSongs && \count($selections) > 1) {
-            $dropped = array_shift($selections);
-            $total -= $dropped['setlist']->getSongCount();
-            $reportEntries[] = [ReportCode::BandsOmittedForLength, ['bands' => [$dropped['band']->getName()]]];
-        }
-
-        /** @var array<int, int> $songLimitBySetlistId */
-        $songLimitBySetlistId = [];
-        if ($total > $this->maxSongs && 1 === \count($selections)) {
-            // Last resort: the sole remaining band's setlist alone exceeds the cap. Never mutate
-            // the shared `Setlist` row (D-66, reference data) — instead cap how many of its songs
-            // are read when building this run's PlaylistTrack skeleton.
-            $soleId = $selections[0]['setlist']->getId();
-            if (null !== $soleId) {
-                $songLimitBySetlistId[$soleId] = $this->maxSongs;
-            }
-            $reportEntries[] = [ReportCode::SetlistTruncated, ['keptSongs' => $this->maxSongs, 'originalSongs' => $total]];
-        }
-
-        return [$selections, $songLimitBySetlistId];
     }
 }

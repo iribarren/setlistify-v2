@@ -11,6 +11,18 @@ export type {
   ResultKind,
   TrackOutcome,
   ReportCode,
+  ConfidenceLabel,
+  CandidateSetlistsOutput,
+  CandidateSetlistBandOutput,
+  CandidateSetlistOutput,
+  SetlistChoiceInput,
+  SetlistChoiceItemInput,
+  PendingChoicesOutput,
+  PendingChoiceAutoResolvedOutput,
+  PendingChoiceDecisionOutput,
+  PendingChoiceCandidateOutput,
+  VersionChoicesInput,
+  VersionChoiceItemInput,
 } from "./types";
 export {
   JOB_STATES,
@@ -21,12 +33,14 @@ export {
   RESULT_KINDS,
   TRACK_OUTCOMES,
   REPORT_CODES,
+  CONFIDENCE_LABELS,
   asJobState,
   asBlockedReason,
   asFailureReason,
   asResultKind,
   asTrackOutcome,
   asReportCode,
+  asConfidenceLabel,
 } from "./types";
 
 export {
@@ -34,6 +48,8 @@ export {
   concertJobsQueryKey,
   concertPlaylistsQueryKey,
   playlistDetailQueryKey,
+  candidateSetlistsQueryKey,
+  pendingChoicesQueryKey,
   useProviderConfigs,
   useConcertPlaylistJobs,
   useConcertPlaylists,
@@ -42,8 +58,15 @@ export {
   useRetryGeneration,
   useCreateAnyway,
   useDeletePlaylist,
+  useCandidateSetlists,
+  useSubmitSetlistChoice,
+  usePendingChoices,
+  useSubmitVersionChoices,
+  useCancelGeneration,
   pickCurrentJob,
   type StartGenerationVars,
+  type SubmitSetlistChoiceVars,
+  type SubmitVersionChoicesVars,
 } from "./queries";
 
 export { playlistJobQueryKey, usePlaylistJobPolling } from "./polling";
@@ -56,6 +79,15 @@ export {
 } from "./view";
 
 export { describeReportCode, type ReasonParams } from "./reportCopy";
+
+export { describeConfidence, type ConfidenceChip } from "./confidence";
+
+export {
+  usePlaylistChoiceDraft,
+  clearPlaylistChoiceDraft,
+  type PlaylistChoiceDraft,
+  type UsePlaylistChoiceDraftResult,
+} from "./choices";
 
 export {
   selectProviderCandidates,

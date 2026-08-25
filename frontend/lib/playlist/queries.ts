@@ -8,13 +8,18 @@ import {
 
 import { apiClient, ApiError, unwrap } from "@/lib/api";
 
+import { clearPlaylistChoiceDraft } from "./choices";
 import { playlistJobQueryKey } from "./polling";
 import { ACTIVE_JOB_STATES, asJobState } from "./types";
 import type {
+  CandidateSetlistsOutput,
+  PendingChoicesOutput,
   PlaylistGenerationJobOutput,
   PlaylistOutput,
   ProviderConfigOutput,
+  SetlistChoiceInput,
   StartGenerationInput,
+  VersionChoicesInput,
 } from "./types";
 
 // AC-8.4 (frontend skeleton pattern): stable domain-labelled query key tuples.
@@ -110,6 +115,10 @@ export function usePlaylistDetail(playlistId: string | null): UseQueryResult<Pla
 export interface StartGenerationVars {
   concertId: string;
   provider?: string;
+  /** D-203: "Choose it yourself" starts a `mode: "normal"` job (AC-1.1). Omitted — Fast, as before. */
+  mode?: "fast" | "normal";
+  /** AC-4.3: the expired job a fresh one pre-fills from (US-4). */
+  resumeFromJobId?: string;
 }
 
 /**
@@ -121,13 +130,126 @@ export function useStartGeneration(): UseMutationResult<PlaylistGenerationJobOut
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ concertId, provider }: StartGenerationVars) => {
-      const body: StartGenerationInput = { concertId: Number(concertId), provider: provider ?? null };
+    mutationFn: async ({ concertId, provider, mode, resumeFromJobId }: StartGenerationVars) => {
+      const body: StartGenerationInput = {
+        concertId: Number(concertId),
+        provider: provider ?? null,
+        mode: mode ?? null,
+        resumeFromJobId: resumeFromJobId ? Number(resumeFromJobId) : null,
+      };
       return unwrap(async (signal) => apiClient.POST("/api/playlist-generation-jobs", { body, signal }));
     },
     onSuccess: (job, { concertId }) => {
       queryClient.setQueryData(playlistJobQueryKey(String(job.id)), job);
       void queryClient.invalidateQueries({ queryKey: concertJobsQueryKey(concertId) });
+    },
+  });
+}
+
+// --- Normal mode (docs/specs/2026-08-25-playlist-normal-mode.md, D-190) ---------------------------
+
+export const candidateSetlistsQueryKey = (jobId: string) => ["playlist", "candidate-setlists", jobId] as const;
+export const pendingChoicesQueryKey = (jobId: string) => ["playlist", "pending-choices", jobId] as const;
+
+/** US-1, step 1: AC-1.2's projection of `candidateSetlists` — zero setlist.fm calls (AC-1.2). */
+export function useCandidateSetlists(jobId: string | null): UseQueryResult<CandidateSetlistsOutput, ApiError> {
+  return useQuery({
+    queryKey: candidateSetlistsQueryKey(jobId ?? ""),
+    enabled: Boolean(jobId),
+    queryFn: async () =>
+      unwrap(async (signal) =>
+        apiClient.GET("/api/playlist-generation-jobs/{id}/candidate-setlists", {
+          params: { path: { id: jobId as string } },
+          signal,
+        }),
+      ),
+  });
+}
+
+export interface SubmitSetlistChoiceVars {
+  jobId: string;
+  input: SetlistChoiceInput;
+}
+
+/**
+ * T-05: `awaiting_setlist_choice -> matching`. AC-6.5: the caller is responsible for treating a 422
+ * as "refetch the job and re-render from server truth" — this hook only performs the call.
+ */
+export function useSubmitSetlistChoice(): UseMutationResult<PlaylistGenerationJobOutput, ApiError, SubmitSetlistChoiceVars> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ jobId, input }: SubmitSetlistChoiceVars) =>
+      unwrap(async (signal) =>
+        apiClient.POST("/api/playlist-generation-jobs/{id}/setlist-choice", {
+          params: { path: { id: jobId } },
+          body: input,
+          signal,
+        }),
+      ),
+    onSuccess: (job, { jobId }) => {
+      queryClient.setQueryData(playlistJobQueryKey(jobId), job);
+    },
+  });
+}
+
+/** US-2, step 2: AC-2.4's projection of `pendingChoices` — no provider search happens here. */
+export function usePendingChoices(jobId: string | null): UseQueryResult<PendingChoicesOutput, ApiError> {
+  return useQuery({
+    queryKey: pendingChoicesQueryKey(jobId ?? ""),
+    enabled: Boolean(jobId),
+    queryFn: async () =>
+      unwrap(async (signal) =>
+        apiClient.GET("/api/playlist-generation-jobs/{id}/pending-choices", {
+          params: { path: { id: jobId as string } },
+          signal,
+        }),
+      ),
+  });
+}
+
+export interface SubmitVersionChoicesVars {
+  jobId: string;
+  input: VersionChoicesInput;
+}
+
+/**
+ * T-08: `awaiting_version_choice -> building`. D-192: full replacement, idempotent while still
+ * suspended — re-submitting (e.g. the user goes back and changes an answer) simply overwrites.
+ * D-194: this is also literally "Build the playlist" on the client-side confirm step.
+ */
+export function useSubmitVersionChoices(): UseMutationResult<PlaylistGenerationJobOutput, ApiError, SubmitVersionChoicesVars> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ jobId, input }: SubmitVersionChoicesVars) =>
+      unwrap(async (signal) =>
+        apiClient.POST("/api/playlist-generation-jobs/{id}/version-choices", {
+          params: { path: { id: jobId } },
+          body: input,
+          signal,
+        }),
+      ),
+    onSuccess: (job, { jobId }) => {
+      queryClient.setQueryData(playlistJobQueryKey(jobId), job);
+      // D-206: the draft's job is over — clear it on successful submission.
+      void clearPlaylistChoiceDraft(jobId);
+    },
+  });
+}
+
+/** D-208: "Start over" — cancel the suspended job, then the caller starts a fresh one. */
+export function useCancelGeneration(jobId: string): UseMutationResult<PlaylistGenerationJobOutput, ApiError, void> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () =>
+      unwrap(async (signal) =>
+        apiClient.POST("/api/playlist-generation-jobs/{id}/cancel", { params: { path: { id: jobId } }, signal }),
+      ),
+    onSuccess: (job) => {
+      queryClient.setQueryData(playlistJobQueryKey(jobId), job);
+      void clearPlaylistChoiceDraft(jobId);
     },
   });
 }

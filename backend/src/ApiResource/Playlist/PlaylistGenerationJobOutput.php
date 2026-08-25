@@ -43,6 +43,9 @@ final readonly class PlaylistGenerationJobOutput
         public \DateTimeImmutable $createdAt,
         public ?\DateTimeImmutable $startedAt,
         public ?\DateTimeImmutable $finishedAt,
+        /** D-209/AC-9.1: null until the job's version step has been reached at least once. */
+        public ?int $choicesRequiredCount = null,
+        public ?int $choicesMadeCount = null,
     ) {
     }
 }

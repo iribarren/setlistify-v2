@@ -189,6 +189,25 @@ class PlaylistTrack
         $this->reasonParams = $reasonParams;
     }
 
+    /**
+     * Spec 13 §6's staleness-on-resume row 1: `Choice\StalenessReconciler` calls this on every row
+     * whose source song's title changed since selection (a setlist.fm correction) — updates the
+     * denormalized title and puts the row back to `Pending` so `MatchingStage`'s own resume loop
+     * re-matches it exactly like a never-attempted song. A row whose title did NOT change is never
+     * touched by this method, which is what "keep every user choice whose song is unchanged" means
+     * in practice: nothing here resets it, so whatever it already resolved to (or is still deciding)
+     * stands.
+     */
+    public function resetForStalenessReconciliation(string $currentTitle): void
+    {
+        $this->sourceTitle = $currentTitle;
+        $this->outcome = TrackOutcome::Pending;
+        $this->providerTrackId = null;
+        $this->confidence = null;
+        $this->reasonCode = null;
+        $this->reasonParams = null;
+    }
+
     public function getInsertedAt(): ?\DateTimeImmutable
     {
         return $this->insertedAt;

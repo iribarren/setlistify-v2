@@ -55,6 +55,8 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
     private array $trackIdOverrides = [];
     /** @var list<string> songTitles for which searchTrack() returns zero candidates (F-09) */
     private array $noCandidateTitles = [];
+    /** @var array<string, list<TrackCandidate>> songTitle => full scripted candidate list (docs/specs/2026-08-25-playlist-normal-mode.md) */
+    private array $candidateOverrides = [];
     /** @var list<list<string>> */
     private array $addTracksCallLog = [];
 
@@ -74,7 +76,20 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
         $this->regionRestrictedTrackIds = [];
         $this->trackIdOverrides = [];
         $this->noCandidateTitles = [];
+        $this->candidateOverrides = [];
         $this->addTracksCallLog = [];
+    }
+
+    /**
+     * Full control over `searchTrack()`'s return for one song title — used to script a CHOICE-band
+     * (`0.55 <= confidence < 0.80`) or REJECT result, which the default single exact-match candidate
+     * can never produce (docs/specs/2026-08-25-playlist-normal-mode.md).
+     *
+     * @param list<TrackCandidate> $candidates
+     */
+    public function scriptCandidates(string $songTitle, array $candidates): void
+    {
+        $this->candidateOverrides[$songTitle] = $candidates;
     }
 
     /** Throws `QuotaExhaustedException` from `searchTrack()` on exactly the given 1-based call number (a later retry's calls succeed normally). */
@@ -200,6 +215,10 @@ final class TestDoubleStreamingProvider implements StreamingProviderInterface
 
         if (\in_array($query->songTitle, $this->noCandidateTitles, true)) {
             return [];
+        }
+
+        if (isset($this->candidateOverrides[$query->songTitle])) {
+            return $this->candidateOverrides[$query->songTitle];
         }
 
         $trackId = $this->trackIdOverrides[$query->songTitle] ?? 'double-track-1';

@@ -383,11 +383,15 @@ token, no error icon `testID`, and none of the forbidden words appears in the tr
   "Use the live version", "Add anyway"). Those actions are version selection — prompt 17's
   `POST …/version-choices`. This prompt renders the rows, the reasons and the counts; the row actions
   arrive with Normal mode. `ResultMostly`'s primary CTA is therefore **"See what's missing"** rather than
-  "Review the 5 songs" until prompt 17 makes reviewing actionable. Open question **Q-1**.
+  "Review the 5 songs" until prompt 17 makes reviewing actionable. Open question **Q-1** —
+  **resolved by `docs/specs/2026-08-25-playlist-normal-mode.md` (D-205): declined, the other way from
+  what was anticipated here.** The row actions belong to Normal mode's pre-build version-selection
+  screen, not to a post-build report; `ResultMostly`'s CTA stays "See what's missing" permanently.
 - **The mode chooser is not built.** `Main.dc.html` shows "Or choose it yourself →" opening a sheet with
   Fast and Choose-it-yourself. Choose-it-yourself is prompt 17. The trigger ships as the one-tap primary
   button the design already makes the default; the sheet lands with the mode it introduces. Open
-  question **Q-2**.
+  question **Q-2** — **resolved by `docs/specs/2026-08-25-playlist-normal-mode.md` (D-203): shipped as
+  `ModeSheet`, per this section's own recommendation.**
 - **No cancel UI.** `POST …/cancel` exists server-side; prompt 15 drew no cancel affordance, and inventing
   one here would be design done in code. It stays unused until designed. **D-179.**
 - **No push notification** for a long generation. Recorded as a risk, not built.
@@ -488,9 +492,22 @@ Resolved on approval — 2026-08-24. All recommendations accepted as written.
 
 1. **Report row actions — resolved: not shipped at all until prompt 17.** `ResultMostly`'s primary CTA
    is "See what's missing"; prompt 17 restores the designed row actions and copy. *(D-171.)*
+   **Closed by prompt 17 (`docs/specs/2026-08-25-playlist-normal-mode.md`, D-205): the other way, on
+   the backend side shipped so far.** The report's row actions are declined outright, not restored —
+   acting on them post-build is playlist editing, out of scope for that prompt and unsupported by the
+   frozen nine-method streaming port. The actions belong on the pre-build version-selection screen
+   instead; prompt 17's backend (`POST …/version-choices` and its candidates) is what that screen
+   would call. `ResultMostly`'s CTA stays "See what's missing" permanently. **The client screen itself
+   (`VersionSelect`/`Confirm` wiring, `frontend/lib/playlist/`, `frontend/components/playlist/`) is
+   not part of the backend work that closed this question and remains open for a client-side pass.**
 
 2. **Mode chooser sheet — resolved: not shipped.** Fast mode ships as the one-tap trigger only; the
    "choose it yourself" link and sheet land with prompt 17.
+   **Backend closed by prompt 17 (D-203): the four operations a mode sheet would call
+   (`candidate-setlists`, `setlist-choice`, `pending-choices`, `version-choices`) are live.** The sheet
+   itself (`ModeSheet.tsx`, `frontend/lib/playlist/view.ts`'s two new view states) is frontend work not
+   included in that backend change and remains to be built before this question is fully closed
+   end-to-end.
 
 3. **`upstream_unavailable` artboard — resolved: reuse `DegradedQuotaExhausted`'s layout** with its own
    sentence ("we're having trouble reaching \<Provider\> — we'll keep trying"). Revisit with a dedicated

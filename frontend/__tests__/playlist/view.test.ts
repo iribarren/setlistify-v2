@@ -30,12 +30,20 @@ describe("derivePlaylistView (T-1, D-166/D-170)", () => {
     expect(derivePlaylistView(job({ state }), null).kind).toBe("progress");
   });
 
-  it("expired → idle", () => {
-    expect(derivePlaylistView(job({ state: "expired" }), null).kind).toBe("idle");
+  it("expired → expired (D-202/AC-4.2 — a deliberate divergence from spec 16's original expired -> idle)", () => {
+    expect(derivePlaylistView(job({ state: "expired" }), null).kind).toBe("expired");
   });
 
   it("cancelled → idle", () => {
     expect(derivePlaylistView(job({ state: "cancelled" }), null).kind).toBe("idle");
+  });
+
+  it("awaiting_setlist_choice → choose_setlist (D-202)", () => {
+    expect(derivePlaylistView(job({ state: "awaiting_setlist_choice" }), null).kind).toBe("choose_setlist");
+  });
+
+  it("awaiting_version_choice → choose_versions (D-202)", () => {
+    expect(derivePlaylistView(job({ state: "awaiting_version_choice" }), null).kind).toBe("choose_versions");
   });
 
   it("completed/complete → result_full", () => {

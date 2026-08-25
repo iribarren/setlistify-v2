@@ -11,4 +11,7 @@ enum SelectionReason: string
     case FallbackLongest = 'fallback_longest';
     case OnlyOneAvailable = 'only_one_available';
     case UserChosen = 'user_chosen';
+
+    /** AC-4.3: recommended because it is what the expired job being resumed from had chosen. */
+    case ResumedFromPreviousChoice = 'resumed_from_previous_choice';
 }
