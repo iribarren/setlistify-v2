@@ -158,9 +158,16 @@ final readonly class JobStateMachine
     }
 
     /** T-17: `awaiting_* -> expired`, found past TTL by `app:playlist:expire-jobs`. */
+    /**
+     * T-17 (spec 13 §6, AC-4.1): keeps `userChoices` — the pre-fill material a resumed job reads
+     * (AC-4.3) — and drops the two suspension payloads, which are stale the moment the session has
+     * lapsed.
+     */
     public function expire(PlaylistGenerationJob $job): void
     {
         $this->transition($job, JobState::Expired);
+        $job->setCandidateSetlists(null);
+        $job->setPendingChoices(null);
         $this->flush();
     }
 

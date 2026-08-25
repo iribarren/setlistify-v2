@@ -134,6 +134,22 @@ final class JobStateMachineTest extends TestCase
         }
     }
 
+    /** AC-4.1: expiry keeps `userChoices` (AC-4.3's pre-fill material) and drops the two suspension payloads, both stale the instant the session has lapsed. */
+    public function testExpireKeepsUserChoicesButDropsTheSuspensionPayloads(): void
+    {
+        $job = $this->inState(JobState::AwaitingVersionChoice);
+        $job->setCandidateSetlists([]);
+        $job->setPendingChoices(['songsTotal' => 0, 'autoResolvedCount' => 0, 'choicesRequiredCount' => 0, 'autoResolved' => [], 'decisions' => []]);
+        $job->setUserChoices(['setlistChoices' => [['bandId' => 1, 'setlistfmId' => 'sl-1']]]);
+
+        $this->machine->expire($job);
+
+        self::assertSame(JobState::Expired, $job->getState());
+        self::assertNull($job->getCandidateSetlists());
+        self::assertNull($job->getPendingChoices());
+        self::assertSame(['setlistChoices' => [['bandId' => 1, 'setlistfmId' => 'sl-1']]], $job->getUserChoices());
+    }
+
     public function testAwaitingStatesCanAlsoBeCancelledOrBlocked(): void
     {
         $job = $this->inState(JobState::AwaitingSetlistChoice);

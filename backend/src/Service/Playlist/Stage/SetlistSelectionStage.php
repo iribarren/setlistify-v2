@@ -16,6 +16,7 @@ use App\Service\Playlist\JobStateMachine;
 use App\Service\Playlist\Model\JobMode;
 use App\Service\Playlist\Model\NoSetlistCause;
 use App\Service\Playlist\Model\ReportCode;
+use App\Service\Playlist\Model\SelectionReason;
 use App\Service\Playlist\PlaylistSkeletonBuilder;
 use App\Service\Playlist\SelectionResult;
 use App\Service\Playlist\SubstantialSetlistSelector;
@@ -111,7 +112,7 @@ final readonly class SetlistSelectionStage
         }
 
         if (JobMode::Normal === $job->getMode() && self::anyBandOffersAChoice($perBand)) {
-            $this->suspendForSetlistChoice($job, $perBand, $now);
+            $this->suspendForSetlistChoice($job, $perBand, $now, $this->resumedSetlistChoices($job));
 
             return null;
         }
@@ -138,8 +139,9 @@ final readonly class SetlistSelectionStage
      * from cached rows or the single page-1 fetch `fetchOnePage()` already spent (AC-1.2).
      *
      * @param list<array{concertBand: ConcertBand, candidates: list<Setlist>, result: ?SelectionResult}> $perBand
+     * @param array<int, string>                                                                         $resumedChoices bandId => setlistfmId (AC-4.3)
      */
-    private function suspendForSetlistChoice(PlaylistGenerationJob $job, array $perBand, \DateTimeImmutable $now): void
+    private function suspendForSetlistChoice(PlaylistGenerationJob $job, array $perBand, \DateTimeImmutable $now, array $resumedChoices = []): void
     {
         $concertDate = $job->getConcert()->getDate()->format('Y-m-d');
 
@@ -164,12 +166,25 @@ final readonly class SetlistSelectionStage
                 ];
             }
 
+            $recommendedSetlistfmId = $result?->setlist->getSetlistfmId();
+            $recommendedReason = $result?->reason->value;
+
+            // AC-4.3: a resumed job's previous choice is recommended again, but only when it is
+            // still among THIS job's candidates — otherwise the default recommendation stands and
+            // the band surfaces as an ordinary, unprefilled decision (AC-4.4's spirit, applied to
+            // the setlist step: nothing is silently carried over that no longer exists).
+            $resumedSetlistfmId = $resumedChoices[$band->getId() ?? 0] ?? null;
+            if (null !== $resumedSetlistfmId && \in_array($resumedSetlistfmId, array_column($candidatesJson, 'setlistfmId'), true)) {
+                $recommendedSetlistfmId = $resumedSetlistfmId;
+                $recommendedReason = SelectionReason::ResumedFromPreviousChoice->value;
+            }
+
             $bandsJson[] = [
                 'bandId' => $band->getId() ?? 0,
                 'bandName' => $band->getName(),
                 'billingOrder' => $concertBand->getBillingOrder(),
-                'recommendedSetlistfmId' => $result?->setlist->getSetlistfmId(),
-                'recommendedReason' => $result?->reason->value,
+                'recommendedSetlistfmId' => $recommendedSetlistfmId,
+                'recommendedReason' => $recommendedReason,
                 'noSetlistCause' => null === $result ? NoSetlistCause::forResolutionState($band->getSetlistfmResolutionState())->value : null,
                 'candidates' => $candidatesJson,
             ];
@@ -227,6 +242,32 @@ final readonly class SetlistSelectionStage
         // entries are not lost. `PlaylistPipeline` reads `songsTotal === 0` after this stage and
         // completes as `no_source_material` without ever entering `matching`.
         return $this->skeletonBuilder->build($job, $selections, $reportEntries, $now);
+    }
+
+    /**
+     * AC-4.3: the bandId => setlistfmId map from the job this one resumes, if any — read from
+     * `userChoices['setlistChoices']`, which `SetlistChoiceApplier` writes at submission and which
+     * survives expiry (`JobStateMachine::expire()` never clears `userChoices`).
+     *
+     * @return array<int, string>
+     */
+    private function resumedSetlistChoices(PlaylistGenerationJob $job): array
+    {
+        $resumedFrom = $job->getResumedFromJob();
+        if (null === $resumedFrom) {
+            return [];
+        }
+
+        /** @var array{setlistChoices?: list<array{bandId: int, setlistfmId: string}>} $userChoices */
+        $userChoices = $resumedFrom->getUserChoices() ?? [];
+        $setlistChoices = $userChoices['setlistChoices'] ?? [];
+
+        $map = [];
+        foreach ($setlistChoices as $choice) {
+            $map[(int) $choice['bandId']] = (string) $choice['setlistfmId'];
+        }
+
+        return $map;
     }
 
     /** @return list<Setlist> ordered by eventDate DESC */

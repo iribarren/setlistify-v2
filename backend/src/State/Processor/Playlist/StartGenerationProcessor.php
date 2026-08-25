@@ -15,12 +15,15 @@ use App\Message\BuildPlaylistMessage;
 use App\Repository\PlaylistGenerationJobRepository;
 use App\Repository\StreamingAccountRepository;
 use App\Security\Voter\ConcertVoter;
+use App\Security\Voter\PlaylistGenerationJobVoter;
 use App\Service\Matching\MatchProfileRegistry;
 use App\Service\Playlist\Model\JobMode;
-use App\Service\Provider\ProviderRegistry;
+use App\Service\Playlist\Model\JobState;
 use App\Service\Provider\ProviderDisabledException;
+use App\Service\Provider\ProviderRegistry;
 use App\Service\Streaming\StreamingProviderLocator;
 use App\State\ConcertLocator;
+use App\State\PlaylistGenerationJobLocator;
 use App\State\PlaylistGenerationJobOutputMapper;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -44,6 +47,7 @@ final readonly class StartGenerationProcessor implements ProcessorInterface
     public function __construct(
         private ConcertLocator $concertLocator,
         private PlaylistGenerationJobRepository $jobRepository,
+        private PlaylistGenerationJobLocator $jobLocator,
         private StreamingAccountRepository $streamingAccountRepository,
         private ProviderRegistry $providerAvailability,
         private StreamingProviderLocator $streamingProviderLocator,
@@ -80,11 +84,24 @@ final readonly class StartGenerationProcessor implements ProcessorInterface
             return $this->mapper->map($existing);
         }
 
+        $mode = $this->resolveMode($data->mode);
+        $resumedFrom = null !== $data->resumeFromJobId ? $this->resolveResumeFromJob($data->resumeFromJobId) : null;
+
         $now = \DateTimeImmutable::createFromInterface($this->clock->now());
         $algorithmVersion = $this->matchProfileRegistry->algorithmVersion();
-        $idempotencyKey = self::idempotencyKey($concert->getId() ?? 0, $providerKey, JobMode::Fast, $algorithmVersion);
+        $idempotencyKey = self::idempotencyKey($concert->getId() ?? 0, $providerKey, $mode, $algorithmVersion);
 
-        $job = new PlaylistGenerationJob($owner, $concert, $providerKey, $account, JobMode::Fast, $idempotencyKey, $algorithmVersion, $now);
+        $job = new PlaylistGenerationJob($owner, $concert, $providerKey, $account, $mode, $idempotencyKey, $algorithmVersion, $now);
+
+        if (null !== $resumedFrom) {
+            $job->setResumedFromJob($resumedFrom, $now);
+            // AC-4.3: carries the old job's pre-fill material forward — `SetlistSelectionStage`
+            // reads it back off `$job->getResumedFromJob()->getUserChoices()`. Setting it here too
+            // keeps the new job's own `userChoices` seeded from the start, matching the entity's
+            // "kept through expiry, for pre-filling a new job" contract even before this job itself
+            // ever suspends.
+            $job->setUserChoices($resumedFrom->getUserChoices());
+        }
 
         try {
             $this->jobRepository->save($job);
@@ -130,6 +147,40 @@ final readonly class StartGenerationProcessor implements ProcessorInterface
         // No default provider configured — the same 404 shape as an explicitly unknown key
         // (spec 14 §6, mirroring App\State\Processor\StreamingLinkStartProcessor's precedent).
         throw new NotFoundHttpException();
+    }
+
+    private function resolveMode(?string $requested): JobMode
+    {
+        if (null === $requested) {
+            return JobMode::Fast;
+        }
+
+        // `Assert\Choice` on `StartGenerationInput::$mode` already rejects an unknown value before
+        // this runs, but `JobMode::from()` is the same 422 shape as the rest of this processor if
+        // that validation is ever bypassed (e.g. a direct processor call in a test).
+        try {
+            return JobMode::from($requested);
+        } catch (\ValueError) {
+            throw new UnprocessableEntityHttpException(\sprintf('Unknown mode "%s".', $requested));
+        }
+    }
+
+    /**
+     * AC-4.3: the referenced job must belong to the current owner (the same `PlaylistGenerationJobLocator`
+     * lookup the four suspension operations use, so a cross-owner or unknown id 404s byte-identically,
+     * never 403 — D-157) and must be `expired` — resuming only makes sense against a lapsed session
+     * (US-4). Any other state is 422, not 404: the id exists and belongs to this owner, it is simply
+     * the wrong kind of job to resume from.
+     */
+    private function resolveResumeFromJob(int $resumeFromJobId): PlaylistGenerationJob
+    {
+        $job = $this->jobLocator->locate($resumeFromJobId, PlaylistGenerationJobVoter::VIEW);
+
+        if (JobState::Expired !== $job->getState()) {
+            throw new UnprocessableEntityHttpException(\sprintf('Job %d is not expired; only an expired job can be resumed from.', $resumeFromJobId));
+        }
+
+        return $job;
     }
 
     /** @param array<string, mixed> $context */

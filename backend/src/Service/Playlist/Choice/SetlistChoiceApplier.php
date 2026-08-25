@@ -120,6 +120,17 @@ final readonly class SetlistChoiceApplier
         $this->skeletonBuilder->build($job, $selections, $reportEntries, $now);
         $job->setCandidateSetlists(null);
 
+        // Kept through expiry, for AC-4.3's pre-fill: `SetlistSelectionStage` consults a resumed
+        // job's `userChoices['setlistChoices']` to recommend the same setlist again, when it is
+        // still among the new job's candidates.
+        $setlistChoicesJson = [];
+        foreach ($choiceBySetlistfmId as $bandId => $setlistfmId) {
+            $setlistChoicesJson[] = ['bandId' => $bandId, 'setlistfmId' => $setlistfmId];
+        }
+        $userChoices = $job->getUserChoices() ?? [];
+        $userChoices['setlistChoices'] = $setlistChoicesJson;
+        $job->setUserChoices($userChoices);
+
         $this->stateMachine->enterMatching($job);
         $this->messageBus->dispatch(new BuildPlaylistMessage($job->getId() ?? 0, $job->getAttempt()));
     }
