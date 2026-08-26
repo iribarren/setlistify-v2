@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { Linking, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import { Badge, Button, Card } from "@/components";
-import { ReservedSection } from "@/components/concert";
 import { useStreamingAccounts } from "@/lib/streaming";
 import {
   chooseProvider,
@@ -23,6 +22,7 @@ import { useTheme } from "@/theme";
 import { DeletePlaylistConfirmation } from "./DeletePlaylistConfirmation";
 import { GenerateTrigger } from "./GenerateTrigger";
 import { ModeSheet } from "./ModeSheet";
+import { PlaybackPanel } from "./PlaybackPanel";
 import { ResumeBanner } from "./ResumeBanner";
 
 export interface PlaylistSectionProps {
@@ -231,12 +231,6 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
                 onPress={() => router.push(`/concerts/${concertId}/playlist-report`)}
               />
             ) : null}
-            <Button
-              testID="playlist-open-provider"
-              label={`Open in ${providerName}`}
-              onPress={() => playlist.externalUrl && void Linking.openURL(playlist.externalUrl)}
-              disabled={!playlist.externalUrl}
-            />
             <Button testID="playlist-delete" label="Delete" variant="destructive" onPress={() => setConfirmingDelete(true)} />
           </View>
         </View>
@@ -252,8 +246,8 @@ export function PlaylistSection({ concertId, testID }: PlaylistSectionProps): Re
         />
       ) : null}
 
-      {/* D-176: playback is prompt 19's, reserved directly beneath the tracklist (AC-8.3). */}
-      <ReservedSection testID="reserved-playback" title="Playback" comingIn="prompt 19" />
+      {/* D-176/AC-8.3: replaces the reserved-playback placeholder, directly beneath the tracklist. */}
+      <PlaybackPanel testID="playback-panel" playlist={playlist} providers={providersQuery.data} />
     </View>
   );
 }

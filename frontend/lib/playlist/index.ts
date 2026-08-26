@@ -34,6 +34,7 @@ export {
   TRACK_OUTCOMES,
   REPORT_CODES,
   CONFIDENCE_LABELS,
+  PLAYBACK_MODES,
   asJobState,
   asBlockedReason,
   asFailureReason,
@@ -41,7 +42,9 @@ export {
   asTrackOutcome,
   asReportCode,
   asConfidenceLabel,
+  asPlaybackMode,
 } from "./types";
+export type { PlaybackMode } from "./types";
 
 export {
   providersQueryKey,
@@ -79,6 +82,13 @@ export {
 } from "./view";
 
 export { describeReportCode, type ReasonParams } from "./reportCopy";
+
+export {
+  derivePlaybackSurface,
+  EMBED_LOAD_TIMEOUT_MS,
+  type PlaybackSurface,
+  type DerivePlaybackSurfaceInput,
+} from "./playback";
 
 export { describeConfidence, type ConfidenceChip } from "./confidence";
 

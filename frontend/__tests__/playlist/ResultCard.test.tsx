@@ -3,12 +3,15 @@ import { Linking } from "react-native";
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { ResultCard } from "@/components/playlist";
-import type { PlaylistViewKind } from "@/lib/playlist";
+import type { PlaybackSurface, PlaylistViewKind } from "@/lib/playlist";
 import { ThemeProvider } from "@/theme";
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>);
 }
+
+const DEEPLINK = (url: string): PlaybackSurface => ({ kind: "deeplink", url });
+const METADATA: PlaybackSurface = { kind: "metadata" };
 
 const FORBIDDEN_WORDS = [/error/i, /failed/i, /\bproblem\b/i, /\bsorry\b/i];
 
@@ -20,6 +23,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
         kind="result_full"
         job={{ matchedCount: 19, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
         playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", externalUrl: "https://open.spotify.com/playlist/abc" }}
+        surface={DEEPLINK("https://open.spotify.com/playlist/abc")}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
@@ -36,6 +40,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
         kind="result_mostly"
         job={{ matchedCount: 14, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
         playlist={null}
+        surface={METADATA}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
@@ -54,6 +59,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
           kind={kind as never}
           job={{ matchedCount: 4, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
           playlist={null}
+          surface={METADATA}
           providerDisplayName="Spotify"
           onSeeReport={jest.fn()}
         />,
@@ -71,6 +77,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
         kind="result_nothing"
         job={{ matchedCount: 0, lowConfidenceCount: 0, songsTotal: 12, skippedCount: 0 }}
         playlist={null}
+        surface={METADATA}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
@@ -94,6 +101,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
             { bandName: "Some Band", setlistfmId: "abc123", url: "https://www.setlist.fm/setlist/some-band/2026/venue-abc123.html" },
           ],
         }}
+        surface={METADATA}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
@@ -114,6 +122,7 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
         kind="result_nothing"
         job={{ matchedCount: 0, lowConfidenceCount: 0, songsTotal: 12, skippedCount: 0 }}
         playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", sourceSetlists: [] }}
+        surface={METADATA}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
@@ -133,11 +142,67 @@ describe("ResultCard (T-5, T-6, AC-4.3)", () => {
           "@type": "Playlist",
           sourceSetlists: [{ bandName: "Some Band", setlistfmId: "abc123", url: null }],
         }}
+        surface={METADATA}
         providerDisplayName="Spotify"
         onSeeReport={jest.fn()}
       />,
     );
 
     expect(screen.queryByRole("button", { name: "View the setlist" })).toBeNull();
+  });
+
+  // --- D-218: playback affordances are governed by `surface`, not merely by URL presence ---------
+
+  it("result_full: surface metadata (off, or a still-loading config) renders no 'Open in' action even with an externalUrl on the playlist (D-218, AC-3.2)", async () => {
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_full"
+        job={{ matchedCount: 19, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
+        playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", externalUrl: "https://open.spotify.com/playlist/abc" }}
+        surface={METADATA}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Open in Spotify" })).toBeNull();
+  });
+
+  it("result_mostly: surface metadata renders no 'Open in ... anyway' action (D-218, AC-3.2)", async () => {
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_mostly"
+        job={{ matchedCount: 14, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
+        playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", externalUrl: "https://open.spotify.com/playlist/abc" }}
+        surface={METADATA}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Open in Spotify anyway" })).toBeNull();
+    // AC-3.3: the report action is unaffected by playbackMode.
+    expect(screen.getByRole("button", { name: "See what's missing" })).toBeTruthy();
+  });
+
+  it("result_full: surface deeplink opens surface.url, not playlist.externalUrl (D-218)", async () => {
+    const openURLSpy = jest.spyOn(Linking, "openURL").mockResolvedValue(true);
+
+    await renderWithTheme(
+      <ResultCard
+        testID="result"
+        kind="result_full"
+        job={{ matchedCount: 19, lowConfidenceCount: 0, songsTotal: 19, skippedCount: 0 }}
+        playlist={{ "@id": "/api/playlists/1", "@type": "Playlist", externalUrl: "https://open.spotify.com/playlist/stale" }}
+        surface={DEEPLINK("https://open.spotify.com/playlist/fresh")}
+        providerDisplayName="Spotify"
+        onSeeReport={jest.fn()}
+      />,
+    );
+
+    fireEvent.press(screen.getByRole("button", { name: "Open in Spotify" }));
+    expect(openURLSpy).toHaveBeenCalledWith("https://open.spotify.com/playlist/fresh");
+
+    openURLSpy.mockRestore();
   });
 });
