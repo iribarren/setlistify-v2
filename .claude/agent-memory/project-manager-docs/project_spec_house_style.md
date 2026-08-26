@@ -16,7 +16,8 @@ be matched when writing a new one.
   spec 16 (playlist fast mode UI) = D-161–D-181,
   the result-state-gaps fix (2026-08-24) = D-182–D-187,
   spec 17 (playlist normal mode, 2026-08-25) = D-188–D-209,
-  spec 19 (concert page playback, 2026-08-26) = D-210–D-226 — next spec starts at **D-227**.
+  spec 19 (concert page playback, 2026-08-26) = D-210–D-226,
+  spec 20 (notes and reviews, 2026-08-26) = D-227–D-247 — next spec starts at **D-248**.
   **Check the highest existing D-number before writing.**
 - **Header table** with rows: Spec ID · Backlog prompt · Command · Primary agent · Type ·
   Depends on · Implemented by · Decisions · Status.
