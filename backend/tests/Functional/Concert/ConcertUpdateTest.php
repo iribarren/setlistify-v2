@@ -27,20 +27,20 @@ final class ConcertUpdateTest extends ConcertWebTestCase
 
         $created = $this->createConcert($client, $auth['accessToken'], [
             ...self::minimalConcertPayload('2026-06-15', 'Europe/Madrid'),
-            'note' => 'original note',
+            'doorsTime' => '18:00',
         ]);
 
         $client->request(
             'PATCH',
             \sprintf('/api/concerts/%d', self::idOf($created)),
             server: array_merge(self::authHeaders($auth['accessToken']), ['CONTENT_TYPE' => 'application/merge-patch+json']),
-            content: json_encode(['note' => 'updated note'], \JSON_THROW_ON_ERROR),
+            content: json_encode(['doorsTime' => '19:30'], \JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK, (string) $client->getResponse()->getContent());
         $data = self::decodeJsonObject((string) $client->getResponse()->getContent());
 
-        self::assertSame('updated note', $data['note']);
+        self::assertSame('19:30', $data['doorsTime']);
         self::assertSame('2026-06-15', $data['date'], 'date was not in the patch, must stay untouched');
         self::assertSame(self::bandNameOf(self::lineupEntryAt($created, 0)), self::bandNameOf(self::lineupEntryAt($data, 0)));
     }
@@ -135,7 +135,7 @@ final class ConcertUpdateTest extends ConcertWebTestCase
             'PATCH',
             \sprintf('/api/concerts/%d', self::idOf($created)),
             server: array_merge(self::authHeaders($auth['accessToken']), ['CONTENT_TYPE' => 'application/merge-patch+json']),
-            content: json_encode(['id' => self::idOf($other), 'note' => 'x'], \JSON_THROW_ON_ERROR),
+            content: json_encode(['id' => self::idOf($other), 'doorsTime' => '18:00'], \JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
@@ -143,7 +143,7 @@ final class ConcertUpdateTest extends ConcertWebTestCase
         // Neither concert was mutated.
         $client->request('GET', \sprintf('/api/concerts/%d', self::idOf($other)), server: self::authHeaders($auth['accessToken']));
         $otherReread = self::decodeJsonObject((string) $client->getResponse()->getContent());
-        self::assertNull($otherReread['note']);
+        self::assertNull($otherReread['doorsTime']);
     }
 
     public function testUpdatedAtChangesButCreatedAtDoesNot(): void
@@ -161,7 +161,7 @@ final class ConcertUpdateTest extends ConcertWebTestCase
             'PATCH',
             \sprintf('/api/concerts/%d', self::idOf($created)),
             server: array_merge(self::authHeaders($auth['accessToken']), ['CONTENT_TYPE' => 'application/merge-patch+json']),
-            content: json_encode(['note' => 'x'], \JSON_THROW_ON_ERROR),
+            content: json_encode(['doorsTime' => '18:00'], \JSON_THROW_ON_ERROR),
         );
 
         self::assertResponseStatusCodeSame(Response::HTTP_OK, (string) $client->getResponse()->getContent());

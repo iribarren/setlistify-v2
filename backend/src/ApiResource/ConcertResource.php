@@ -75,6 +75,11 @@ use Symfony\Component\HttpFoundation\Response;
                     schema: ['type' => 'integer', 'minimum' => 1, 'maximum' => 100, 'default' => 20],
                     description: 'Page size, capped at 100 (D-31, AC-3.5).',
                 ),
+                'reviewed' => new QueryParameter(
+                    key: 'reviewed',
+                    schema: ['type' => 'string', 'enum' => ['true', 'false']],
+                    description: 'Filter by whether the current user has written a review for this concert (D-241, AC-6.6). Omit to return both.',
+                ),
             ],
         ),
         new Get(

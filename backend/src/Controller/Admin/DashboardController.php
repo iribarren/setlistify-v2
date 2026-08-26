@@ -91,6 +91,7 @@ final class DashboardController extends AbstractDashboardController
         yield MenuItem::linkToDashboard('Dashboard', 'fa fa-home');
         yield MenuItem::linkTo(UserCrudController::class, 'Users', 'fa fa-users');
         yield MenuItem::linkTo(ConcertCrudController::class, 'Concerts', 'fa fa-music');
+        yield MenuItem::linkTo(ConcertReviewCrudController::class, 'Concert reviews', 'fa fa-star');
         yield MenuItem::linkTo(BandCrudController::class, 'Bands', 'fa fa-guitar');
         yield MenuItem::linkTo(SetlistCacheEntryCrudController::class, 'Setlist cache', 'fa fa-database');
         yield MenuItem::linkTo(PlaylistGenerationJobCrudController::class, 'Playlist generation jobs', 'fa fa-tasks');

@@ -6,6 +6,7 @@ namespace App\State;
 
 use App\ApiResource\BandOutput;
 use App\ApiResource\ConcertOutput;
+use App\ApiResource\ConcertReviewSummaryOutput;
 use App\ApiResource\LineupEntryOutput;
 use App\ApiResource\MoneyData;
 use App\ApiResource\VenueData;
@@ -24,7 +25,12 @@ final readonly class ConcertOutputMapper
     ) {
     }
 
-    public function map(Concert $concert): ConcertOutput
+    /**
+     * `$reviewSummary` is supplied by the caller (D-241) — this mapper has no repository access of
+     * its own, so the collection/item providers are the ones that decide how the summary was
+     * fetched (a single `LEFT JOIN` for the collection, a plain lookup for the item).
+     */
+    public function map(Concert $concert, ?ConcertReviewSummaryOutput $reviewSummary = null): ConcertOutput
     {
         $lineup = [];
         foreach ($concert->getConcertBands() as $concertBand) {
@@ -57,7 +63,7 @@ final readonly class ConcertOutputMapper
             ticketPrice: $ticketPrice,
             doorsTime: $concert->getDoorsTime()?->format('H:i'),
             startTime: $concert->getStartTime()?->format('H:i'),
-            note: $concert->getNote(),
+            reviewSummary: $reviewSummary,
             createdAt: $concert->getCreatedAt(),
             updatedAt: $concert->getUpdatedAt(),
         );

@@ -163,9 +163,9 @@ verification, log out) — the second of the shell's two destinations.
 
 - **Route tree**: `app/(app)/concerts/index.tsx` (list — Upcoming/Past sections, skeletons, empty/
   error states, infinite scroll), `concerts/new.tsx` (add), `concerts/[id]/index.tsx` (detail —
-  lineup, venue, price, reserved Playlist/Your-note/Share regions for prompts 19–21),
-  `concerts/[id]/edit.tsx` (edit + delete). `concerts/_layout.tsx` is a nested `Stack` so list →
-  detail → edit push/pop and deep-link normally inside the persistent shell chrome.
+  lineup, venue, price, `PlaylistSection`, `ReviewSection` (prompt 20), a reserved Share region for
+  prompt 21), `concerts/[id]/edit.tsx` (edit + delete). `concerts/_layout.tsx` is a nested `Stack` so
+  list → detail → edit push/pop and deep-link normally inside the persistent shell chrome.
 - **`lib/concerts/`**: `queries.ts` (`useConcertsSection`/`useConcert`/`useCreateConcert`/
   `useUpdateConcert`/`useDeleteConcert`, D-32/D-33/D-41 — all built on `lib/api/`, never `fetch`
   directly), `mapping.ts` (form model ⇄ generated DTOs; D-38 — the one place money/date conversion
@@ -185,7 +185,7 @@ verification, log out) — the second of the shell's two destinations.
 - **Components added to the inventory** (`frontend/components/`, AC-9.5): `components/concert/`
   (`ConcertCard`, `SkeletonCard`, `LineupList`, `BandEntryRow`, `DisclosureSection`,
   `ReservedSection`, `ConcertForm`, `DeleteConfirmation`) and `components/nav/` (`BottomTabBar`,
-  `Sidebar`).
+  `Sidebar`). `ConcertForm` no longer has a note field — see "Notes and reviews" below.
 - **Offline** (D-37): a read falls back to whatever TanStack Query already cached; a write attempted
   offline fails fast (`lib/concerts/errorMessage.ts`'s `status === 0` case) with the user's input
   intact — there is no write queue.
@@ -344,6 +344,48 @@ cells without editing this feature.
   governed by the same `PlaybackSurface` (D-218) — the bug this feature fixes: `playbackMode = off`
   previously left them rendering unconditionally.
 
+## Notes and reviews (`feature/notes-and-reviews`)
+
+`docs/specs/2026-08-26-notes-and-reviews.md` (D-227–D-247) promotes `Concert.note` (a plain column,
+never displayed) into `ConcertReview` — a rating, notes and an optional highlight, readable on the
+concert page at last. `ConcertForm`'s note field and `Concert.note`/`ConcertInput.note`/
+`ConcertPatchInput.note` are gone; `frontend/api/` is regenerated (the client's review types come
+from `ConcertReviewInput`/`ConcertReviewOutput`/`ConcertReviewSummaryOutput`, never hand-declared).
+
+- **`components/review/`**: `ReviewSection` (the concert page's region — unwritten/written/upcoming
+  states, D-234's de-emphasized "unlocks after the show" panel for the last one), `ReviewEditor`
+  (rating + notes + a collapsed `DisclosureSection` highlight; a phone-width sheet vs. a desktop-width
+  inline `Card` — the existing `DESKTOP_BREAKPOINT` breakpoint, never `Platform.OS` — D-245), `StarRating`
+  (five discrete 1–5 targets, read-only and interactive), `HighlightPicker` (a picker grouped by band
+  in setlist order when the concert has a persisted setlist for one of its bands, else a plain text
+  field — AC-5.1/AC-5.2), and `ReviewPromptCard` (the post-concert nudge, at the head of the concert
+  list's Past section).
+- **`lib/review/`**: `types.ts` (schema aliases), `grapheme.ts` (`countGraphemes` — `Intl.Segmenter`
+  where available, `[...str].length` fallback, advisory only per D-36/D-236), `highlightSources.ts`
+  (`useHighlightSources` — reads a concert's persisted `Setlist`/`Song` rows via
+  `GET /api/bands/{bandId}/setlists` + `GET /api/setlists/{setlistfmId}`, matched to the concert's own
+  date; never calls `SetlistGateway`/setlist.fm directly, spending none of the 1,440/day budget —
+  AC-5.6), `prompt.ts` (`useReviewPromptCard`/`pastReviewPromptCandidates` — the pure D-242 selection
+  rule plus the one-shot-per-mount hook), `reviewPromptStorage.native.ts`/`.web.ts` (the dismissal
+  seam — `AsyncStorage`/`localStorage`, the same platform-suffix shape as
+  `lib/playlist/choicesStorage.*`; dismissal is deliberately client-local, never server state).
+- **`hooks/useConcertReview.ts`**: `useConcertReview` (a 404 resolves to `null` — "no review yet" is a
+  legitimate cached state, not a thrown error), `useSaveConcertReview`/`useDeleteConcertReview` — both
+  invalidate the review query, this concert's detail cache, and both list sections, so `ConcertCard`'s
+  indicator and the prompt card react without a manual refetch.
+- **`ConcertCard`** renders `reviewSummary` (from `ConcertOutput`, via one `LEFT JOIN`, no N+1) as a
+  compact star rating, or a neutral "Written up" `Badge` when a summary exists with no rating shown.
+  An unreviewed past concert renders nothing — absence is the signal (AC-6.3). An upcoming concert
+  never shows a review indicator either way (AC-6.4).
+- **Text stays plain** (D-237, extending D-30): review notes render exclusively through React
+  Native's `<Text>` — no Markdown, no HTML renderer, no `WebView`, enforced by a static test
+  (`__tests__/review/static.test.ts`), the same guard shape as prompt 19's provider-literal test.
+- **Known gap, recorded rather than routed around**: the generated schema's `SongOutput` had no
+  entity id — nothing to submit as `ConcertReviewInput.highlightSongId`. `SongOutput.id` (populated
+  for a persisted `Song`, `null` on the raw-payload fallback path with no relational `Band`) was added
+  as the minimal backend addition this feature's structured highlight needs; see
+  `backend/src/ApiResource/Setlist/SongOutput.php`.
+
 ## What's here
 
 ```
@@ -368,13 +410,16 @@ frontend/
 │  │                    PlaylistSection, DeletePlaylistConfirmation (prompt 16); ModeSheet,
 │  │                    SetlistPicker, VersionPicker, ConfirmSummary, ResumeBanner (prompt 17);
 │  │                    PlaybackPanel, PlaybackEmbed.native/web (prompt 19)
+│  ├─ review/          ReviewSection, ReviewEditor, StarRating, HighlightPicker, ReviewPromptCard (prompt 20)
 │  └─ nav/             BottomTabBar, Sidebar, breakpoint
+├─ hooks/             useConcertReview.ts (query + PUT/DELETE mutations, cache invalidation)
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
 ├─ lib/concerts/      concert query hooks, DTO mapping, client validation, RFC 7807 violation mapping
 ├─ lib/streaming/     account-linking query hooks, linkAccount.native/web, error copy
 ├─ lib/playlist/      playlist query hooks, polling, state→screen mapping, report copy, provider choice,
 │                     derivePlaybackSurface
+├─ lib/review/        grapheme counting, highlight sources, review-prompt eligibility + dismissal storage
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```

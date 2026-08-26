@@ -183,4 +183,24 @@ abstract class AdminWebTestCase extends WebTestCase
 
         return $data;
     }
+
+    /**
+     * @param array<string, mixed> $payload
+     *
+     * @return array<string, mixed>
+     */
+    protected function apiPutReview(KernelBrowser $client, string $accessToken, int $concertId, array $payload): array
+    {
+        $client->request(
+            'PUT',
+            \sprintf('/api/concerts/%d/review', $concertId),
+            server: ['CONTENT_TYPE' => 'application/ld+json', 'HTTP_ACCEPT' => 'application/ld+json', 'HTTP_AUTHORIZATION' => 'Bearer '.$accessToken],
+            content: json_encode($payload, \JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+
+        return $data;
+    }
 }

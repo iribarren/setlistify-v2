@@ -14,7 +14,14 @@ import { focusRingStyle } from "./focusRing";
 export interface TextInputProps
   extends Pick<
     RNTextInputProps,
-    "value" | "onChangeText" | "placeholder" | "keyboardType" | "secureTextEntry" | "autoFocus"
+    | "value"
+    | "onChangeText"
+    | "placeholder"
+    | "keyboardType"
+    | "secureTextEntry"
+    | "autoFocus"
+    | "multiline"
+    | "numberOfLines"
   > {
   label: string;
   errorMessage?: string;
@@ -37,6 +44,8 @@ export function TextInput({
   keyboardType,
   secureTextEntry,
   autoFocus,
+  multiline,
+  numberOfLines,
   testID,
 }: TextInputProps): React.JSX.Element {
   const theme = useTheme();
@@ -74,6 +83,8 @@ export function TextInput({
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         autoFocus={autoFocus}
+        multiline={multiline}
+        numberOfLines={numberOfLines}
         editable={!disabled}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -82,9 +93,11 @@ export function TextInput({
         aria-invalid={hasError}
         style={[
           {
-            minHeight: 46,
+            minHeight: multiline ? 46 * Math.max(numberOfLines ?? 3, 1) : 46,
             borderRadius: theme.rad("sm"),
             paddingHorizontal: theme.space("space-4"),
+            paddingVertical: multiline ? theme.space("space-3") : undefined,
+            textAlignVertical: multiline ? "top" : undefined,
             borderWidth: 1.5,
             borderColor,
             backgroundColor: disabled ? colors["surface-sunken"] : colors["surface-raised"],

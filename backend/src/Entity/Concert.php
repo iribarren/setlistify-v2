@@ -26,6 +26,11 @@ use Doctrine\ORM\Mapping as ORM;
  * `cascade: ['persist', 'remove']` + `orphanRemoval: true` on the join collection is what makes
  * `ConcertBand` rows disappear with the concert (AC-6.2) while `Band` rows — never owned by this
  * cascade — survive (AC-6.3).
+ *
+ * There is no `note` column here any more (D-239,
+ * docs/specs/2026-08-26-notes-and-reviews.md) — D-30's "one plain column" is superseded by
+ * `App\Entity\ConcertReview`, which owns the content the `Version20260826140000` migration copied
+ * out of it.
  */
 #[ORM\Entity(repositoryClass: ConcertRepository::class)]
 #[ORM\Table(name: 'concerts')]
@@ -73,10 +78,6 @@ class Concert
 
     #[ORM\Column(name: 'start_time', type: 'time_immutable', nullable: true)]
     private ?\DateTimeImmutable $startTime = null;
-
-    /** Plain text, never rendered as HTML/Markdown by the API (D-30). Max 2000 chars (D-31). */
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $note = null;
 
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
@@ -182,17 +183,6 @@ class Concert
     {
         $this->doorsTime = $doorsTime;
         $this->startTime = $startTime;
-        $this->touch($now);
-    }
-
-    public function getNote(): ?string
-    {
-        return $this->note;
-    }
-
-    public function setNote(?string $note, \DateTimeImmutable $now): void
-    {
-        $this->note = $note;
         $this->touch($now);
     }
 

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { Badge } from "@/components";
 import { formatConcertDate, type CachedConcert } from "@/lib/concerts";
+import { StarRating } from "@/components/review";
 import { useTheme } from "@/theme";
 
 export interface ConcertCardProps {
@@ -98,6 +99,17 @@ export function ConcertCard({ concert, onPress, testID }: ConcertCardProps): Rea
         >
           {venue}
         </Text>
+      ) : null}
+      {/* AC-6.3/AC-6.4: only a PAST concert ever shows a review indicator, and only when one
+          exists — absence is the signal, so an unreviewed past concert renders nothing here. */}
+      {concert.status === "past" && concert.reviewSummary ? (
+        <View testID={testID ? `${testID}-review-indicator` : undefined}>
+          {concert.reviewSummary.rating != null ? (
+            <StarRating value={concert.reviewSummary.rating} size={14} />
+          ) : (
+            <Badge label="Written up" variant="neutral" />
+          )}
+        </View>
       ) : null}
     </View>
   );

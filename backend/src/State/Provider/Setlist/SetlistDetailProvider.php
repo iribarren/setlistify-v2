@@ -80,6 +80,7 @@ final readonly class SetlistDetailProvider implements ProviderInterface
     {
         $songs = array_values(array_map(
             static fn ($song): SongOutput => new SongOutput(
+                $song->getId(),
                 $song->getPosition(),
                 $song->getSetLabel(),
                 $song->getTitle(),
@@ -133,6 +134,7 @@ final readonly class SetlistDetailProvider implements ProviderInterface
                 $with = self::toArray($songRaw['with'] ?? null);
 
                 $songs[] = new SongOutput(
+                    null, // not relationally persisted on this path — no Song row id exists yet.
                     $position,
                     $setLabel,
                     $title,

@@ -127,7 +127,6 @@ function buildOptimisticConcert(values: ConcertFormValues, tempId: string): Cach
     ticketPrice: input.ticketPrice,
     doorsTime: input.doorsTime,
     startTime: input.startTime,
-    note: input.note,
     __tempId: tempId,
     __pending: true,
   };

@@ -5,6 +5,7 @@ import { ScrollView, Text, View } from "react-native";
 import { Badge, Button, Card } from "@/components";
 import { DeleteConfirmation, LineupList, ReservedSection } from "@/components/concert";
 import { PlaylistSection } from "@/components/playlist";
+import { ReviewSection } from "@/components/review";
 import { EmptyState, ErrorState, LoadingState } from "@/components/state";
 import {
   describeConcertError,
@@ -188,7 +189,7 @@ export default function ConcertDetailScreen(): React.JSX.Element {
         {/* D-176: the reserved-playlist placeholder is now the real Playlist section — its own
             reserved-playback placeholder (for prompt 19) lives inside it, once a playlist exists. */}
         <PlaylistSection testID="playlist-section" concertId={concertId} />
-        <ReservedSection testID="reserved-note" title="Your note" comingIn="prompt 20" />
+        <ReviewSection testID="review-section" concert={concert} />
         <ReservedSection testID="reserved-share" title="Share" comingIn="prompt 21" />
       </View>
     </ScrollView>

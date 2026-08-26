@@ -49,7 +49,7 @@ final class ConcertOwnershipTest extends ConcertWebTestCase
 
         $intruder = $this->registerAndLogin($client);
         $patchHeaders = array_merge(self::authHeaders($intruder['accessToken']), ['CONTENT_TYPE' => 'application/merge-patch+json']);
-        $patchBody = json_encode(['note' => 'hijacked'], \JSON_THROW_ON_ERROR);
+        $patchBody = json_encode(['doorsTime' => '18:00'], \JSON_THROW_ON_ERROR);
 
         $client->request('PATCH', \sprintf('/api/concerts/%d', self::idOf($created)), server: $patchHeaders, content: $patchBody);
         self::assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
@@ -64,7 +64,7 @@ final class ConcertOwnershipTest extends ConcertWebTestCase
         // The concert itself must be untouched.
         $client->request('GET', \sprintf('/api/concerts/%d', self::idOf($created)), server: self::authHeaders($owner['accessToken']));
         $stillOwners = self::decodeJsonObject((string) $client->getResponse()->getContent());
-        self::assertNull($stillOwners['note']);
+        self::assertNull($stillOwners['doorsTime']);
     }
 
     public function testDeleteOnSomeoneElsesConcertReturns404IdenticalToMissingId(): void
