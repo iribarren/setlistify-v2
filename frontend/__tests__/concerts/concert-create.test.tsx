@@ -86,7 +86,6 @@ describe("Add concert — optimistic create + reconciliation (US-4, D-33)", () =
         ticketPrice: null,
         doorsTime: null,
         startTime: null,
-        note: null,
         createdAt: "2026-01-01T00:00:00+00:00",
         updatedAt: "2026-01-01T00:00:00+00:00",
       }),

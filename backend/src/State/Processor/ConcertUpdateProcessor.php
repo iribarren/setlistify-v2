@@ -63,7 +63,6 @@ final readonly class ConcertUpdateProcessor implements ProcessorInterface
             $this->applyVenue($data, $raw, $concert, $now);
             $this->applyPrice($data, $raw, $concert, $now);
             $this->applyTimes($data, $raw, $concert, $now);
-            $this->applyNote($data, $raw, $concert, $now);
             $this->applyLineup($data, $raw, $concert);
 
             $this->entityManager->persist($concert);
@@ -137,16 +136,6 @@ final readonly class ConcertUpdateProcessor implements ProcessorInterface
         $startTime = $startChanged ? $this->fieldParser->parseTime($data->startTime) : $concert->getStartTime();
 
         $concert->setTimes($doorsTime, $startTime, $now);
-    }
-
-    /** @param array<string, mixed> $raw */
-    private function applyNote(ConcertPatchInput $data, array $raw, Concert $concert, \DateTimeImmutable $now): void
-    {
-        if (!\array_key_exists('note', $raw)) {
-            return;
-        }
-
-        $concert->setNote($data->note, $now);
     }
 
     /** @param array<string, mixed> $raw */

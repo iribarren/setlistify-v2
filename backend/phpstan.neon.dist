@@ -9,5 +9,12 @@ parameters:
     paths:
         - src
         - tests
+    # Migration classes are deliberately NOT PSR-4 autoloaded (composer.json's own comment on
+    # `migrations_paths`) and so aren't analysed as part of `paths` above — but
+    # ConcertReviewMigrationTest (docs/specs/2026-08-26-notes-and-reviews.md) needs to reference one
+    # by class name. scanDirectories makes it resolvable for reflection without adding the whole
+    # `migrations/` directory to the analysed path set.
+    scanDirectories:
+        - migrations
     symfony:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

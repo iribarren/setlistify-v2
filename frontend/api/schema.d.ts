@@ -101,6 +101,34 @@ export interface paths {
         patch: operations["api_concerts_id_patch"];
         trace?: never;
     };
+    "/api/concerts/{concertId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a ConcertReview resource.
+         * @description Retrieves a ConcertReview resource.
+         */
+        get: operations["api_concerts_concertIdreview_get"];
+        /**
+         * Replaces the ConcertReview resource.
+         * @description Replaces the ConcertReview resource.
+         */
+        put: operations["api_concerts_concertIdreview_put"];
+        post?: never;
+        /**
+         * Removes the ConcertReview resource.
+         * @description Removes the ConcertReview resource.
+         */
+        delete: operations["api_concerts_concertIdreview_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/email-verification/confirm": {
         parameters: {
             query?: never;
@@ -712,8 +740,6 @@ export interface components {
             /** @description Local wall-clock `HH:MM` in `$timezone` (AC-2.5). */
             doorsTime?: string | null;
             startTime?: string | null;
-            /** @description Plain text, never rendered as HTML/Markdown (D-30). */
-            note?: string | null;
         };
         /** @description A concert the authenticated user attended or is planning to attend — bands, date, venue, and what it cost (US-1 through US-7). */
         "Concert.ConcertOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
@@ -726,7 +752,7 @@ export interface components {
             ticketPrice?: components["schemas"]["MoneyData.jsonld"] | null;
             doorsTime?: string | null;
             startTime?: string | null;
-            note?: string | null;
+            reviewSummary?: components["schemas"]["ConcertReviewSummaryOutput.jsonld"] | null;
             /** Format: date-time */
             createdAt?: string;
             /** Format: date-time */
@@ -741,7 +767,34 @@ export interface components {
             ticketPrice?: components["schemas"]["MoneyData"] | null;
             doorsTime?: string | null;
             startTime?: string | null;
-            note?: string | null;
+        };
+        /** @description One user's write-up of one concert — rating, notes and an optional highlight (US-1 through US-5). */
+        "ConcertReview.ConcertReviewInput": {
+            /** @description 1-5 inclusive (D-230). Nullable — a review may be notes-only (D-231). */
+            rating?: number | null;
+            /** @description Plain text, no rendering contract (D-237), ≤ 4000 graphemes so a family emoji costs 1, not 7 (D-236). */
+            notes?: string | null;
+            /** @description Must belong to a `Setlist`/`Song` of a band in this concert's lineup — checked by the processor (D-233). */
+            highlightSongId?: number | null;
+            /** @description The always-populated snapshot; the only thing ever rendered (D-232). */
+            highlightTitle?: string | null;
+        };
+        /** @description One user's write-up of one concert — rating, notes and an optional highlight (US-1 through US-5). */
+        "ConcertReview.ConcertReviewOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            rating?: number | null;
+            notes?: string | null;
+            highlightSongId?: number | null;
+            highlightTitle?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        "ConcertReviewSummaryOutput.jsonld": {
+            rating?: number | null;
+            highlightTitle?: string | null;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         /** @description Unprocessable entity */
         ConstraintViolation: {
@@ -1192,6 +1245,7 @@ export interface components {
             songCount?: number;
         };
         "SongOutput.jsonld": {
+            id?: number | null;
             position?: number;
             setLabel?: string | null;
             title?: string;
@@ -1382,6 +1436,8 @@ export interface operations {
                 "order[date]"?: "asc" | "desc";
                 /** @description Page size, capped at 100 (D-31, AC-3.5). */
                 itemsPerPage?: number;
+                /** @description Filter by whether the current user has written a review for this concert (D-241, AC-6.6). Omit to return both. */
+                reviewed?: "true" | "false";
             };
             header?: never;
             path?: never;
@@ -1615,6 +1671,158 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["ConstraintViolation"];
                     "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_concerts_concertIdreview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ConcertReview identifier */
+                concertId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ConcertReview resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["ConcertReview.ConcertReviewOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    api_concerts_concertIdreview_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ConcertReview identifier */
+                concertId: string;
+            };
+            cookie?: never;
+        };
+        /** @description The updated ConcertReview resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["ConcertReview.ConcertReviewInput"];
+            };
+        };
+        responses: {
+            /** @description ConcertReview resource updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["ConcertReview.ConcertReviewOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    api_concerts_concertIdreview_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description ConcertReview identifier */
+                concertId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description ConcertReview resource deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

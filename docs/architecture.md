@@ -238,10 +238,14 @@ suspension is cosmetic for up to the refresh token's lifetime.
 
 **D-45 — Erasure is a hard delete with an explicit cascade, executed by one service**
 (`App\Service\Admin\UserEraser`, one DB transaction). `Concert`, `RefreshToken`,
-`PasswordResetToken` and `EmailVerificationToken` all declare `onDelete: 'CASCADE'` on their
+`PasswordResetToken`, `EmailVerificationToken` and `ConcertReview`
+(`docs/specs/2026-08-26-notes-and-reviews.md`, D-244) all declare `onDelete: 'CASCADE'` on their
 `user`/`owner` foreign key already, so deleting the `users` row cascades at the database level;
-`Band` and `Venue` carry no such foreign key at all, so they survive by construction. The audit entry
-is written in the same transaction and (D-43) holds no FK to the row being deleted.
+`Band` and `Venue` carry no such foreign key at all, so they survive by construction. `ConcertReview`
+also cascades from `Concert`'s own deletion (its `concert_id` FK), so erasing a user's concerts takes
+their reviews with them either way. The audit entry is written in the same transaction and (D-43)
+holds no FK to the row being deleted; it never names a review's contents, only that erasure happened
+(D-243).
 
 **D-46 — Field lists are allowlists, structurally enforced.** EasyAdmin's own
 `AbstractCrudController::configureFields()` has a non-abstract default that exposes every entity
@@ -728,6 +732,10 @@ can use sessions and 2FA instead of the API's JWTs.
   match rate, not-found rate, the blocked-reason breakdown, and the five most frequently unmatched
   (artist, title) pairs — flagged when p95 duration exceeds 90s, mean match rate drops below 0.75, or
   the blocked share exceeds 10% of jobs.
+- **Notes and reviews addition** (`docs/specs/2026-08-26-notes-and-reviews.md`, D-243): read-only
+  `ConcertReviewCrudController` — owner (masked), concert, rating, whether notes are present, the
+  grapheme length, and timestamps. **Never the notes body, not even truncated** — same instinct as
+  the digest-only audit values above, so a compromised admin session is not a compromised diary.
 - **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
   token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
   shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), the two setlist.fm band
@@ -751,9 +759,11 @@ User ─┬─< Concert ─┬─< ConcertBand >─ Band
       │       pastAfter [derived],                  setlistfmMbid [null,
       │       venue [embedded],                      prompt 09])
       │       priceAmount/Currency,
-      │       doorsTime/startTime,
-      │       note)
-      │            └──< Playlist ─── ProviderPlaylistRef (provider, external id)
+      │       doorsTime/startTime)
+      │            ├──< Playlist ─── ProviderPlaylistRef (provider, external id)
+      │            └──< ConcertReview (rating [1-5, null], notes [≤4000 graphemes, null],
+      │                     highlightSong [→ Song, SET NULL], highlightTitle [snapshot],
+      │                     sourceNoteMigratedAt — UNIQUE(owner, concert))
       ├─< StreamingAccount (provider, encrypted accessToken/refreshToken, expiresAt,
       │       scopes, providerAccountId, providerDisplayName, status, linkedAt/updatedAt —
       │       UNIQUE(user, provider))
@@ -792,8 +802,15 @@ boundary instant `App\Service\Concert\ConcertScheduler` computes on every write.
 (`docs/specs/2026-08-22-setlistfm-integration.md`, D-56–D-70) — see §5. `StreamingAccount` is built
 (`docs/specs/2026-08-22-streaming-port-and-account-linking.md`, D-77/D-78) — see §4 and §11.
 `ProviderSetting` is built (`docs/specs/2026-08-22-backoffice-provider-configuration.md`, D-89–
-D-105) — see §6. Everything else in this sketch (`Playlist`, `PlaylistTrack`) is still a later
-prompt.
+D-105) — see §6. `ConcertReview` is built (`docs/specs/2026-08-26-notes-and-reviews.md`, D-227–
+D-247): promoted out of `Concert.note` (D-30, now superseded) into its own entity so a later
+`ShareLink` (prompt 21) can include or exclude a *row*, not remember to exclude columns; the
+migration that made the move also verified the copied count before dropping the column. The
+highlight is deliberately both a nullable `Song` FK (`ON DELETE SET NULL`) and an always-populated
+title snapshot — `PlaylistTrack.sourceSong`/`sourceTitle`'s pattern, reused so a nightly setlist
+refresh can never blank a user's highlight. No `visibility` column ships with it (D-238) — sharing
+is prompt 21's decision to make, not one pre-baked here. Everything else in this sketch (`Playlist`,
+`PlaylistTrack`) is still a later prompt.
 
 ## 11. Security posture
 
@@ -856,10 +873,15 @@ prompt.
   reaches a log aggregator even if a future call site logs its context carelessly.
 - **User-scoped resources return 404, never 403, for another user's data** — `Concert` is the first
   one (`docs/specs/2026-08-21-concert-domain-api.md`, D-27) and sets the pattern every later
-  user-scoped resource (playlists, notes) is expected to copy: a Doctrine query extension
+  user-scoped resource is expected to copy: a Doctrine query extension
   (`App\Security\ConcertOwnerExtension`) filters *every* query — collection and item — to the current
   owner first, so a cross-owner lookup finds nothing and produces the framework's ordinary "not
   found" 404, indistinguishable from a genuinely missing id. A voter
   (`App\Security\Voter\ConcertVoter`) is the second gate, checked after load, for any future code
   path that reaches the entity outside that filtered query. A 403 here would confirm the id exists —
-  exactly what this rule exists to prevent.
+  exactly what this rule exists to prevent. `ConcertReview`
+  (`docs/specs/2026-08-26-notes-and-reviews.md`, D-229) is the first resource to actually copy it:
+  its parent `Concert` is resolved through `App\State\ConcertLocator` (itself gated by
+  `ConcertOwnerExtension`) *before* `concert_reviews` is ever queried, and
+  `App\Security\ConcertReviewOwnerExtension` — a structural, verbatim copy of `ConcertOwnerExtension`,
+  not a shared base class — is the second gate.

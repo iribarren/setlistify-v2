@@ -32,7 +32,6 @@ export interface ConcertFormValues {
   /** Local wall-clock `HH:MM` (AC-3.8). Empty string = unset. */
   doorsTime: string;
   startTime: string;
-  note: string;
 }
 
 let keySeq = 0;
@@ -66,7 +65,6 @@ export function createEmptyFormValues(): ConcertFormValues {
     priceCurrency: "USD",
     doorsTime: "",
     startTime: "",
-    note: "",
   };
 }
 
@@ -95,7 +93,6 @@ export function concertOutputToFormValues(concert: ConcertOutput): ConcertFormVa
     priceCurrency: concert.ticketPrice?.currency ?? "USD",
     doorsTime: concert.doorsTime ?? "",
     startTime: concert.startTime ?? "",
-    note: concert.note ?? "",
   };
 }
 
@@ -177,7 +174,6 @@ export function formValuesToConcertInput(values: ConcertFormValues): ConcertInpu
       priceAmount != null ? { amount: priceAmount, currency: values.priceCurrency.trim() || "USD" } : null,
     doorsTime: values.doorsTime.trim() || null,
     startTime: values.startTime.trim() || null,
-    note: values.note.trim() || null,
   };
 }
 

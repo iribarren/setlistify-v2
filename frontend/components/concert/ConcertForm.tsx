@@ -131,7 +131,6 @@ export function ConcertForm({
 
   const showClientErrors = attempted;
   const dateError = serverErrors.date ?? (showClientErrors ? clientErrors.date : undefined);
-  const noteError = serverErrors.note ?? (showClientErrors ? clientErrors.note : undefined);
   const bandsErrorSummary = showClientErrors ? clientErrors.bands : undefined;
 
   return (
@@ -311,16 +310,6 @@ export function ConcertForm({
         >
           {values.timezone} — detected from this device
         </Text>
-        <TextInput
-          testID="concert-form-note"
-          label="Note (optional)"
-          value={values.note}
-          onChangeText={(text) => {
-            update("note", text);
-            clearServerField("note");
-          }}
-          errorMessage={noteError}
-        />
       </DisclosureSection>
 
       <View style={{ flexDirection: "row", gap: theme.space("space-3"), justifyContent: "flex-end" }}>

@@ -197,14 +197,6 @@ final class ConcertValidationTest extends ConcertWebTestCase
         ], 'doorsTime');
     }
 
-    public function testNoteOverTwoThousandCharactersIsA422(): void
-    {
-        $this->assertConcertRequestIsA422WithViolationAt([
-            ...self::minimalConcertPayload(),
-            'note' => str_repeat('a', 2001),
-        ], 'note');
-    }
-
     public function testMalformedJsonReturns400NotA422(): void
     {
         $client = $this->createAuthClient();

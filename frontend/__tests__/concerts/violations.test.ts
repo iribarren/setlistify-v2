@@ -2,9 +2,9 @@ import { mapViolationsToFields, type Violation } from "@/lib/concerts";
 
 describe("lib/concerts/violations (D-36/AC-8.3-AC-8.4)", () => {
   it("maps a plain field path onto its form field", () => {
-    const violations: Violation[] = [{ propertyPath: "note", message: "Notes are at most 2000 characters." }];
+    const violations: Violation[] = [{ propertyPath: "doorsTime", message: "Doors must be HH:MM." }];
     const result = mapViolationsToFields(violations);
-    expect(result.note).toBe("Notes are at most 2000 characters.");
+    expect(result.doorsTime).toBe("Doors must be HH:MM.");
   });
 
   it("maps an indexed lineup path onto its band index (AC-8.3)", () => {

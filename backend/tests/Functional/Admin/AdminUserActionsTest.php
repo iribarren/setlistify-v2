@@ -101,6 +101,26 @@ final class AdminUserActionsTest extends AdminWebTestCase
             'lineup' => [['name' => $bandName]],
         ]);
 
+        // A PAST concert + review (docs/specs/2026-08-26-notes-and-reviews.md, D-244, AC-10.2):
+        // erasing the subject must take their review with it.
+        $subjectPastConcert = $this->apiCreateConcert($client, $registered['accessToken'], [
+            'date' => '2020-01-01',
+            'timezone' => 'Europe/Madrid',
+            'lineup' => [['name' => 'Erasure Review Band '.bin2hex(random_bytes(4))]],
+        ]);
+        self::assertIsInt($subjectPastConcert['id']);
+        $this->apiPutReview($client, $registered['accessToken'], $subjectPastConcert['id'], ['rating' => 5]);
+
+        // A bystander with their OWN past concert + review — must survive the subject's erasure.
+        $bystander = $this->apiRegisterAndLogin($client);
+        $bystanderConcert = $this->apiCreateConcert($client, $bystander['accessToken'], [
+            'date' => '2020-01-01',
+            'timezone' => 'Europe/Madrid',
+            'lineup' => [['name' => 'Bystander Review Band '.bin2hex(random_bytes(4))]],
+        ]);
+        self::assertIsInt($bystanderConcert['id']);
+        $this->apiPutReview($client, $bystander['accessToken'], $bystanderConcert['id'], ['rating' => 3]);
+
         $em = static::getContainer()->get('doctrine')->getManager();
         $subject = $em->getRepository(User::class)->findOneBy(['email' => $subjectEmail]);
         self::assertNotNull($subject);
@@ -111,7 +131,12 @@ final class AdminUserActionsTest extends AdminWebTestCase
         $bandId = $band->getId();
 
         $concertCountBefore = \count($em->getRepository(Concert::class)->findBy(['owner' => $subject]));
-        self::assertSame(1, $concertCountBefore);
+        self::assertSame(2, $concertCountBefore);
+
+        $bystanderUser = $em->getRepository(User::class)->findOneBy(['email' => $bystander['email']]);
+        self::assertNotNull($bystanderUser);
+        $bystanderReviewCountBefore = \count($em->getRepository(\App\Entity\ConcertReview::class)->findBy(['owner' => $bystanderUser]));
+        self::assertSame(1, $bystanderReviewCountBefore);
 
         $client->request(
             'POST',
@@ -124,6 +149,11 @@ final class AdminUserActionsTest extends AdminWebTestCase
         self::assertNull($em->getRepository(User::class)->find($subjectId));
         self::assertSame([], $em->getRepository(Concert::class)->findBy(['owner' => $subjectId]));
         self::assertSame([], $em->getRepository(ConcertBand::class)->findBy(['band' => $bandId]));
+
+        // D-244/AC-10.2: the subject's review is gone (cascaded via both owner_id and concert_id),
+        // and the bystander's review, on their own concert, survives untouched.
+        self::assertSame([], $em->getRepository(\App\Entity\ConcertReview::class)->findBy(['owner' => $subjectId]));
+        self::assertSame(1, \count($em->getRepository(\App\Entity\ConcertReview::class)->findBy(['owner' => $bystanderUser])));
 
         // Band survives — shared, not user-scoped (AC-7.4).
         self::assertNotNull($em->getRepository(Band::class)->find($bandId));

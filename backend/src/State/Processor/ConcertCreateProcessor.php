@@ -77,10 +77,6 @@ final readonly class ConcertCreateProcessor implements ProcessorInterface
             $concert->setTimes($doorsTime, $startTime, $now);
         }
 
-        if (null !== $data->note) {
-            $concert->setNote($data->note, $now);
-        }
-
         $billingOrder = 0;
         foreach ($data->lineup as $entry) {
             $concert->addLineupEntry($this->fieldParser->resolveBand($entry), $billingOrder++);

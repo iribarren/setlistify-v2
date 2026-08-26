@@ -49,10 +49,6 @@ final class ConcertInput implements ConcertInputInterface
     #[Assert\Regex(pattern: '/^([01]\d|2[0-3]):[0-5]\d$/', message: 'This value must be a time in HH:MM format.')]
     public ?string $startTime = null;
 
-    /** Plain text, never rendered as HTML/Markdown (D-30). */
-    #[Assert\Length(max: 2000)]
-    public ?string $note = null;
-
     public function lineupEntries(): array
     {
         return $this->lineup;

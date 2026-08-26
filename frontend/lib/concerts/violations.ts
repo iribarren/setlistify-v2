@@ -18,7 +18,6 @@ export interface ViolationFieldErrors {
   priceCurrency?: string;
   doorsTime?: string;
   startTime?: string;
-  note?: string;
   bands: Record<number, string>;
   formErrors: string[];
 }
@@ -70,9 +69,6 @@ export function mapViolationsToFields(violations: Violation[]): ViolationFieldEr
         break;
       case "startTime":
         result.startTime = message;
-        break;
-      case "note":
-        result.note = message;
         break;
       default:
         // AC-8.4: an unrecognised path still surfaces, just at the form level rather than next to

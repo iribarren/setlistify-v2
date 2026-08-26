@@ -6,7 +6,6 @@ import type { ConcertFormValues } from "./mapping";
 export const MIN_BANDS = 1;
 export const MAX_BANDS = 30;
 export const BAND_NAME_MAX = 120;
-export const NOTE_MAX = 2000;
 export const MIN_DATE = "1900-01-01";
 
 /** `now + 5 years`, as a `YYYY-MM-DD` string (D-31, AC-9.2). */
@@ -19,7 +18,6 @@ export function maxDate(reference: Date = new Date()): string {
 export interface FormFieldErrors {
   date?: string;
   bands?: Record<number, string>;
-  note?: string;
 }
 
 /** AC-8.1: client-side validation mirroring the server's documented bounds. */
@@ -53,13 +51,9 @@ export function validateFormValues(values: ConcertFormValues, reference: Date = 
     }
   }
 
-  if (values.note.length > NOTE_MAX) {
-    errors.note = `Notes are at most ${NOTE_MAX} characters.`;
-  }
-
   return errors;
 }
 
 export function hasFormErrors(errors: FormFieldErrors): boolean {
-  return Boolean(errors.date || errors.note || (errors.bands && Object.keys(errors.bands).length > 0));
+  return Boolean(errors.date || (errors.bands && Object.keys(errors.bands).length > 0));
 }

@@ -71,7 +71,6 @@ final class ConcertCreateTest extends ConcertWebTestCase
             'ticketPrice' => ['amount' => 4500, 'currency' => 'eur'],
             'doorsTime' => '19:00',
             'startTime' => '20:30',
-            'note' => 'Great show, very loud.',
         ]);
 
         $venue = self::asArray($data['venue']);
@@ -84,7 +83,6 @@ final class ConcertCreateTest extends ConcertWebTestCase
         self::assertSame('EUR', $ticketPrice['currency'], 'currency is uppercased on write (D-28)');
         self::assertSame('19:00', $data['doorsTime']);
         self::assertSame('20:30', $data['startTime']);
-        self::assertSame('Great show, very loud.', $data['note']);
     }
 
     public function testAMinimalConcertWithOnlyDateAndOneBandIsValid(): void
@@ -101,7 +99,6 @@ final class ConcertCreateTest extends ConcertWebTestCase
         self::assertNull($data['ticketPrice']);
         self::assertNull($data['doorsTime']);
         self::assertNull($data['startTime']);
-        self::assertNull($data['note']);
     }
 
     public function testZeroAmountTicketPriceIsValid(): void

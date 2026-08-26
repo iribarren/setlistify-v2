@@ -321,3 +321,20 @@ when@test:
         App\Tests\Support\Streaming\TestDoubleStreamingProvider:
             public: true
             tags: ['app.streaming_provider']
+
+        # AC-3.4 (docs/specs/2026-08-26-notes-and-reviews.md): inert unless a test calls arm() —
+        # see the class docblock for why this simulates a genuine insert race from inside a real
+        # request/response cycle instead of settling for the unique-constraint test alone.
+        App\Tests\Support\ConcertReview\ConcertReviewRaceInjector:
+            public: true
+            tags:
+                - { name: 'doctrine.event_listener', event: 'prePersist' }
+
+        # AC-5.6 (docs/specs/2026-08-26-notes-and-reviews.md): a real spy on the setlist.fm HTTP
+        # transport, so a test can assert review reads/writes never spend any of the 1,440/day
+        # budget — decorates the same `setlistfm.client` scoped client
+        # `App\Service\Setlist\SetlistFmClient` is wired to, test-only.
+        App\Tests\Support\Setlist\CountingSetlistFmHttpClient:
+            decorates: 'setlistfm.client'
+            public: true
+            arguments: ['@.inner']

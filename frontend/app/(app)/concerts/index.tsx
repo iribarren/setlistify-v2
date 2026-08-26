@@ -4,8 +4,10 @@ import { RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { Button } from "@/components";
 import { ConcertCard, SkeletonCard } from "@/components/concert";
+import { ReviewPromptCard } from "@/components/review";
 import { EmptyState, ErrorState } from "@/components/state";
 import { useConcertsSection, type CachedConcert, type ConcertSectionStatus } from "@/lib/concerts";
+import { useReviewPromptCard } from "@/lib/review";
 import { useTheme } from "@/theme";
 
 /**
@@ -25,6 +27,10 @@ export default function ConcertsListScreen(): React.JSX.Element {
 
   // AC-1.4: skeletons while the FIRST page loads — not on every background refetch.
   const initialLoading = (upcoming.isLoading && !upcoming.data) || (past.isLoading && !past.data);
+
+  // AC-7.1-AC-7.3: called unconditionally every render (rules of hooks) — it defers its one-shot
+  // pick internally until the past section's first page has actually loaded.
+  const reviewPrompt = useReviewPromptCard(pastItems, Boolean(past.data));
 
   const hasAnyCachedData = Boolean(upcoming.data) || Boolean(past.data);
   // AC-1.8: a list-level failure only replaces the whole area when there's nothing cached to fall
@@ -121,6 +127,15 @@ export default function ConcertsListScreen(): React.JSX.Element {
         onLoadMore={() => void upcoming.fetchNextPage()}
         onPressItem={goToDetail}
       />
+
+      {reviewPrompt.concert ? (
+        <ReviewPromptCard
+          testID="review-prompt-card"
+          concert={reviewPrompt.concert}
+          onPress={() => goToDetail(reviewPrompt.concert as CachedConcert)}
+          onDismiss={reviewPrompt.dismiss}
+        />
+      ) : null}
 
       <Section
         testID="past-section"

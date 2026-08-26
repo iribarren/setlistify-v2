@@ -31,7 +31,6 @@ export {
   MIN_BANDS,
   MAX_BANDS,
   BAND_NAME_MAX,
-  NOTE_MAX,
   MIN_DATE,
   maxDate,
   validateFormValues,
