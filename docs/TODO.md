@@ -77,3 +77,13 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
   `docs/specs/2026-08-26-concert-page-player-embed.md` Risk 1) — now more pressing since the
   embed is live on web behind `playbackMode`. Does not block anything; the answer changes a flag
   value, not code.
+- **Visually verify `feature/notes-and-reviews`'s phone-vs-desktop review editor and the
+  setlist-backed highlight picker** (`docs/specs/2026-08-26-notes-and-reviews.md`, D-245, US-5).
+  Only `tsc`/eslint/jest-expo covered these in this environment — no real browser or iOS/Android
+  simulator was used to confirm the sheet-vs-inline breakpoint switch or the picker's live
+  band/setlist grouping render correctly.
+- **Decide a backup/point-in-time-recovery policy for the Postgres instance** before public launch
+  (`docs/specs/2026-08-26-notes-and-reviews.md`, open question 1). `ConcertReview` is the first
+  feature whose data (personal writing) can't be reconstructed if lost — a concert row can be
+  re-entered from a ticket stub, a review can't. Not resolved by this feature; needs its own
+  infrastructure prompt.
