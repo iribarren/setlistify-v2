@@ -13,4 +13,5 @@
 - [Spec 16 fast-mode UI decisions](project_spec_16_decisions.md) — D-161..D-181: one state-driven route, Retry-After polling, read-only report in fast mode.
 - [Result-state gaps fix decisions](project_spec_result_state_gaps_decisions.md) — D-182..D-187: NoSetlistCause enum, sourceSetlists, migration-free bugfix spec.
 - [Spec 17 normal-mode decisions](project_spec_17_decisions.md) — D-188..D-209: four suspension endpoints, client-side confirm, preference memory, report actions declined.
+- [Spec 19 playback decisions](project_spec_19_decisions.md) — D-210..D-226: one pure function reads playbackMode, `off` currently leaks; scoped Spotify-only, web-only embed.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.

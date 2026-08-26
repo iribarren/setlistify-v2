@@ -227,8 +227,7 @@ a URL the backend produced and later resolves the opaque, one-time reference the
 `lib/playlist/queries.ts`'s `useProviderConfigs` reads it with a 60s `staleTime` (D-169) so an
 operator's mid-incident toggle reaches an open app quickly, and it is the *only* place a
 provider's `displayName` (the one provider-specific string allowed into the UI) comes from.
-- **Still out of scope here**: playback mode driving an in-app player embed (prompt 19).
-  `lib/streaming/index.ts`'s `SUPPORTED_PROVIDERS`/`providerDisplayName` remain the streaming-account
+- `lib/streaming/index.ts`'s `SUPPORTED_PROVIDERS`/`providerDisplayName` remain the streaming-account
   linking feature's own (unrelated) provider list — the playlist feature never imports them.
 
 ## Playlist generation — Fast mode (`feature/playlist-fast-mode-ui`)
@@ -261,12 +260,15 @@ server's state actually describes — never a client-invented error.
     accounts`, then none/single/default+alternatives/ask-the-user (D-169). No provider key literal
     anywhere in this directory or `components/playlist/` — enforced by a static test.
   - `types.ts` — every wire shape is an alias of `frontend/api/schema.d.ts`.
+  - `playback.ts` — `derivePlaybackSurface()`: the ONE place `playbackMode` is read (D-213), pure and
+    exhaustively tested. See "Concert page playback" below.
 - **`components/playlist/`** — `GenerateTrigger`, `GenerationProgress`, `ResultCard` (the four result
   variants), `ReportList` (only the songs needing a look — matched rows never render), `DegradedState`
   (the six degraded screens plus the two genuine failures; `ErrorState` is used ONLY for
   `failed_generic`/`failed_indeterminate`), `PlaylistSection` (the concert detail screen's Playlist
-  card — trigger / compact in-progress status / the permanent tracklist card), and
-  `DeletePlaylistConfirmation` (states plainly that the provider-side playlist survives — D-151/D-173).
+  card — trigger / compact in-progress status / the permanent tracklist card), `PlaybackPanel` (see
+  "Concert page playback" below), and `DeletePlaylistConfirmation` (states plainly that the
+  provider-side playlist survives — D-151/D-173).
 - **Routes**: `app/(app)/concerts/[id]/playlist.tsx` — ONE route for progress + all sixteen result/
   degraded/failure screens, state-driven via `derivePlaylistView()` rather than four separate routes
   (D-162); `app/(app)/concerts/[id]/playlist-report.tsx` — the report. Row actions ("Pick a version",
@@ -319,6 +321,29 @@ parked (its Q-2) and adds the two suspension steps spec 13 designed into the *sa
 completion, and a preference-management screen for `UserTrackPreference` (D-198's Q-3) — all
 explicitly undesigned or deferred.
 
+## Concert page playback (`feature/concert-page-player-embed`)
+
+`docs/specs/2026-08-26-concert-page-player-embed.md` (D-210–D-226) fills prompt 16's
+`reserved-playback` placeholder with `PlaybackPanel`, replacing it directly beneath the tracklist.
+Shipped **Spotify-only**; the code itself stays provider-agnostic (no `"spotify"`/`"youtube"` literal
+anywhere in the feature, enforced by a static test) so prompt 18's YouTube adapter closes the deferred
+cells without editing this feature.
+
+- `playbackMode = embed` renders a real `<iframe>` **on web**. On iOS and Android, `embed` renders the
+  same "Open in \<Provider\>" handoff as `deeplink` mode — **no `react-native-webview` is added, and
+  Expo Go remains sufficient** for the whole project. `playbackMode = off` renders no playback
+  affordance at all, on every platform.
+- `derivePlaybackSurface()` (`lib/playlist/playback.ts`) is the only reader of `playbackMode`; it takes
+  the playlist, the provider's config, and one boolean (`embedUnavailable` — true on a blocked/errored
+  web frame, after an 8s load watchdog, or unconditionally on native) and returns `embed`/`deeplink`/
+  `metadata`. A disabled provider degrades `embed` → `deeplink`, never to `off` (D-219).
+- `PlaybackEmbed.web.tsx`/`.native.tsx` is the one new platform fork this feature adds — the native
+  half renders nothing and reports the embed unavailable on mount, so the fallback path is exercised
+  identically to a blocked web frame.
+- `PlaylistSection`'s and `ResultCard`'s three pre-existing "Open in \<Provider\>" actions are now
+  governed by the same `PlaybackSurface` (D-218) — the bug this feature fixes: `playbackMode = off`
+  previously left them rendering unconditionally.
+
 ## What's here
 
 ```
@@ -341,13 +366,15 @@ frontend/
 │  ├─ streaming/       ConnectionsSection, StreamingAccountRow, DisconnectConfirmation
 │  ├─ playlist/        GenerateTrigger, GenerationProgress, ResultCard, ReportList, DegradedState,
 │  │                    PlaylistSection, DeletePlaylistConfirmation (prompt 16); ModeSheet,
-│  │                    SetlistPicker, VersionPicker, ConfirmSummary, ResumeBanner (prompt 17)
+│  │                    SetlistPicker, VersionPicker, ConfirmSummary, ResumeBanner (prompt 17);
+│  │                    PlaybackPanel, PlaybackEmbed.native/web (prompt 19)
 │  └─ nav/             BottomTabBar, Sidebar, breakpoint
 ├─ lib/api/           openapi-fetch client, ApiError, timeout, header seam, query hooks
 ├─ lib/auth/          SessionProvider/useSession, token store, refresh coordinator, storage adapters
 ├─ lib/concerts/      concert query hooks, DTO mapping, client validation, RFC 7807 violation mapping
 ├─ lib/streaming/     account-linking query hooks, linkAccount.native/web, error copy
-├─ lib/playlist/      playlist query hooks, polling, state→screen mapping, report copy, provider choice
+├─ lib/playlist/      playlist query hooks, polling, state→screen mapping, report copy, provider choice,
+│                     derivePlaybackSurface
 ├─ scripts/           generate-api.mjs
 └─ __tests__/
 ```

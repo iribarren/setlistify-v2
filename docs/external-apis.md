@@ -94,9 +94,12 @@ of advertising, sponsorships, or promotions" and "any e-commerce (e.g., in-app p
 monetization)". For Non-Streaming SDAs the permitted set is "the sale of advertising, sponsorships,
 or promotions on the Non-Streaming SDA; the sale of, or sale of access to, a Non-Streaming SDA".
 
-**Where Setlistify sits.** The concert page uses Spotify's iframe embed, which plausibly makes it a
-Streaming SDA. **While the app is unmonetized this is harmless** — the prohibition is on commercial
-uses, and there are none. It becomes live the day any monetization is enabled.
+**Where Setlistify sits.** The concert page's playback panel (shipped in
+`docs/specs/2026-08-26-concert-page-player-embed.md`) renders Spotify's iframe embed **on web**,
+which plausibly makes it a Streaming SDA there. On iOS and Android the embed surface does not exist
+yet — `embed` mode presents the deep-link handoff on native instead, which is unambiguously a
+Non-Streaming SDA action. **While the app is unmonetized this is harmless** — the prohibition is on
+commercial uses, and there are none. It becomes live the day any monetization is enabled.
 
 **Mitigation, already built in.** `ProviderSetting.playbackMode` is a runtime flag, editable from the
 `/admin` "Providers" screen (`docs/specs/2026-08-22-backoffice-provider-configuration.md`). Setting it
@@ -104,10 +107,11 @@ to `deeplink` removes in-app playback and converts Setlistify to a Non-Streaming
 request — no deploy, no app-store release. The edit screen states this consequence inline, at the
 moment of the click, rather than only here.
 
-**Open question worth resolving in writing.** Spotify's own iframe widget is a greyer case than SDK
-playback, because Spotify serves the audio itself. Ask Spotify directly whether embedding their
-widget classifies an app as a Streaming SDA. That answer decides whether `playbackMode` can stay on
-`embed` after monetization.
+**Open question worth resolving in writing — still unresolved.** Spotify's own iframe widget is a
+greyer case than SDK playback, because Spotify serves the audio itself. Ask Spotify directly whether
+embedding their widget classifies an app as a Streaming SDA. That answer decides whether
+`playbackMode` can stay on `embed` (now live on web) after monetization; whatever it turns out to be,
+`playbackMode` is the mechanism that acts on it — a flag flip, not a release.
 
 ### Token revocation
 
@@ -181,6 +185,15 @@ Three cold Normal-mode generations exhaust YouTube's entire daily quota for ever
 product — not a Normal-mode defect (Fast mode is already four), and not solved here; flagged for
 prompt 18 to design against, alongside the `blocked`/`provider_quota` path above, which already
 absorbs exhaustion without failing a job.
+
+**Playback surface, once the adapter lands.** `docs/specs/2026-08-26-concert-page-player-embed.md`
+shipped the concert page's playback panel against Spotify only — no `YouTubeProvider` exists yet, so
+there is no YouTube `embedUrl`/`externalUrl` and no `ProviderSetting` row to flip today. The same
+`playbackMode` flag will govern YouTube exactly as it governs Spotify the moment prompt 18's adapter
+implements `playlistEmbedUrl()`/`playlistDeepLink()` — the client is already provider-agnostic (no
+`"youtube"` literal appears anywhere in the playback feature, enforced by a static test), so closing
+this is prompt 18 adding an adapter and re-running the feature's device matrix, not editing the panel.
+The ads-in-embeds note above is the forward-looking statement for when that embed actually renders.
 
 ---
 

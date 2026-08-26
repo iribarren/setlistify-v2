@@ -8,6 +8,7 @@ export {
   type PlaylistDegradedStateProps,
 } from "./DegradedState";
 export { PlaylistSection, type PlaylistSectionProps } from "./PlaylistSection";
+export { PlaybackPanel, type PlaybackPanelProps } from "./PlaybackPanel";
 export {
   DeletePlaylistConfirmation,
   type DeletePlaylistConfirmationProps,

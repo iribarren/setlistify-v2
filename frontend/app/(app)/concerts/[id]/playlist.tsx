@@ -27,10 +27,13 @@ import {
   useStartGeneration,
   useSubmitSetlistChoice,
   useSubmitVersionChoices,
+  derivePlaybackSurface,
   derivePlaylistView,
   pickCurrentJob,
+  type PlaybackSurface,
+  type SetlistChoiceItemInput,
+  type VersionChoiceItemInput,
 } from "@/lib/playlist";
-import type { SetlistChoiceItemInput, VersionChoiceItemInput } from "@/lib/playlist";
 // Relative, not `@/` — the eslint import resolver only follows the platform-suffix convention
 // through a relative specifier (see `frontend/README.md`, and `ConnectionsSection.tsx`).
 import { linkAccount } from "../../../../lib/streaming/linkAccount";
@@ -275,6 +278,18 @@ export default function PlaylistScreen(): React.JSX.Element {
             kind={view.kind}
             job={job}
             playlist={playlistDetail.data ?? null}
+            // D-218: this screen never mounts an embed, so `embedUnavailable: true` — the same input
+            // a blocked web frame or a native platform produces (D-216) — folds `embed` mode down to
+            // the deep-link presentation here too.
+            surface={
+              playlistDetail.data
+                ? derivePlaybackSurface({
+                    provider: providersQuery.data?.find((provider) => provider.key === job.provider),
+                    playlist: playlistDetail.data,
+                    embedUnavailable: true,
+                  })
+                : ({ kind: "metadata" } satisfies PlaybackSurface)
+            }
             providerDisplayName={
               providersQuery.data?.find((provider) => provider.key === job.provider)?.displayName ?? "your provider"
             }

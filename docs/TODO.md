@@ -63,3 +63,17 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
   (~180–220 entries) added to `backend/tests/Fixtures/matching/manifest.yaml`'s `catalog:`
   section per the template documented there. Regenerate `manifest.sha256` and commit fixtures +
   checksum together, with no algorithm change in the same PR (D-122's freeze rule).
+- **Run the Layer-3 device matrix for `feature/concert-page-player-embed`**
+  (`docs/specs/2026-08-26-concert-page-player-embed.md`, D-225): 3 `playbackMode` values ×
+  Spotify × {web, iOS, Android} = nine cells, plus the "flip `playbackMode` in `/admin`, watch an
+  already-open client change with no rebuild" check (AC-4.1) on each platform. Not run in this
+  environment — no iOS/Android device or simulator was available, and no real Spotify embed was
+  loaded in a browser against a live `docker compose` stack. Everything Jest can prove (Layers 1
+  and 2, including forcing each platform's `PlaybackEmbed` resolution via `jest.mock`) is green;
+  this is the checklist item the PR description should carry and a reviewer should check off
+  before merging, per the spec's own Layer 3 section.
+- **Ask Spotify in writing whether their iframe embed classifies an app as a Streaming SDA**
+  (`docs/external-apis.md` §Spotify's open question, restated by
+  `docs/specs/2026-08-26-concert-page-player-embed.md` Risk 1) — now more pressing since the
+  embed is live on web behind `playbackMode`. Does not block anything; the answer changes a flag
+  value, not code.

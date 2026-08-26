@@ -2,13 +2,20 @@ import React from "react";
 import { Linking, Text, View } from "react-native";
 
 import { Button } from "@/components";
-import type { PlaylistOutput, PlaylistViewKind } from "@/lib/playlist";
+import type { PlaybackSurface, PlaylistOutput, PlaylistViewKind } from "@/lib/playlist";
 import { useTheme } from "@/theme";
 
 export interface ResultCardProps {
   kind: Extract<PlaylistViewKind, "result_full" | "result_mostly" | "result_barely" | "result_nothing">;
   job: { matchedCount?: number; lowConfidenceCount?: number; songsTotal?: number; skippedCount?: number };
   playlist: PlaylistOutput | null;
+  /**
+   * D-218: governs every "Open in <Provider>" action below — the caller computes this with
+   * `derivePlaybackSurface()` (the only place `playbackMode` is read, AC-7.3), passing
+   * `embedUnavailable: true` since this screen never mounts an embed itself. `off` (or a still-
+   * loading config) resolves to `"metadata"`, which hides every open action — AC-3.2's guard.
+   */
+  surface: PlaybackSurface;
   providerDisplayName: string;
   onSeeReport: () => void;
   testID?: string;
@@ -27,6 +34,7 @@ export function ResultCard({
   kind,
   job,
   playlist,
+  surface,
   providerDisplayName,
   onSeeReport,
   testID,
@@ -35,7 +43,9 @@ export function ResultCard({
   const { colors } = theme;
   const hits = HITS(job);
   const denominator = DENOMINATOR(job);
-  const externalUrl = playlist?.externalUrl ?? null;
+  // D-218: governed by playbackMode, not merely by whether a URL exists — `off` hides this even
+  // when `playlist.externalUrl` is present.
+  const externalUrl = surface.kind === "deeplink" ? surface.url : null;
   const setlistUrl = playlist?.sourceSetlists?.[0]?.url ?? null;
 
   const palette = kind === "result_full" ? "success" : kind === "result_barely" ? "warning" : "info";
@@ -92,12 +102,15 @@ export function ResultCard({
       </Text>
       <View style={{ flexDirection: "row", gap: theme.space("space-3"), flexWrap: "wrap", justifyContent: "center" }}>
         {kind === "result_full" ? (
-          <Button
-            testID={testID ? `${testID}-open` : undefined}
-            label={`Open in ${providerDisplayName}`}
-            onPress={() => externalUrl && void Linking.openURL(externalUrl)}
-            disabled={!externalUrl}
-          />
+          // D-218/AC-2.4: absent — never disabled — whenever there's nothing to open, whether
+          // because the URL is missing or because playbackMode governs it off.
+          externalUrl ? (
+            <Button
+              testID={testID ? `${testID}-open` : undefined}
+              label={`Open in ${providerDisplayName}`}
+              onPress={() => void Linking.openURL(externalUrl)}
+            />
+          ) : null
         ) : (
           <>
             <Button
@@ -105,13 +118,12 @@ export function ResultCard({
               label={kind === "result_nothing" ? "See the full breakdown" : "See what's missing"}
               onPress={onSeeReport}
             />
-            {kind !== "result_nothing" ? (
+            {kind !== "result_nothing" && externalUrl ? (
               <Button
                 testID={testID ? `${testID}-open-anyway` : undefined}
                 label={`Open in ${providerDisplayName} anyway`}
                 variant="secondary"
-                onPress={() => externalUrl && void Linking.openURL(externalUrl)}
-                disabled={!externalUrl}
+                onPress={() => void Linking.openURL(externalUrl)}
               />
             ) : null}
             {/* D-186/AC-2.5: absent — never disabled — when there's nothing to link to (a setlist

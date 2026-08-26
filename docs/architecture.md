@@ -591,8 +591,10 @@ for the exhaustive enumeration and prompts 14/17/19's recorded obligation to rea
 
 ## 7. Playback surface
 
-The concert page plays a generated playlist through the provider's own iframe embed. The decision is
-**runtime configuration, not code**: `playbackMode` selects embed, a deep-link handoff, or nothing.
+Shipped in `docs/specs/2026-08-26-concert-page-player-embed.md` (D-210–D-226), Spotify-only. The
+concert page plays a generated playlist through one of three presentations, chosen at runtime, never
+in code: `playbackMode` selects **embed** (the provider's own iframe), **deeplink** (an "Open in
+\<Provider\>" handoff), or **off** (metadata only — no playback affordance at all).
 
 This matters legally, not just operationally. Spotify's developer policy distinguishes a *Streaming
 SDA* (plays Spotify audio — no commercial use permitted at all) from a *Non-Streaming SDA* (creates
@@ -600,6 +602,31 @@ playlists, hands off to Spotify to play — limited commercial uses permitted). 
 makes Setlistify the former. While the app is unmonetized this is harmless, because the prohibition
 is on commercial uses and there are none. Flipping `playbackMode` to `deeplink` converts the app to
 the latter without a deploy. See `docs/external-apis.md` §Spotify for the full position.
+
+**The backend.** `PlaylistOutput.embedUrl` is computed at map time by `PlaylistOutputMapper`, which
+calls `StreamingProviderInterface::playlistEmbedUrl()` through `StreamingProviderLocator` — never
+stored, never built by the client. `externalUrl` (the deep link) falls back to the port's
+`playlistDeepLink()` when the stored value is null. Either call degrades to `null`/the stored value
+on an unresolvable provider, never throwing (*generation degrades, it does not fail*, applied to
+playback).
+
+**The client.** `derivePlaybackSurface()` (`frontend/lib/playlist/playback.ts`) is the **only** place
+in `frontend/` that reads `playbackMode` — a pure function of the provider's config, the playlist, and
+one boolean, `embedUnavailable`. That boolean has three producers, all folding to the same
+`deeplink`/`metadata` outcome: the iframe's `onError` on web, an 8-second load watchdog (a blocked
+frame is often silent — no `onerror` fires), and the native platform itself. **On iOS and Android the
+embed surface does not exist today**: `PlaybackEmbed.native` renders nothing and reports
+`embedUnavailable` on mount, so `embed` mode presents the deep-link handoff there, through the exact
+same fallback path a blocked web frame takes — no platform branch anywhere but the
+`PlaybackEmbed.web`/`.native` filename split. A disabled provider (`enabled: false`) degrades `embed`
+→ `deeplink`, never to `off` — `enabled` gates Setlistify's own integration, not a user's ability to
+open a playlist that already exists in their own account. Native embed via a WebView is a deferred,
+future feature (see the spec's *Out of Scope*) — this branch adds no `react-native-webview` dependency
+and no native code, so Expo Go keeps working.
+
+**Web CSP.** The Expo web build ships no CSP today, so the embed loads unobstructed. If a CSP is
+introduced for the web client, its `frame-src` directive must allowlist each provider's embed host —
+recorded here so that future work finds it before a user reports a blank player.
 
 ## 8. Playlist generation pipeline
 

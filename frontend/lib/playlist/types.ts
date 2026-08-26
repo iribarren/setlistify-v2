@@ -168,6 +168,15 @@ export const CONFIDENCE_LABELS = exhaustiveArray<ConfidenceLabel>()([
   "your_previous_choice",
 ] as const);
 
+/**
+ * D-213: the wire vocabulary `derivePlaybackSurface()` (the only reader of `playbackMode`, AC-7.3)
+ * interprets. `off` deliberately has no fourth `PlaybackSurface` variant of its own — see
+ * `lib/playlist/playback.ts`.
+ */
+export type PlaybackMode = NonNullable<ProviderConfigOutput["playbackMode"]>;
+
+export const PLAYBACK_MODES = exhaustiveArray<PlaybackMode>()(["embed", "deeplink", "off"] as const);
+
 function makeNarrower<T extends string>(values: readonly T[]) {
   const set = new Set<string>(values);
   return (value: string | null | undefined): T | null => (value && set.has(value) ? (value as T) : null);
@@ -181,3 +190,4 @@ export const asTrackOutcome = makeNarrower(TRACK_OUTCOMES);
 export const asReportCode = makeNarrower(REPORT_CODES);
 export const asNoSetlistCause = makeNarrower(NO_SETLIST_CAUSES);
 export const asConfidenceLabel = makeNarrower(CONFIDENCE_LABELS);
+export const asPlaybackMode = makeNarrower(PLAYBACK_MODES);

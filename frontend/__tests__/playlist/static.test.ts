@@ -73,3 +73,62 @@ describe("static: no setlist.fm URL is constructed or templated client-side (T-8
     expect(content).not.toMatch(SETLISTFM_URL_LITERAL);
   });
 });
+
+// AC-7.3/D-213: `playbackMode` is interpreted in exactly one pure function — every other file in the
+// feature receives a `PlaybackSurface` from `derivePlaybackSurface()` and never reads the field
+// itself. Mirrors spec 17's `ModeIsBranchedOnInExactlyTwoPlacesTest` shape, for one place instead of
+// two.
+describe("static: .playbackMode is read in exactly one file (AC-7.3, D-213)", () => {
+  const ALLOWED_FILE = join("lib", "playlist", "playback.ts");
+  const files = SCAN_DIRS.flatMap(collectSourceFiles);
+  const PLAYBACK_MODE_ACCESS = /\.playbackMode\b/;
+
+  it("scanned at least one file", () => {
+    expect(files.length).toBeGreaterThan(0);
+  });
+
+  it.each(files.map((file) => [file.replace(ROOT + "/", "")]))("%s", (relativePath) => {
+    const content = readFileSync(join(ROOT, relativePath), "utf8");
+    const readsPlaybackMode = PLAYBACK_MODE_ACCESS.test(content);
+    if (relativePath === ALLOWED_FILE) {
+      expect(readsPlaybackMode).toBe(true); // sanity: the one allowed file actually reads it.
+    } else {
+      expect(readsPlaybackMode).toBe(false);
+    }
+  });
+});
+
+// AC-7.1/AC-7.2/D-224: no SDK-based in-app playback is introduced anywhere — enforced structurally
+// by asserting no dependency in package.json matches a provider-SDK deny-list.
+describe("static: no provider SDK dependency in package.json (AC-7.1, AC-7.2, D-224)", () => {
+  const SDK_DENY_LIST = ["spotify", "youtube", "googleapis", "musickit"];
+
+  it("no dependency or devDependency name matches the deny-list", () => {
+    const packageJson = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const names = [
+      ...Object.keys(packageJson.dependencies ?? {}),
+      ...Object.keys(packageJson.devDependencies ?? {}),
+    ];
+
+    for (const name of names) {
+      for (const denied of SDK_DENY_LIST) {
+        expect(name.toLowerCase()).not.toContain(denied);
+      }
+    }
+  });
+
+  it("react-native-webview is not a dependency (D-216: the native embed is deferred)", () => {
+    const packageJson = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const names = [
+      ...Object.keys(packageJson.dependencies ?? {}),
+      ...Object.keys(packageJson.devDependencies ?? {}),
+    ];
+    expect(names).not.toContain("react-native-webview");
+  });
+});
