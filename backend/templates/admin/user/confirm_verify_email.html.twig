@@ -1,0 +1,21 @@
+{% extends '@EasyAdmin/page/content.html.twig' %}
+
+{% block content_title %}Verify email{% endblock %}
+
+{% block main %}
+    {% if error is defined and error %}
+        <p style="color:#b00020;">{{ error }}</p>
+    {% endif %}
+
+    <p>User <strong>{{ masked_email }}</strong> (id {{ user.id }}) is currently
+        <strong>unverified</strong>.</p>
+
+    <p>This marks the address as verified as of now. There is no admin-facing way to undo this
+        afterwards.</p>
+
+    <form method="post" action="{{ action_path }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_user_action') }}">
+        <button type="submit">Verify this user's email</button>
+        <a href="{{ detail_path }}">Cancel</a>
+    </form>
+{% endblock %}

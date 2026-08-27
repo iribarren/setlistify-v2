@@ -56,4 +56,25 @@ final class AdminAccessControlTest extends AdminWebTestCase
         $client->request('GET', '/admin', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$token]);
         self::assertNotSame(200, $client->getResponse()->getStatusCode());
     }
+
+    /**
+     * AC-3.2 (docs/specs/2026-08-27-admin-set-email-verified.md): the manual-verify confirm and
+     * perform routes are unreachable without an authenticated admin session, exactly like the
+     * existing suspend/reveal-email/delete routes.
+     */
+    public function testVerifyEmailRoutesUnreachableWithoutAdminSession(): void
+    {
+        $client = $this->createAdminClient();
+
+        $client->request('GET', '/admin/user/1/verify-email/confirm');
+        self::assertResponseRedirects('/admin/login');
+
+        $client->request(
+            'POST',
+            '/admin/user/1/verify-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
+        self::assertResponseRedirects('/admin/login');
+    }
 }
