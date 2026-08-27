@@ -15,4 +15,5 @@
 - [Spec 17 normal-mode decisions](project_spec_17_decisions.md) — D-188..D-209: four suspension endpoints, client-side confirm, preference memory, report actions declined.
 - [Spec 19 playback decisions](project_spec_19_decisions.md) — D-210..D-226: one pure function reads playbackMode, `off` currently leaks; scoped Spotify-only, web-only embed.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.
+- [Admin set-email-verified decisions](project_spec_admin_email_verified_decisions.md) — D-248..D-256: two-way audited toggle, no migration, un-verify does not revoke sessions.
 - [Spec 20 notes and reviews decisions](project_spec_20_decisions.md) — D-227..D-247: 1–5 stars, dual highlight FK+snapshot, past-only writes, note column migrated then dropped.

@@ -17,7 +17,9 @@ be matched when writing a new one.
   the result-state-gaps fix (2026-08-24) = D-182–D-187,
   spec 17 (playlist normal mode, 2026-08-25) = D-188–D-209,
   spec 19 (concert page playback, 2026-08-26) = D-210–D-226,
-  spec 20 (notes and reviews, 2026-08-26) = D-227–D-247 — next spec starts at **D-248**.
+  spec 20 (notes and reviews, 2026-08-26) = D-227–D-247,
+  admin set-email-verified (2026-08-27, not a numbered prompt) = D-248–D-256 — next spec starts at
+  **D-257**.
   **Check the highest existing D-number before writing.**
 - **Header table** with rows: Spec ID · Backlog prompt · Command · Primary agent · Type ·
   Depends on · Implemented by · Decisions · Status.
