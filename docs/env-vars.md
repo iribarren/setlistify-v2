@@ -60,7 +60,7 @@ not take the other down. Redirect URIs are registered per environment.
 | `WEB_APP_URL` | no | Base URL of the web app — used to build the links inside verification/reset emails (AC-6.8) |
 | `TOKEN_ENCRYPTION_KEY` | **yes** | libsodium key encrypting **users' provider OAuth tokens** at rest — the **active** key. See below. |
 | `TOKEN_ENCRYPTION_KEY_ID` | no | The key id stamped into every **new** ciphertext. Default `v1`. |
-| `TOKEN_ENCRYPTION_KEYS_RETIRED` | **yes** | Comma-separated `id:base64key` pairs — retired keys still valid for **decryption only**. Empty by default. See below. |
+| `TOKEN_ENCRYPTION_KEYS_RETIRED` | **yes** | Comma-separated `id:base64key` pairs — retired keys still valid for **decryption only**. Empty by default (`""` — not a bare `KEY=`: Docker Compose's `env_file` parser only strips a trailing `# comment` when a real value precedes it, and otherwise takes the comment text itself as the value, which `TokenCipher::fromEnvironment()` then rejects as an invalid key). See below. |
 
 ### setlist.fm
 
