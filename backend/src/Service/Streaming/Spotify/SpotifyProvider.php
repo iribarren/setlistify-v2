@@ -126,9 +126,13 @@ final class SpotifyProvider implements StreamingProviderInterface
 
     public function searchTrack(SongQuery $query, ProviderTokens $tokens): array
     {
+        // Paths passed to $apiClient are deliberately relative (no leading slash): Symfony's
+        // HttpClient resolves a leading-slash path as absolute, which discards the `/v1` segment
+        // of SPOTIFY_API_BASE_URL entirely (RFC 3986 §5.3) — the exact bug that once made every
+        // Spotify Web API call 404/410 despite a correctly configured base URL.
         $response = $this->httpClient->get(
             'search',
-            '/search',
+            'search',
             $this->queryBuilder->build($query),
             $tokens->accessToken,
         );
@@ -142,7 +146,7 @@ final class SpotifyProvider implements StreamingProviderInterface
 
         $response = $this->httpClient->postJson(
             'create_playlist',
-            \sprintf('/users/%s/playlists', $identity['id']),
+            \sprintf('users/%s/playlists', $identity['id']),
             [
                 'name' => $draft->name,
                 'description' => $draft->description ?? '',
@@ -171,7 +175,7 @@ final class SpotifyProvider implements StreamingProviderInterface
 
             $this->httpClient->postJson(
                 'add_tracks',
-                \sprintf('/playlists/%s/tracks', $playlistId),
+                \sprintf('playlists/%s/tracks', $playlistId),
                 ['uris' => $uris],
                 $tokens->accessToken,
             );
@@ -191,7 +195,7 @@ final class SpotifyProvider implements StreamingProviderInterface
     /** @return array{id: string, displayName: ?string} */
     private function fetchIdentity(string $accessToken): array
     {
-        $response = $this->httpClient->get('me', '/me', [], $accessToken);
+        $response = $this->httpClient->get('me', 'me', [], $accessToken);
 
         $id = $response['id'] ?? null;
         if (!\is_string($id)) {
