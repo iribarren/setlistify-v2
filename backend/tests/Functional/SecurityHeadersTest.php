@@ -38,4 +38,16 @@ final class SecurityHeadersTest extends WebTestCase
         self::assertSame('nosniff', $headers->get('X-Content-Type-Options'));
         self::assertNotNull($headers->get('Content-Security-Policy'));
     }
+
+    public function testAdminAssetsAreNotBlockedByApiContentSecurityPolicy(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/admin');
+
+        $csp = (string) $client->getResponse()->headers->get('Content-Security-Policy');
+
+        self::assertStringNotContainsString("default-src 'none'", $csp);
+        self::assertStringContainsString("style-src 'self' 'unsafe-inline'", $csp);
+        self::assertStringContainsString("frame-ancestors 'none'", $csp);
+    }
 }

@@ -14,6 +14,8 @@ use Symfony\Component\HttpKernel\KernelInterface;
  * cannot ship without them (US-9, AC-9.6). Scoped by request path so the strict, JSON-API policy
  * never breaks `/api/docs`'s own Swagger UI assets (AC-9.5, R-8) — the docs route gets a relaxed
  * `Content-Security-Policy` that still denies framing, inline `<script>` and third-party origins.
+ * `/admin` gets its own relaxed policy for the same reason — EasyAdmin renders same-origin CSS/JS/
+ * font assets and injects inline styles at runtime.
  */
 final class SecurityHeadersSubscriber implements EventSubscriberInterface
 {
@@ -38,11 +40,16 @@ final class SecurityHeadersSubscriber implements EventSubscriberInterface
         $response = $event->getResponse();
         $path = $event->getRequest()->getPathInfo();
         $isDocs = 1 === preg_match('#^/api/docs#', $path);
+        $isAdmin = 1 === preg_match('#^/admin#', $path);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set('Referrer-Policy', 'no-referrer');
-        $response->headers->set('Content-Security-Policy', $isDocs ? $this->docsContentSecurityPolicy() : $this->apiContentSecurityPolicy());
+        $response->headers->set('Content-Security-Policy', match (true) {
+            $isDocs => $this->docsContentSecurityPolicy(),
+            $isAdmin => $this->adminContentSecurityPolicy(),
+            default => $this->apiContentSecurityPolicy(),
+        });
 
         if ('prod' === $this->kernel->getEnvironment()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
@@ -65,5 +72,15 @@ final class SecurityHeadersSubscriber implements EventSubscriberInterface
     private function docsContentSecurityPolicy(): string
     {
         return "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-ancestors 'none'";
+    }
+
+    /**
+     * EasyAdmin serves its own same-origin CSS/JS/font bundle and injects inline styles at
+     * runtime, but — unlike Swagger UI — never needs `unsafe-eval`. Still same-origin only,
+     * still no framing.
+     */
+    private function adminContentSecurityPolicy(): string
+    {
+        return "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; frame-ancestors 'none'";
     }
 }
