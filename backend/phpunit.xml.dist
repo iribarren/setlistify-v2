@@ -101,7 +101,7 @@
         <env name="SPOTIFY_CLIENT_ID" value="test-fixture-client-id" force="true"/>
         <env name="SPOTIFY_CLIENT_SECRET" value="test-fixture-client-secret-not-a-real-credential" force="true"/>
         <env name="SPOTIFY_REDIRECT_URI" value="https://backend.test/api/streaming/spotify/callback" force="true"/>
-        <env name="SPOTIFY_API_BASE_URL" value="https://spotify-api.invalid/v1" force="true"/>
+        <env name="SPOTIFY_API_BASE_URL" value="https://spotify-api.invalid/v1/" force="true"/>
         <env name="SPOTIFY_ACCOUNTS_BASE_URL" value="https://spotify-accounts.invalid" force="true"/>
         <env name="TOKEN_ENCRYPTION_KEY" value="qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo=" force="true"/>
         <env name="TOKEN_ENCRYPTION_KEY_ID" value="v1" force="true"/>

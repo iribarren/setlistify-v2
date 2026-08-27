@@ -60,7 +60,7 @@ not take the other down. Redirect URIs are registered per environment.
 | `WEB_APP_URL` | no | Base URL of the web app — used to build the links inside verification/reset emails (AC-6.8) |
 | `TOKEN_ENCRYPTION_KEY` | **yes** | libsodium key encrypting **users' provider OAuth tokens** at rest — the **active** key. See below. |
 | `TOKEN_ENCRYPTION_KEY_ID` | no | The key id stamped into every **new** ciphertext. Default `v1`. |
-| `TOKEN_ENCRYPTION_KEYS_RETIRED` | **yes** | Comma-separated `id:base64key` pairs — retired keys still valid for **decryption only**. Empty by default. See below. |
+| `TOKEN_ENCRYPTION_KEYS_RETIRED` | **yes** | Comma-separated `id:base64key` pairs — retired keys still valid for **decryption only**. Empty by default (`""` — not a bare `KEY=`: Docker Compose's `env_file` parser only strips a trailing `# comment` when a real value precedes it, and otherwise takes the comment text itself as the value, which `TokenCipher::fromEnvironment()` then rejects as an invalid key). See below. |
 
 ### setlist.fm
 
@@ -84,8 +84,8 @@ flags — not variables.
 |---|---|---|
 | `SPOTIFY_CLIENT_ID` | no (but do not publish) | OAuth client id |
 | `SPOTIFY_CLIENT_SECRET` | **yes** | OAuth client secret |
-| `SPOTIFY_REDIRECT_URI` | no | Per-environment, must match the registered app exactly (AC-1.9 — exactly one, the backend's own callback) |
-| `SPOTIFY_API_BASE_URL` | no | Default `https://api.spotify.com/v1`. Overridden in `test` and by the `@group live` smoke test so neither needs a code change to point elsewhere |
+| `SPOTIFY_REDIRECT_URI` | no | Per-environment, must match the registered app exactly (AC-1.9 — exactly one, the backend's own callback). Spotify rejects `localhost` in this value — use the literal loopback IP `127.0.0.1` for local development (its authorization server otherwise returns `redirect_uri: Not matching configuration` even when the path is correct), and register that exact URI in the Spotify Developer Dashboard for the app behind `SPOTIFY_CLIENT_ID` |
+| `SPOTIFY_API_BASE_URL` | no | Default `https://api.spotify.com/v1/`. **Must end with a trailing slash** — Symfony's HttpClient resolves the (deliberately leading-slash-free) request paths in `SpotifyProvider` relative to this base URI per RFC 3986, and a missing trailing slash silently drops the `/v1` segment, turning every Spotify Web API call into a 404/410 against the bare host. Overridden in `test` and by the `@group live` smoke test so neither needs a code change to point elsewhere |
 | `SPOTIFY_ACCOUNTS_BASE_URL` | no | Default `https://accounts.spotify.com` — the OAuth endpoints, same reason as above |
 | `STREAMING_HTTP_TIMEOUT` | no | Provider-agnostic outbound request timeout, seconds. Default `5` |
 | `STREAMING_TOKEN_REFRESH_SKEW` | no | Refresh a token this many seconds before it expires. Default `60` |
