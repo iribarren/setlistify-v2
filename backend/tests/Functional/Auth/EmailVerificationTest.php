@@ -90,6 +90,49 @@ final class EmailVerificationTest extends AuthWebTestCase
         self::assertResponseStatusCodeSame(Response::HTTP_UNAUTHORIZED);
     }
 
+    /**
+     * D-252 (docs/specs/2026-08-27-admin-set-email-verified.md): a token consumed for a user who
+     * was already verified — e.g. by the admin's manual-verify action — must not overwrite the
+     * existing timestamp, must still consume the token, and the endpoint's response stays the same
+     * success/204 either way, invisible to the client.
+     */
+    public function testConfirmWithValidTokenForAlreadyVerifiedUserDoesNotOverwriteTimestamp(): void
+    {
+        $client = $this->createAuthClient();
+        $registered = $this->registerUser($client);
+        $token = $this->extractPlaintextVerificationToken();
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(\App\Entity\User::class)->findOneBy(['email' => $registered['email']]);
+        self::assertNotNull($user);
+        $adminSetAt = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
+        $user->markEmailVerified($adminSetAt);
+        $em->flush();
+        $userId = $user->getId();
+
+        $client->request(
+            'POST',
+            '/api/email-verification/confirm',
+            server: ['CONTENT_TYPE' => 'application/ld+json', 'HTTP_ACCEPT' => 'application/ld+json'],
+            content: json_encode(['token' => $token], \JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(\App\Entity\User::class)->find($userId);
+        self::assertNotNull($user);
+        self::assertEquals($adminSetAt, $user->getEmailVerifiedAt());
+
+        // The token is still consumed — a second attempt with the same token is rejected.
+        $client->request(
+            'POST',
+            '/api/email-verification/confirm',
+            server: ['CONTENT_TYPE' => 'application/ld+json', 'HTTP_ACCEPT' => 'application/ld+json'],
+            content: json_encode(['token' => $token], \JSON_THROW_ON_ERROR),
+        );
+        self::assertResponseStatusCodeSame(Response::HTTP_BAD_REQUEST);
+    }
+
     public function testResendAlwaysReturns202RegardlessOfVerificationState(): void
     {
         $client = $this->createAuthClient();

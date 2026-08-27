@@ -738,16 +738,21 @@ can use sessions and 2FA instead of the API's JWTs.
   the digest-only audit values above, so a compromised admin session is not a compromised diary.
 - **Write access is narrow**: suspend/unsuspend (toggles `User::$isActive`, revokes every refresh
   token), hard delete (`App\Service\Admin\UserEraser`, transactional, cascades to owned data, leaves
-  shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), the two setlist.fm band
-  writes above, and provider configuration (`docs/specs/2026-08-22-backoffice-provider-configuration.md`,
-  D-89–D-105) — `enabled`/`playbackMode`/`isDefault`/`notes` on `ProviderSetting`, EDIT only (no
-  `NEW`/`DELETE`: rows come from the migration seed), routed through `App\Service\Provider\
-  ProviderSettingWriter`. This feature does not become a general-purpose data editor (D-46 makes
-  read-only the structural default, not a convention).
+  shared `Band`/`Venue` untouched), reveal-email (rate-limited, audited), manual email verification
+  (`docs/specs/2026-08-27-admin-set-email-verified.md`, D-248–D-253) — verify-only, no admin
+  un-verify, offered only while `User::$emailVerifiedAt` is `null` and stamped with the current time
+  from the injected clock, never backdated — the two setlist.fm band writes above, and provider
+  configuration (`docs/specs/2026-08-22-backoffice-provider-configuration.md`, D-89–D-105) —
+  `enabled`/`playbackMode`/`isDefault`/`notes` on `ProviderSetting`, EDIT only (no `NEW`/`DELETE`:
+  rows come from the migration seed), routed through `App\Service\Provider\ProviderSettingWriter`.
+  This feature does not become a general-purpose data editor (D-46 makes read-only the structural
+  default, not a convention).
 - **Every write is audited.** `App\Service\Admin\AuditLogger` is the single write path for
   `AuditLogEntry` — actor, entity, field, old → new, timestamp, IP. The entity is append-only (a
   Doctrine event subscriber rejects update/delete outright) and its digested personal-data fields
-  (D-43) let it survive the deletion of the user it describes.
+  (D-43) let it survive the deletion of the user it describes. Manual email verification's
+  `emailVerifiedAt` old/new values are stored literally, not digested — same reasoning as the
+  `isActive` toggle above: it is not personal data.
 - **Personal data is minimized in every view** (`App\Field\MaskedEmailField`, D-51), with the full
   value behind an explicit, rate-limited, audited reveal action — never a hover or a query parameter.
 

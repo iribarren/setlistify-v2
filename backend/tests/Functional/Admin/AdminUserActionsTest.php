@@ -9,14 +9,199 @@ use App\Entity\Band;
 use App\Entity\Concert;
 use App\Entity\ConcertBand;
 use App\Entity\User;
+use Symfony\Component\Clock\Test\ClockSensitiveTrait;
 
 /**
  * US-7/US-9: suspend/unsuspend revokes refresh tokens (AC-7.2) and is audited (AC-7.3); delete
  * cascades to owned data but not shared Band/Venue rows (AC-7.4) and the audit entry survives the
  * delete (AC-7.6); reveal-email is audited (AC-9.3) and rate-limited (AC-9.4).
+ *
+ * US-1/US-2/US-3 (docs/specs/2026-08-27-admin-set-email-verified.md): manual email verification is
+ * verify-only (D-248), audited with a literal timestamp (D-249), and always stamped with the
+ * injected clock's current time, never backdated (D-250).
  */
 final class AdminUserActionsTest extends AdminWebTestCase
 {
+    use ClockSensitiveTrait;
+
+    public function testConfirmVerifyEmailScreenHasNoSideEffect(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $userId = $user->getId();
+
+        $client->request('GET', '/admin/user/'.$userId.'/verify-email/confirm');
+        self::assertResponseIsSuccessful();
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->find($userId);
+        self::assertNotNull($user);
+        self::assertFalse($user->isEmailVerified());
+        self::assertNull($user->getEmailVerifiedAt());
+
+        $entries = $em->getRepository(AuditLogEntry::class)->findBy(['subjectId' => (string) $userId, 'action' => 'verify_email_manually']);
+        self::assertCount(0, $entries);
+    }
+
+    public function testVerifyEmailSetsTimestampAndAudits(): void
+    {
+        $frozenNow = new \DateTimeImmutable('2026-08-27T10:00:00+00:00');
+        self::mockTime($frozenNow);
+
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $userId = $user->getId();
+        self::assertFalse($user->isEmailVerified());
+
+        $client->request(
+            'POST',
+            '/admin/user/'.$userId.'/verify-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
+        self::assertResponseRedirects();
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->find($userId);
+        self::assertNotNull($user);
+        self::assertTrue($user->isEmailVerified());
+        self::assertEquals($frozenNow, $user->getEmailVerifiedAt());
+
+        $entries = $em->getRepository(AuditLogEntry::class)->findBy(['subjectId' => (string) $userId, 'action' => 'verify_email_manually']);
+        self::assertCount(1, $entries);
+        self::assertSame('User', $entries[0]->getSubjectType());
+        self::assertSame('emailVerifiedAt', $entries[0]->getField());
+        self::assertNull($entries[0]->getOldValue());
+        self::assertSame($frozenNow->format(\DateTimeInterface::ATOM), $entries[0]->getNewValue());
+        self::assertNotSame($admin['email'], $entries[0]->getActorLabel());
+        self::assertStringNotContainsString('@', (string) $entries[0]->getActorLabel());
+    }
+
+    public function testVerifyActionHiddenForAlreadyVerifiedUser(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $user->markEmailVerified(new \DateTimeImmutable());
+        $em->flush();
+        $userId = $user->getId();
+
+        $client->request('GET', '/admin/user/'.$userId);
+        self::assertResponseIsSuccessful();
+        self::assertStringNotContainsString('Verify email', (string) $client->getResponse()->getContent());
+    }
+
+    public function testVerifyRejectsAlreadyVerifiedTarget(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $alreadyVerifiedAt = new \DateTimeImmutable('2026-01-01T00:00:00+00:00');
+        $user->markEmailVerified($alreadyVerifiedAt);
+        $em->flush();
+        $userId = $user->getId();
+
+        $client->request(
+            'POST',
+            '/admin/user/'.$userId.'/verify-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
+        self::assertResponseStatusCodeSame(422);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->find($userId);
+        self::assertNotNull($user);
+        self::assertEquals($alreadyVerifiedAt, $user->getEmailVerifiedAt());
+
+        $entries = $em->getRepository(AuditLogEntry::class)->findBy(['subjectId' => (string) $userId, 'action' => 'verify_email_manually']);
+        self::assertCount(0, $entries);
+    }
+
+    public function testVerifyEmailRejectsBadCsrf(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $userId = $user->getId();
+
+        $client->request(
+            'POST',
+            '/admin/user/'.$userId.'/verify-email',
+            parameters: ['_csrf_token' => 'not-the-real-token'],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
+        self::assertResponseStatusCodeSame(422);
+
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->find($userId);
+        self::assertNotNull($user);
+        self::assertFalse($user->isEmailVerified());
+
+        $entries = $em->getRepository(AuditLogEntry::class)->findBy(['subjectId' => (string) $userId, 'action' => 'verify_email_manually']);
+        self::assertCount(0, $entries);
+    }
+
+    /** AC-1.6: `/api/me` for the subject reflects the new value, with no other change to the shape. */
+    public function testVerifiedUserSeesItReflectedOnApiMe(): void
+    {
+        $client = $this->createAdminClient();
+        $admin = $this->createAdmin();
+        $this->loginAndEnroll($client, $admin['email'], $admin['password']);
+
+        $subject = $this->apiRegisterAndLogin($client);
+        $em = static::getContainer()->get('doctrine')->getManager();
+        $user = $em->getRepository(User::class)->findOneBy(['email' => $subject['email']]);
+        self::assertNotNull($user);
+        $userId = $user->getId();
+
+        $client->request(
+            'POST',
+            '/admin/user/'.$userId.'/verify-email',
+            parameters: ['_csrf_token' => self::CSRF_TOKEN],
+            server: ['HTTP_ORIGIN' => self::ORIGIN],
+        );
+        self::assertResponseRedirects();
+
+        $client->request('GET', '/api/me', server: [
+            'HTTP_AUTHORIZATION' => 'Bearer '.$subject['accessToken'],
+            'HTTP_ACCEPT' => 'application/ld+json',
+        ]);
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        self::assertTrue($data['emailVerified']);
+        self::assertSame($subject['email'], $data['email']);
+        self::assertSame(['ROLE_USER'], $data['roles']);
+    }
+
     public function testSuspendRevokesRefreshTokensAndIsAudited(): void
     {
         $client = $this->createAdminClient();

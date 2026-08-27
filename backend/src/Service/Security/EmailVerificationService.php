@@ -33,7 +33,15 @@ final readonly class EmailVerificationService
         $this->mailer->sendEmailVerification($user, $plaintext);
     }
 
-    /** @return bool true if a previously-unverified user was just verified. */
+    /**
+     * @return bool true if a valid, unexpired, unused token was found and consumed —
+     *              {@see EmailVerificationConfirmProcessor} throws its generic 400 on `false`. This
+     *              is deliberately "was the token valid", not "did verification just happen": D-252
+     *              guards against a stale token silently overwriting an admin-set
+     *              {@see User::markEmailVerified()} timestamp (see below), but the HTTP response for
+     *              a structurally valid token must stay a 204 either way — a valid token consumed
+     *              against an already-verified user is a successful no-op, not a client error.
+     */
     public function confirm(string $plaintext): bool
     {
         $token = $this->repository->findOneByTokenHash($this->hash($plaintext));
@@ -44,7 +52,15 @@ final readonly class EmailVerificationService
         }
 
         $token->markUsed($now);
-        $token->getUser()->markEmailVerified($now);
+
+        // D-252: a token consumed after the admin has already manually verified this user (see
+        // UserCrudController::performVerifyEmail()) must not silently overwrite the operator's
+        // timestamp, or it would disagree with the audit entry the admin action wrote.
+        $user = $token->getUser();
+        if (!$user->isEmailVerified()) {
+            $user->markEmailVerified($now);
+        }
+
         $this->repository->save($token);
 
         return true;

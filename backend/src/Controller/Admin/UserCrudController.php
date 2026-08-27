@@ -31,6 +31,7 @@ use EasyCorp\Bundle\EasyAdminBundle\Field\DateTimeField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IdField;
 use EasyCorp\Bundle\EasyAdminBundle\Field\IntegerField;
 use EasyCorp\Bundle\EasyAdminBundle\Router\AdminUrlGenerator;
+use Psr\Clock\ClockInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,9 +40,10 @@ use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * US-6/US-7/US-9: read-only list + detail (AC-6.1, AC-6.6, AC-6.7), plus the three narrow write
- * actions this feature allows — suspend, unsuspend, hard delete — and the reveal-email action
- * (US-9). No other write action exists here (AC-7.7); `configureActions()` from
+ * US-6/US-7/US-9: read-only list + detail (AC-6.1, AC-6.6, AC-6.7), plus the narrow write actions
+ * this feature allows — suspend, unsuspend, hard delete, the reveal-email action (US-9), and the
+ * verify-only manual email verification action (docs/specs/2026-08-27-admin-set-email-verified.md,
+ * D-248). No other write action exists here (AC-7.7); `configureActions()` from
  * {@see AbstractAdminCrudController} already disabled NEW/EDIT/DELETE/BATCH_DELETE.
  *
  * @extends AbstractAdminCrudController<User>
@@ -57,6 +59,7 @@ final class UserCrudController extends AbstractAdminCrudController
         #[Autowire(service: 'limiter.admin_reveal_email')]
         private readonly RateLimiterFactory $revealEmailLimiter,
         private readonly EntityManagerInterface $entityManager,
+        private readonly ClockInterface $clock,
     ) {
     }
 
@@ -111,12 +114,19 @@ final class UserCrudController extends AbstractAdminCrudController
             ->linkToCrudAction('confirmRevealEmail');
         $deleteUser = Action::new('eraseUser', 'Delete (irreversible)')
             ->linkToCrudAction('confirmDelete');
+        // D-248: verify-only, and only offered for a user who isn't verified yet — no admin
+        // un-verify action exists, so once emailVerifiedAt is set the action simply disappears.
+        $verifyEmail = Action::new('verifyEmail', 'Verify email')
+            ->linkToCrudAction('confirmVerifyEmail')
+            ->displayIf(static fn (User $user): bool => !$user->isEmailVerified());
 
         return $actions
             ->add(Crud::PAGE_DETAIL, $toggleActive)
             ->add(Crud::PAGE_INDEX, $toggleActive)
             ->add(Crud::PAGE_DETAIL, $revealEmail)
             ->add(Crud::PAGE_INDEX, $revealEmail)
+            ->add(Crud::PAGE_DETAIL, $verifyEmail)
+            ->add(Crud::PAGE_INDEX, $verifyEmail)
             ->add(Crud::PAGE_DETAIL, $deleteUser);
     }
 
@@ -173,6 +183,80 @@ final class UserCrudController extends AbstractAdminCrudController
             field: 'isActive',
             oldValue: $oldValue,
             newValue: $newActive ? 'true' : 'false',
+        );
+
+        return new RedirectResponse(
+            $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+        );
+    }
+
+    /**
+     * D-248: verify-only, one-directional. GET, no side effect — nothing is mutated or audited
+     * until the POST below succeeds.
+     *
+     * @param AdminContext<User> $context
+     */
+    #[AdminRoute(path: '/{entityId}/verify-email/confirm', name: '_verify_email_confirm')]
+    public function confirmVerifyEmail(AdminContext $context, AdminUrlGenerator $urlGenerator): Response
+    {
+        $user = $this->requireUser($context);
+
+        return $this->render('admin/user/confirm_verify_email.html.twig', [
+            'user' => $user,
+            'masked_email' => EmailMasker::mask($user->getEmail()),
+            'action_path' => $urlGenerator->setController(self::class)->setAction('performVerifyEmail')->setEntityId($user->getId())->generateUrl(),
+            'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+        ]);
+    }
+
+    /**
+     * D-250: the timestamp is always *now* — read from the injected clock rather than
+     * `new \DateTimeImmutable()` inline, so this is testable with a frozen clock. D-248: rejects an
+     * already-verified target explicitly (422, no mutation, no audit) rather than silently
+     * succeeding as a no-op.
+     *
+     * @param AdminContext<User> $context
+     */
+    #[AdminRoute(path: '/{entityId}/verify-email', name: '_verify_email', options: ['methods' => ['POST']])]
+    public function performVerifyEmail(Request $request, AdminContext $context, AdminUrlGenerator $urlGenerator): Response
+    {
+        $user = $this->requireUser($context);
+        $actor = $this->requireActor();
+
+        // Not a form_login/scheb-managed route, so it isn't covered by their CSRF handling —
+        // validated explicitly, same pattern as every other write action in this controller.
+        if (!$this->isCsrfTokenValid('admin_user_action', (string) $request->request->get('_csrf_token', ''))) {
+            return $this->render('admin/user/confirm_verify_email.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('performVerifyEmail')->setEntityId($user->getId())->generateUrl(),
+                'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
+
+        if ($user->isEmailVerified()) {
+            return $this->render('admin/user/confirm_verify_email.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('performVerifyEmail')->setEntityId($user->getId())->generateUrl(),
+                'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+                'error' => 'This user is already verified.',
+            ], new Response(status: 422));
+        }
+
+        $now = \DateTimeImmutable::createFromInterface($this->clock->now());
+        $user->markEmailVerified($now);
+        $this->entityManager->flush();
+
+        $this->auditLogger->log(
+            actor: $actor,
+            action: 'verify_email_manually',
+            subjectType: 'User',
+            subjectId: $user->getId() ?? 0,
+            field: 'emailVerifiedAt',
+            oldValue: null,
+            newValue: $now->format(\DateTimeInterface::ATOM),
         );
 
         return new RedirectResponse(
