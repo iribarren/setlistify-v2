@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Field\MaskedEmailField;
 use App\Repository\RefreshTokenRepository;
 use App\Security\Admin\AdminUser;
+use App\Security\Voter\InstantRefreshVoter;
 use App\Service\Admin\AuditLogger;
 use App\Service\Admin\EmailMasker;
 use App\Service\Admin\UserEraser;
@@ -36,6 +37,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
@@ -60,6 +62,7 @@ final class UserCrudController extends AbstractAdminCrudController
         private readonly RateLimiterFactory $revealEmailLimiter,
         private readonly EntityManagerInterface $entityManager,
         private readonly ClockInterface $clock,
+        private readonly Security $security,
     ) {
     }
 
@@ -86,6 +89,9 @@ final class UserCrudController extends AbstractAdminCrudController
         yield DateTimeField::new('createdAt', 'Registered');
         yield BooleanField::new('emailVerified')->formatValue(static fn (mixed $v, User $u): bool => $u->isEmailVerified());
         yield BooleanField::new('isActive', 'Active')->renderAsSwitch(false);
+        // AC-7.3: reads the voter, never `instantRefreshGrantedAt` directly (statically enforced).
+        yield BooleanField::new('canRefreshSetlistNow', 'Instant refresh')
+            ->formatValue(fn (mixed $v, User $u): bool => $this->security->isGranted(InstantRefreshVoter::ATTRIBUTE, $u));
         yield IntegerField::new('concertCount', 'Concerts')->onlyOnIndex();
     }
 
@@ -119,6 +125,11 @@ final class UserCrudController extends AbstractAdminCrudController
         $verifyEmail = Action::new('verifyEmail', 'Verify email')
             ->linkToCrudAction('confirmVerifyEmail')
             ->displayIf(static fn (User $user): bool => !$user->isEmailVerified());
+        // US-7 (docs/specs/2026-08-27-instant-setlist-refresh.md, D-257): grant/revoke, mirroring
+        // toggleActive's shape. AC-7.3: the toggle direction is read via the voter, never the raw
+        // column.
+        $toggleInstantRefresh = Action::new('toggleInstantRefresh', 'Grant / revoke instant refresh')
+            ->linkToCrudAction('confirmToggleInstantRefresh');
 
         return $actions
             ->add(Crud::PAGE_DETAIL, $toggleActive)
@@ -127,7 +138,74 @@ final class UserCrudController extends AbstractAdminCrudController
             ->add(Crud::PAGE_INDEX, $revealEmail)
             ->add(Crud::PAGE_DETAIL, $verifyEmail)
             ->add(Crud::PAGE_INDEX, $verifyEmail)
+            ->add(Crud::PAGE_DETAIL, $toggleInstantRefresh)
+            ->add(Crud::PAGE_INDEX, $toggleInstantRefresh)
             ->add(Crud::PAGE_DETAIL, $deleteUser);
+    }
+
+    /** @param AdminContext<User> $context */
+    #[AdminRoute(path: '/{entityId}/toggle-instant-refresh/confirm', name: '_toggle_instant_refresh_confirm')]
+    public function confirmToggleInstantRefresh(AdminContext $context, AdminUrlGenerator $urlGenerator): Response
+    {
+        $user = $this->requireUser($context);
+        $entitled = $this->security->isGranted(InstantRefreshVoter::ATTRIBUTE, $user);
+
+        return $this->render('admin/user/confirm_toggle_instant_refresh.html.twig', [
+            'user' => $user,
+            'masked_email' => EmailMasker::mask($user->getEmail()),
+            'entitled' => $entitled,
+            'action_path' => $urlGenerator->setController(self::class)->setAction('performToggleInstantRefresh')->setEntityId($user->getId())->generateUrl(),
+            'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+        ]);
+    }
+
+    /**
+     * D-257/AC-7.4/AC-7.5: grants/revokes `CAN_REFRESH_SETLIST_NOW` by writing (or clearing) the
+     * timestamp — never `User::$roles`. Audited as `grant_instant_refresh`/`revoke_instant_refresh`
+     * (AC-7.5). Revoking is immediate (AC-7.6): nothing already queued is cancelled.
+     *
+     * @param AdminContext<User> $context
+     */
+    #[AdminRoute(path: '/{entityId}/toggle-instant-refresh', name: '_toggle_instant_refresh', options: ['methods' => ['POST']])]
+    public function performToggleInstantRefresh(Request $request, AdminContext $context, AdminUrlGenerator $urlGenerator): Response
+    {
+        $user = $this->requireUser($context);
+        $actor = $this->requireActor();
+
+        if (!$this->isCsrfTokenValid('admin_user_action', (string) $request->request->get('_csrf_token', ''))) {
+            return $this->render('admin/user/confirm_toggle_instant_refresh.html.twig', [
+                'user' => $user,
+                'masked_email' => EmailMasker::mask($user->getEmail()),
+                'entitled' => $this->security->isGranted(InstantRefreshVoter::ATTRIBUTE, $user),
+                'action_path' => $urlGenerator->setController(self::class)->setAction('performToggleInstantRefresh')->setEntityId($user->getId())->generateUrl(),
+                'detail_path' => $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+                'error' => 'Your session expired — please try again.',
+            ], new Response(status: 422));
+        }
+
+        $wasEntitled = $this->security->isGranted(InstantRefreshVoter::ATTRIBUTE, $user);
+        $now = \DateTimeImmutable::createFromInterface($this->clock->now());
+
+        if ($wasEntitled) {
+            $user->revokeInstantRefresh();
+        } else {
+            $user->grantInstantRefresh($now);
+        }
+        $this->entityManager->flush();
+
+        $this->auditLogger->log(
+            actor: $actor,
+            action: $wasEntitled ? 'revoke_instant_refresh' : 'grant_instant_refresh',
+            subjectType: 'User',
+            subjectId: $user->getId() ?? 0,
+            field: 'instantRefreshGrantedAt',
+            oldValue: $wasEntitled ? 'granted' : 'null',
+            newValue: $wasEntitled ? 'null' : 'granted',
+        );
+
+        return new RedirectResponse(
+            $urlGenerator->setController(self::class)->setAction(Crud::PAGE_DETAIL)->setEntityId($user->getId())->generateUrl(),
+        );
     }
 
     /** @param AdminContext<User> $context */

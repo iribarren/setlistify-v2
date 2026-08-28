@@ -216,6 +216,10 @@ final readonly class SetlistSelectionStage
             if (null === $result) {
                 $reportEntries[] = [ReportCode::NoSetlistForBand, [
                     'band' => $band->getName(),
+                    // bandId (2026-08-27-instant-setlist-refresh.md, AC-10.2): the client needs the
+                    // band id to trigger a refresh for the specific band this entry names — nothing
+                    // else on the wire carries it (frontend gap found while wiring US-10).
+                    'bandId' => $band->getId() ?? 0,
                     'cause' => NoSetlistCause::forResolutionState($band->getSetlistfmResolutionState())->value,
                 ]];
                 continue;

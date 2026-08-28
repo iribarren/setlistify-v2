@@ -107,4 +107,20 @@ class SetlistCacheEntry
     {
         return null !== $this->staleAfter && $this->staleAfter <= $now;
     }
+
+    /**
+     * Re-fetching a re-fetchable (non-immutable) cache key — a volatile entry past its
+     * `staleAfter`, or a forced-live re-check (docs/specs/2026-08-27-instant-setlist-refresh.md,
+     * D-263) — overwrites this SAME row in place rather than inserting a second row under the same
+     * unique `cache_key` (`uniq_setlist_cache_key`).
+     *
+     * @param array<string, mixed> $payload
+     */
+    public function refresh(array $payload, \DateTimeImmutable $fetchedAt, ?\DateTimeImmutable $staleAfter, int $httpStatus): void
+    {
+        $this->payload = $payload;
+        $this->fetchedAt = $fetchedAt;
+        $this->staleAfter = $staleAfter;
+        $this->httpStatus = $httpStatus;
+    }
 }

@@ -18,9 +18,20 @@ be matched when writing a new one.
   spec 17 (playlist normal mode, 2026-08-25) = D-188–D-209,
   spec 19 (concert page playback, 2026-08-26) = D-210–D-226,
   spec 20 (notes and reviews, 2026-08-26) = D-227–D-247,
-  admin set-email-verified (2026-08-27, not a numbered prompt) = D-248–D-256 — next spec starts at
-  **D-257**.
-  **Check the highest existing D-number before writing.**
+  admin set-email-verified (2026-08-27, not a numbered prompt) = D-248–**D-253** (the earlier note
+  saying D-256 was wrong — verified against the file),
+  instant setlist refresh (2026-08-27, not a numbered prompt) = D-254–D-269 — next spec starts at
+  **D-270**.
+  **Check the highest existing D-number before writing** — e.g.
+  `grep -rhoE "D-[0-9]{2,3}" docs/specs docs/architecture.md | sed 's/D-//' | sort -n -u | tail -3`
+  (run it through `rtk proxy`, since the rtk grep filter strips the output).
+- **A spec may amend an earlier spec.** Precedent:
+  `2026-08-27-instant-setlist-refresh.md` narrows spec 09's D-65/D-67. The pattern is: an
+  *Amendment to …* section near the top of the new spec, plus edits to the amended spec that only
+  **add** — a `> Narrowed on DATE by D-nnn` blockquote under the affected decision, an
+  `#### Amendment — DATE` block carrying the new decision entries verbatim, an *Amended by* header
+  row, and a note appended to the affected Out-of-Scope row. Never delete or rewrite the original
+  text: a decision record that edits its own history is not a record.
 - **Header table** with rows: Spec ID · Backlog prompt · Command · Primary agent · Type ·
   Depends on · Implemented by · Decisions · Status.
 - **Spike specs** (`/spec`, no branch/code) write their User Stories as properties of *the document*

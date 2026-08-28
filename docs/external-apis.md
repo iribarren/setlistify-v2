@@ -49,6 +49,14 @@ dashboard (`docs/architecture.md` §9, §11) — the constraint no longer needs 
 observe. `SETLISTFM_DAILY_BUDGET`/`SETLISTFM_RATE_PER_SECOND` are read from configuration
 (`docs/env-vars.md`); raising them is only valid once the higher tier below is actually granted.
 
+**Instant setlist refresh does not change this arithmetic** (`docs/specs/2026-08-27-instant-setlist-refresh.md`,
+D-254). An entitled user's on-demand trigger spends from the *same* 1,440/day pool through the *same*
+`SetlistFmBudget::acquire()` gate — no second counter, no reserved lane. It is bounded twice over:
+per user, at most 2 requests per accepted trigger × `SETLISTFM_REFRESH_NOW_DAILY_PER_USER` (default
+5) = 10/day; in aggregate, `SETLISTFM_REFRESH_NOW_BUDGET_RESERVE` (default 10% = 144 requests) of the
+daily budget is a floor on-demand refresh can never touch. The section above's budget arithmetic
+stays accurate as written; this feature narrows into it, it does not widen it.
+
 ---
 
 ## Spotify

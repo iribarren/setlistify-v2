@@ -43,6 +43,23 @@ final class SetlistCache
         );
     }
 
+    /**
+     * Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-263): skips the
+     * freshness short-circuit — never the write (AC-2.5). Restricted to the volatile classes
+     * (`artist.search`, `artist.setlists` page 1, AC-2.6) — both public `force*` methods on this
+     * class, nothing else.
+     */
+    public function forceFetchArtistSearch(string $name): CachedFetch
+    {
+        return $this->fetch(
+            endpoint: 'artist.search',
+            params: ['artistName' => $name],
+            path: '/search/artists',
+            staleAfterFor: fn (\DateTimeImmutable $now): \DateTimeImmutable => $now->modify('+1 day'),
+            forceLive: true,
+        );
+    }
+
     /** Page 1 can gain entries (D-59) — volatile; every later page is history and immutable. */
     public function fetchArtistSetlistsPage(string $mbid, int $page, ?float $waitOverrideSeconds = null): CachedFetch
     {
@@ -69,6 +86,22 @@ final class SetlistCache
     }
 
     /**
+     * Instant setlist refresh (D-263): force-live is accepted only for page 1 (AC-2.6) — every
+     * later page is immutable history (D-59) and is never re-fetched speculatively.
+     */
+    public function forceFetchArtistSetlistsPageOne(string $mbid, ?float $waitOverrideSeconds = null): CachedFetch
+    {
+        return $this->fetch(
+            endpoint: 'artist.setlists',
+            params: ['mbid' => $mbid, 'p' => 1],
+            path: \sprintf('/artist/%s/setlists', $mbid),
+            staleAfterFor: fn (\DateTimeImmutable $now): \DateTimeImmutable => $now->modify('+1 day'),
+            waitOverrideSeconds: $waitOverrideSeconds,
+            forceLive: true,
+        );
+    }
+
+    /**
      * @param array<string, scalar>                             $params
      * @param \Closure(\DateTimeImmutable): ?\DateTimeImmutable $staleAfterFor
      */
@@ -78,14 +111,17 @@ final class SetlistCache
         string $path,
         \Closure $staleAfterFor,
         ?float $waitOverrideSeconds = null,
+        bool $forceLive = false,
     ): CachedFetch {
         $cacheKey = $this->buildCacheKey($endpoint, $params);
 
-        $redisHit = $this->readRedis($cacheKey);
-        if (null !== $redisHit) {
-            $this->metrics->recordHit('redis');
+        if (!$forceLive) {
+            $redisHit = $this->readRedis($cacheKey);
+            if (null !== $redisHit) {
+                $this->metrics->recordHit('redis');
 
-            return $redisHit;
+                return $redisHit;
+            }
         }
 
         $lock = $this->lockFactory->createLock('setlistfm:fetch:'.$cacheKey, ttl: 15.0);
@@ -98,18 +134,20 @@ final class SetlistCache
         }
 
         try {
-            // Re-check Redis: another process may have just filled it while we waited (AC-6.7).
-            $redisHit = $this->readRedis($cacheKey);
-            if (null !== $redisHit) {
-                $this->metrics->recordHit('redis');
+            if (!$forceLive) {
+                // Re-check Redis: another process may have just filled it while we waited (AC-6.7).
+                $redisHit = $this->readRedis($cacheKey);
+                if (null !== $redisHit) {
+                    $this->metrics->recordHit('redis');
 
-                return $redisHit;
+                    return $redisHit;
+                }
             }
 
             $now = \DateTimeImmutable::createFromInterface($this->clock->now());
             $entry = $this->repository->findOneByCacheKey($cacheKey);
 
-            if (null !== $entry && !$entry->isStale($now)) {
+            if (!$forceLive && null !== $entry && !$entry->isStale($now)) {
                 $this->metrics->recordHit('postgres');
                 $this->writeRedis($cacheKey, $entry->getPayload(), $entry->getFetchedAt());
 
@@ -134,7 +172,15 @@ final class SetlistCache
 
             \assert($result->success && null !== $result->payload && null !== $result->httpStatus);
             $staleAfter = $staleAfterFor($now);
-            $this->repository->save(new SetlistCacheEntry($cacheKey, $endpoint, $result->payload, $now, $staleAfter, $result->httpStatus));
+            if (null !== $entry) {
+                // A re-fetchable (non-immutable) key already had a row — overwrite it in place
+                // rather than inserting a second row under the same unique cache_key (the ordinary
+                // "stale, re-fetch" path, and force-live's "fresh but re-fetch anyway" path alike).
+                $entry->refresh($result->payload, $now, $staleAfter, $result->httpStatus);
+                $this->repository->save($entry);
+            } else {
+                $this->repository->save(new SetlistCacheEntry($cacheKey, $endpoint, $result->payload, $now, $staleAfter, $result->httpStatus));
+            }
             $this->writeRedis($cacheKey, $result->payload, $now);
 
             return CachedFetch::live($result->payload, $now);

@@ -3,6 +3,7 @@ import { AppState, type AppStateStatus } from "react-native";
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 
 import { apiClient, ApiError, toApiError } from "@/lib/api";
+import { retryAfterMs } from "@/lib/api/pollingHelpers";
 
 import type { PlaylistGenerationJobOutput } from "./types";
 
@@ -37,9 +38,8 @@ export function usePlaylistJobPolling(jobId: string | null): UseQueryResult<Play
         signal,
       });
 
-      const retryAfter = result.response.headers.get("Retry-After");
       // D-163: this is the ENTIRE termination rule — no list of state names to keep in sync.
-      retryAfterMsRef.current = retryAfter ? Math.max(1, Number(retryAfter)) * 1000 : false;
+      retryAfterMsRef.current = retryAfterMs(result.response.headers.get("Retry-After"));
 
       if (result.response.status === 304) {
         // AC-2.4: a 304 re-renders nothing — return the exact same cached reference.

@@ -9,11 +9,14 @@ import {
   PlaylistDegradedState,
   ResultCard,
   SetlistPicker,
+  SetlistRefreshAction,
   VersionPicker,
   defaultCandidateFor,
 } from "@/components/playlist";
 import { Button } from "@/components";
 import { ApiError } from "@/lib/api";
+import { useSession } from "@/lib/auth";
+import { bandsNeedingSetlist } from "@/lib/setlistRefresh";
 import {
   useCandidateSetlists,
   useConcertPlaylistJobs,
@@ -52,6 +55,7 @@ export default function PlaylistScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams<{ id: string }>();
   const concertId = String(id);
 
+  const { user } = useSession();
   const jobsQuery = useConcertPlaylistJobs(concertId);
   const providersQuery = useProviderConfigs();
   const accountsQuery = useStreamingAccounts();
@@ -322,6 +326,25 @@ export default function PlaylistScreen(): React.JSX.Element {
             onCheckAgain={() => void jobsQuery.refetch()}
           />
         ) : null}
+
+        {/* US-10 (D-269): the action lives where the failure is displayed. AC-10.1/10.2: entitled
+            users only, and only for a band whose noSetlistCause a refresh can plausibly help — both
+            checked here, before SetlistRefreshAction ever mounts. */}
+        {(view.kind === "degraded_band_unknown" || view.kind === "degraded_no_songs") && user?.canRefreshSetlistNow
+          ? bandsNeedingSetlist(playlistDetail.data).map((band) => (
+              <View key={band.bandId} style={{ marginTop: theme.space("space-4") }}>
+                <SetlistRefreshAction
+                  testID={`setlist-refresh-${band.bandId}`}
+                  bandId={band.bandId}
+                  bandName={band.bandName}
+                  onBandResolved={() => {
+                    void playlistDetail.refetch();
+                    void jobsQuery.refetch();
+                  }}
+                />
+              </View>
+            ))
+          : null}
 
         {reconnecting ? <LoadingState testID="playlist-reconnecting" title="Reconnecting…" /> : null}
       </View>

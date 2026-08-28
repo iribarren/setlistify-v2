@@ -14,6 +14,8 @@ export interface SessionUser {
   email: string;
   emailVerified: boolean;
   roles: string[];
+  /** D-269, AC-10.1 — gates the instant setlist refresh action on the playlist result screen. */
+  canRefreshSetlistNow: boolean;
 }
 
 export interface SessionContextValue {
@@ -52,7 +54,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }): Re
 
   const loadUser = useCallback(async () => {
     const me = await authApi.me();
-    setUser({ id: me.id, email: me.email, emailVerified: me.emailVerified, roles: me.roles });
+    setUser({
+      id: me.id,
+      email: me.email,
+      emailVerified: me.emailVerified,
+      roles: me.roles,
+      canRefreshSetlistNow: me.canRefreshSetlistNow,
+    });
   }, []);
 
   // AC-3.1–AC-3.3: attempt restore before anything authenticated renders. Native reads the stored

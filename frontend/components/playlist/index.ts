@@ -18,3 +18,4 @@ export { SetlistPicker, type SetlistPickerProps, type SetlistSelection } from ".
 export { VersionPicker, defaultCandidateFor, type VersionPickerProps } from "./VersionPicker";
 export { ConfirmSummary, type ConfirmSummaryProps } from "./ConfirmSummary";
 export { ResumeBanner, type ResumeBannerProps } from "./ResumeBanner";
+export { SetlistRefreshAction, type SetlistRefreshActionProps } from "./SetlistRefreshAction";

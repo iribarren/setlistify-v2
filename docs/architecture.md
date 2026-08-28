@@ -561,6 +561,45 @@ A band's setlist.fm identity is its MusicBrainz ID (MBID), not its typed name (D
 only, auto-resolving a single exact normalized match and marking ambiguity/absence as explicit
 states (`resolved` | `ambiguous` | `no_presence` | `unresolved`) rather than guessing.
 
+### 5.1 Instant setlist refresh — the one entitled exception to "nightly only"
+
+Shipped by `docs/specs/2026-08-27-instant-setlist-refresh.md` (D-254–D-280), amending D-65/D-67 and
+widening D-57 of the spec above — narrowly, and paying for it with throttles rather than a quota
+carve-out. An entitled user (`User.instantRefreshGrantedAt`, a nullable grant timestamp — never a
+`roles` write, D-257) may trigger one on-demand re-check for a band on one of their own concerts.
+
+- **Gate**: `App\Security\Voter\InstantRefreshVoter` exposes `CAN_REFRESH_SETLIST_NOW`, the only
+  reader of the grant column (statically enforced). Granted/revoked from `UserCrudController` in
+  the backoffice, audited as `grant_instant_refresh`/`revoke_instant_refresh`.
+- **Force-live path**: `BandIdentityResolver::forceResolve()` resets an `unresolved`/`ambiguous`/
+  `no_presence` band and re-searches live (never a `resolved` band — D-56 stands);
+  `SetlistGateway::refreshArtistSearch()`/`refreshArtistSetlistsPageOne()` skip the cache's
+  freshness check for `artist.search` and index page 1 only (D-263) — still writing through both
+  cache tiers, still gated by the same `SetlistFmBudget::acquire()`, no priority lane. Both the
+  resolver methods and the gateway's force-live methods are callable only from the refresh
+  Messenger handler and its two API processors (statically enforced, mirroring D-58's door test).
+- **Throttles, before the budget gate** (`App\Service\Setlist\SetlistRefreshCoordinator`, D-259):
+  a per-band cooldown (`SETLISTFM_REFRESH_NOW_COOLDOWN`), a per-user daily cap
+  (`SETLISTFM_REFRESH_NOW_DAILY_PER_USER`), and an application-wide budget reserve
+  (`SETLISTFM_REFRESH_NOW_BUDGET_RESERVE` share of `SETLISTFM_DAILY_BUDGET`) — all fail-closed on a
+  Redis error. A `symfony/lock` per band serializes the whole check-then-write sequence.
+- **Async**: `POST /api/bands/{bandId}/setlist-refresh` validates, throttles, audits and dispatches
+  `RefreshBandSetlistsMessage`, returning `202` with zero outbound setlist.fm calls on the request
+  thread. `GET` on the same URI polls, `Retry-After` while active, `state: null` (not `404`) for a
+  band never refreshed. Every throttle refusal is `429` with `Retry-After` and a typed
+  `refusedReason` — `FreshnessEnvelope` itself is never extended with throttle reasons (D-261).
+- **The ambiguity pick** (amendment, D-270–D-280): a separate operation,
+  `POST …/setlist-refresh/resolution`, lets the same entitled user resolve an `ambiguous` outcome by
+  selecting one candidate from their own most recent refresh — never a free-text MBID (D-271), only
+  into a vacant identity (D-270), only once (D-276). Writes through the same `Band::resolveTo()` the
+  auto-resolver and the operator's correction use — a third caller, never a fourth. Audited as
+  `choose_band_mbid`, distinct from the operator's `correct_band_mbid` (D-274). Makes no outbound
+  call itself and is exempt from the per-band cooldown (the band's identity just changed), but its
+  completion — a one-request setlist fetch — still counts against the daily cap and the budget gate.
+- **Ownership**: reuses `ConcertOwnerExtension` via `App\State\BandOwnershipChecker` — a band that
+  exists but is on none of the caller's concerts is `422 band_not_on_your_concerts` (D-266), not
+  `403`/`404`, since a `Band`'s existence already leaks through the shared, unowned setlist read.
+
 ## 6. Provider configuration (backoffice-controlled)
 
 **Built** (`docs/specs/2026-08-22-backoffice-provider-configuration.md`, D-89–D-105).
@@ -718,6 +757,16 @@ can use sessions and 2FA instead of the API's JWTs.
   a band's setlist.fm MBID and clearing a band's cached setlist associations (AC-11.5) — both routed
   through `AuditLogger` like every other admin write; no "refresh this band now" button exists
   (deliberately: it would be a one-click budget spend, D-67).
+- **Instant setlist refresh additions** (`docs/specs/2026-08-27-instant-setlist-refresh.md`, US-7,
+  US-9): `UserCrudController` gained a grant/revoke action for `CAN_REFRESH_SETLIST_NOW`
+  (confirm → CSRF-validated POST → mutate → flush → audit → redirect, the same shape as
+  suspend/unsuspend), audited as `grant_instant_refresh`/`revoke_instant_refresh`. The dashboard's
+  setlist.fm panel gained four figures: on-demand triggers accepted today, refusals today by reason,
+  requests spent by on-demand refresh today (absolute and as a share of the daily budget), currently
+  entitled users, and user-made band resolutions today (the `choose_band_mbid` count — the figure
+  that tells an operator whether D-270's blast radius is actually being exercised). `/admin` still
+  gets no "refresh this band now" button (D-255) — the backoffice's job here is granting the
+  entitlement and watching what it costs, not spending the budget itself.
 - **Playlist generation additions** (spec `2026-08-23-spike-playlist-pipeline.md` §8, D-141/D-142 —
   filling in the "not yet shipped" gap noted above): read-only `PlaylistGenerationJobCrudController`
   (list: created, user, concert, provider, mode, state, duration, matched/total, algorithm version;
@@ -852,6 +901,19 @@ is prompt 21's decision to make, not one pre-baked here. Everything else in this
 - **Every admin write is audited, append-only, and survives the subject's own deletion** (D-43):
   `AuditLogEntry.actorId` carries no foreign key, and personal-data fields are stored as keyed
   digests rather than plaintext.
+- **`Band::resolveTo()` — the single identity write, with exactly three callers**
+  (`docs/specs/2026-08-27-instant-setlist-refresh.md`, D-279): `BandIdentityResolver`'s auto-resolve
+  on a single exact normalized match, `BandCrudController::performCorrectMbid()`'s operator
+  correction (`correct_band_mbid`, any state, free-text MBID, 2FA-gated), and
+  `BandIdentityResolver::resolveAmbiguousChoice()`'s entitled-user pick (`choose_band_mbid`,
+  vacancy-only, candidate-set-only, once-only — D-270/D-271/D-276). Two distinct audit action names
+  make "which identities were chosen by users vs. operators" a `WHERE action = …`, not an inference
+  from the actor's roles. A fourth caller would defeat the static test that enforces this count
+  (AC-2.8) — the same structural-enforcement shape as D-58's gateway door and D-46's field allowlist.
+  Entitlement itself is a nullable grant timestamp on `User` (`instantRefreshGrantedAt`, D-257),
+  never a `roles` write, read only by `App\Security\Voter\InstantRefreshVoter` (statically
+  enforced) — so `User::$roles` stays literally "populated exactly once, server-side, at
+  registration."
 - All external calls have timeouts, retry-with-backoff, and circuit-breaking; no external service is
   trusted to be up.
 - **User session model** (`docs/specs/2026-08-21-auth-and-accounts.md`, D-18/D-21): a short-lived

@@ -87,3 +87,27 @@ Deferred items and things only the project owner can provide. Not a backlog (tha
   feature whose data (personal writing) can't be reconstructed if lost — a concert row can be
   re-entered from a ticket stub, a review can't. Not resolved by this feature; needs its own
   infrastructure prompt.
+- **Run a genuine multi-process concurrency test for AC-5.6/AC-6.14**
+  (`docs/specs/2026-08-27-instant-setlist-refresh.md`, instant setlist refresh). The delivered
+  tests (`SetlistRefreshCoordinatorTest`, the pick's functional coverage) exercise the throttle
+  and precondition logic with sequential calls only — the `symfony/lock` per-band serialization is
+  implemented and its state-check-then-write ordering is correct by inspection, but no test in
+  this branch actually races two real concurrent processes/requests against the same band the way
+  `ConcertReviewRaceInjector`'s second-DBAL-connection technique
+  (`.claude/agent-memory/backend-engineer/project_notes_and_reviews.md`) does for a genuine insert
+  race. Worth adding before this feature sees real concurrent traffic.
+- **Manually click through `/admin`'s new "Grant / revoke instant refresh" action and the
+  dashboard's new setlist.fm figures** before merging
+  (`docs/specs/2026-08-27-instant-setlist-refresh.md`, US-7, US-9). Verified by functional tests
+  and a full local `phpunit` run only — no human looked at the rendered confirmation template or
+  the dashboard panel's layout.
+- **Judgment call to revisit**: when the ambiguity pick's identity write succeeds but its
+  completion throttle (daily cap / budget reserve) then refuses, `ResolveBandIdentityProcessor`
+  still returns `202` with `refusedReason` set rather than a `429` — the band's identity write is
+  real and audited either way, only the immediate setlist fetch didn't happen. The spec's D-275/
+  AC-6.12 text is not fully explicit about this edge case (a user who happens to be exactly at
+  their daily cap at the moment they pick); flagged here rather than assumed silently correct.
+- **Apply for setlist.fm's higher rate tier is unrelated to this feature's own four new env vars**
+  (`SETLISTFM_REFRESH_NOW_COOLDOWN`/`_DAILY_PER_USER`/`_BUDGET_RESERVE`/`_TOKEN_WAIT`) — all four
+  are unmeasured starting points (spec's own Assumptions list) and, like the nightly job's tuned
+  defaults above, should be revisited once US-9's dashboard shows real usage.

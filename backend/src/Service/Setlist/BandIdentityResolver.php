@@ -45,6 +45,67 @@ final readonly class BandIdentityResolver
 
         $fetch = $this->gateway->searchArtist($band->getName());
 
+        return $this->classifySearchResult($band, $fetch);
+    }
+
+    /**
+     * Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-263, AC-2.1).
+     * Forces re-resolution even from `ambiguous`/`no_presence` by resetting first — never for a
+     * `resolved` band (AC-2.2, D-56 stands: nothing re-derives an identity that already exists).
+     *
+     * `ensureResolved()`'s early-return guard is untouched (AC-2.3) — this is a separate entry
+     * point. The classification logic (parsing candidates, deciding exact-match vs. ambiguous) is
+     * shared via {@see self::classifySearchResult()} so it exists in exactly one place, as AC-2.1
+     * intends; only the *fetch* differs — this path skips the search cache's freshness check
+     * (`SetlistGateway::refreshArtistSearch()`) so "try again" genuinely re-asks setlist.fm, rather
+     * than replaying a search from up to a day ago.
+     *
+     * Callable ONLY from the refresh handler/processors (AC-2.8, statically enforced).
+     */
+    public function forceResolve(Band $band, \DateTimeImmutable $now): BandResolutionOutcome
+    {
+        if (Band::RESOLUTION_RESOLVED === $band->getSetlistfmResolutionState()) {
+            return BandResolutionOutcome::resolved($band);
+        }
+
+        $band->resetResolution($now);
+        $this->entityManager->flush();
+
+        $fetch = $this->gateway->refreshArtistSearch($band->getName());
+
+        return $this->classifySearchResult($band, $fetch);
+    }
+
+    /**
+     * The user-side disambiguation pick (docs/specs/2026-08-27-instant-setlist-refresh.md,
+     * D-270, D-279, amendment to D-57). Writes through `Band::resolveTo()` exactly as the
+     * auto-resolver and the operator's correction do — one identity write path, three callers.
+     *
+     * The state precondition is D-270 itself: writes only into a vacancy (`setlistfmMbid` is
+     * `null`) — never overwrites an already-resolved identity, including one resolved by another
+     * user milliseconds earlier (AC-6.8/AC-6.14). Validating that `$chosen` was actually among the
+     * candidates shown to this user is the *caller's* job (the processor/coordinator), not this
+     * method's (D-279) — this method's job is the precondition and the write.
+     *
+     * Makes NO outbound call (AC-2.9) — the candidate's mbid/name were already fetched by a prior
+     * search. Callable ONLY from the refresh handler/processors (AC-2.8, statically enforced).
+     *
+     * @throws BandAlreadyResolvedException when `$band` is no longer a vacancy
+     */
+    public function resolveAmbiguousChoice(Band $band, ArtistSearchCandidate $chosen, \DateTimeImmutable $now): BandResolutionOutcome
+    {
+        if (null !== $band->getSetlistfmMbid()) {
+            throw new BandAlreadyResolvedException($band);
+        }
+
+        $band->resolveTo($chosen->mbid, $chosen->name, $now);
+        $this->entityManager->flush();
+
+        return BandResolutionOutcome::resolved($band);
+    }
+
+    private function classifySearchResult(Band $band, CachedFetch $fetch): BandResolutionOutcome
+    {
         if (null === $fetch->payload) {
             return BandResolutionOutcome::unavailable($band, $fetch->reason, $fetch->budgetResetAt);
         }

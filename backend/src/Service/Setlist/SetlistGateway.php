@@ -36,4 +36,20 @@ final readonly class SetlistGateway
     {
         return $this->cache->fetchSetlistDetail($setlistfmId);
     }
+
+    /**
+     * Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-263). Callable
+     * ONLY from the refresh handler/processors (AC-2.8, statically enforced by
+     * `App\Tests\Unit\Service\Setlist\ForceLiveCallersAreRestrictedTest`) — never from a read path.
+     */
+    public function refreshArtistSearch(string $name): CachedFetch
+    {
+        return $this->cache->forceFetchArtistSearch($name);
+    }
+
+    /** See {@see self::refreshArtistSearch()} — same restriction, same reason (AC-2.6, AC-2.8). */
+    public function refreshArtistSetlistsPageOne(string $mbid, ?float $waitOverrideSeconds = null): CachedFetch
+    {
+        return $this->cache->forceFetchArtistSetlistsPageOne($mbid, $waitOverrideSeconds);
+    }
 }

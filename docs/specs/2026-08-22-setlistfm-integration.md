@@ -8,7 +8,9 @@
 | **Primary agent** | `backend-engineer` (one branch, one PR) |
 | **Branch** | `feature/setlistfm-integration` |
 | **Depends on** | `05` — concert domain API (merged) · `08` — backoffice foundation (merged) |
-| **Status** | **Approved** |
+| **Decisions** | **D-56** – **D-70**, plus **D-254** and **D-255** (the 2026-08-27 amendment below) |
+| **Amended by** | `docs/specs/2026-08-27-instant-setlist-refresh.md` (2026-08-27) — narrows **D-65** and **D-67** |
+| **Status** | **Approved** (amended 2026-08-27) |
 
 ---
 
@@ -487,6 +489,13 @@ consumption by the number of users. The mitigation is that a wrong choice is *vi
 correctable in one place*: AC-2.6 gives the operator the fix, audited. A per-user override, if it is
 ever genuinely needed, is an additive change to a table that does not exist yet.
 
+> **Widened on 2026-08-27 by D-270 – D-272** (`docs/specs/2026-08-27-instant-setlist-refresh.md`):
+> the set of actors who may make this choice widens from "an operator only" to "an operator, or an
+> entitled user picking from a server-produced candidate set, into a vacant identity, once." What is
+> stored — one MBID on the shared `Band`, first-write-wins — does not change; this paragraph's own
+> mitigation (visible and correctable in one place) is exactly what the amendment leans on, not what
+> it revises. See R-4 below for the widened mitigation note.
+
 **D-58 — `SetlistGateway` is the only door; the HTTP client is not injectable elsewhere.**
 `CLAUDE.md`'s "always cached" rule is only as strong as its weakest caller. Rather than trusting
 future features to remember, the client is registered as a private, non-aliased service consumed
@@ -543,6 +552,12 @@ are attempted. Without the shared state, ten processes each discover the outage 
 spend fifty requests learning the same thing.
 
 **D-65 — Freshness is a nightly, prioritized, budget-capped job — never an on-demand check.**
+> **Narrowed on 2026-08-27 by D-254** (`docs/specs/2026-08-27-instant-setlist-refresh.md`). Everything
+> below remains the rule for **the default, unentitled path** — which is every user unless an operator
+> deliberately grants otherwise. A single entitled, band-scoped, cooldown-bounded, per-user-capped
+> exception now exists, and it spends from this same budget through this same gate. Read D-254 with
+> this decision, not instead of it.
+
 *This resolves the prompt's open question.* The refresh policy is: one scheduled run per night, over
 bands attached to concerts that are upcoming or ended in the last 7 days, nearest-first, spending at
 most 25% of the day's budget. On-demand per-user checks are rejected outright: they scale with
@@ -562,6 +577,12 @@ extension is added for these resources; adding one would imply an ownership mode
 exist and would confuse the invariant that does.
 
 **D-67 — The backoffice gets read-only views plus exactly two audited writes.**
+> **Narrowed on 2026-08-27 by D-255** (`docs/specs/2026-08-27-instant-setlist-refresh.md`). The
+> backoffice half is **unchanged and permanent**: there is still no "refresh this band now" button in
+> `/admin`. What changed is the API: an entitled user may trigger one band-scoped refresh, and it is
+> not the "one click, no ceiling" this decision rejected — it passes a per-band cooldown, a per-user
+> daily cap and an application budget reserve before it reaches the budget gate.
+
 Cache-health, budget and cache-entry views are read-only, consistent with prompt 08's posture
 (D-46, US-6 there). The two exceptions are correcting a band's MBID and clearing a band's cached
 setlist associations (AC-11.5) — both necessary because D-57's first-resolver-wins model needs a
@@ -588,6 +609,64 @@ They are captured deliberately (AC-13.4 enumerates the required cases), committe
 live smoke test (AC-13.3) exists to catch the day setlist.fm's shape changes underneath them. That
 smoke test is run before a release, manually, not on a schedule — a scheduled live test is a
 scheduled budget spend.
+
+---
+
+#### Amendment — 2026-08-27
+
+The two decisions below were added after this spec shipped, by
+`docs/specs/2026-08-27-instant-setlist-refresh.md`, prompted by
+`docs/investigations/2026-08-27-boikot-setlist-not-found.md`. They **narrow** D-65 and D-67; they do
+not reverse them, and they leave D-56, D-57, D-58, D-59, D-60, D-61, D-62, D-63, D-64, D-66, D-68,
+D-69 and D-70 untouched. In particular the caching, identity and budget mechanics are unchanged: the
+new path spends from the same 1,440/day pool, through the same `SetlistFmBudget::acquire()`, and is
+refused when the budget is spent exactly as every other caller is. Nothing above has been deleted —
+D-65 and D-67 stand as written, with a scope note.
+
+**D-254 — There is exactly one on-demand exception, and it is paid for with throttles, not with a
+quota.**
+D-65 rejected on-demand checks because *they scale with traffic*. That argument is correct, and the
+exception is built so that it does not: an **entitled** user (a deliberately granted, audited,
+per-account flag — not an admin, not every user) may trigger a refresh for **one band on one of their
+own concerts**, and only after a per-band cooldown, a per-user daily cap and an application budget
+reserve have all been cleared. Its cost therefore scales with `min(entitled users × daily cap,
+remaining budget above the reserve)` — configuration, not traffic. It is not speculative (a human
+asked for it by name, so AC-10.6's rule that no *read path* triggers a check is untouched), not
+repeated (the cooldown is band-scoped, because the band is shared and the second user's question
+costs the same units as the first's), and not privileged: **no separate quota, no reserved lane, no
+bypass.** The rejected alternative — giving entitled users their own request allowance — is exactly
+the second counter D-61 warns about. Cost accepted and not disguised: on a busy day an entitled
+user's refresh can be the request that exhausts the budget for an unentitled one. The reserve bounds
+how much of the day that can be; it does not eliminate it.
+
+**D-255 — The narrowing is to the API only; the backoffice still gets no "refresh now" button.**
+D-67's *"notably absent"* stands for `/admin`, permanently. Operators already have the two audited
+writes that matter — MBID correction and cache clear — and an operator who wants fresher data runs
+`app:setlist:refresh`. A third backoffice write with no user need behind it would be scope, not
+capability. What changed is one sentence's reach: *"on-demand per-user checks are rejected outright"*
+becomes *"…rejected outright on the default path"*. The reasoning underneath both decisions — that
+the budget is the most dangerous resource in the product and a one-click unbounded spend against it
+is unacceptable — is not weakened; it is what dictated every throttle in D-254.
+
+**D-270 – D-272 — the user-side disambiguation pick, added 2026-08-27** (full text in
+`docs/specs/2026-08-27-instant-setlist-refresh.md`; summarized here as the pointer this document's
+own convention keeps for every amendment):
+
+- **D-270** — A user may fill an empty band identity (`setlistfmMbid IS NULL`); they may never
+  overwrite one. This is what keeps D-56 ("once resolved, never re-derived") whole under the
+  widened chooser set — the pick is the *first* derivation, made by a human, never a second one.
+- **D-271** — The user chooses from a server-produced candidate set — the exact list their own most
+  recent refresh returned — never a free-text MBID. This is what keeps D-57's blast radius bounded
+  under a wider set of choosers: the reachable wrong answers shrink from "every MBID in existence"
+  to "the handful of same-named bands setlist.fm's own search proposed."
+- **D-272** — Any returned candidate is selectable, not only ones whose name normalizes exactly to
+  the band's (the auto-resolver's own conservatism, AC-2.3, is unchanged and still governs what the
+  *machine* may decide unaided).
+
+These three decisions widen who may exercise D-57's write; they do not touch what is written, how
+it is stored, or D-56/D-58/D-59's guarantees about identity and the transport door.
+
+---
 
 ### Suggested implementation order
 
@@ -620,7 +699,7 @@ scheduled budget spend.
 | **Writing to setlist.fm** — submitting or editing setlists | Not a product goal, and it would change the API terms conversation entirely |
 | **Venue enrichment from setlist.fm** into the `Venue` embeddable (D-26) | Tempting and cheap-looking, but it makes user-entered data and upstream data fight over one field. Needs its own decision; prompt 24 owns venue promotion |
 | **Automatic band merge** when two rows resolve to one MBID | AC-1.5 makes the collision *visible*; merging user-attached rows automatically is a data-loss risk. Prompt 08's tooling territory |
-| **A user-facing "refresh now" control**, and its backoffice equivalent | D-67. One click, one budget unit, no ceiling |
+| **A user-facing "refresh now" control**, and its backoffice equivalent | D-67. One click, one budget unit, no ceiling. **Amended 2026-08-27:** the backoffice equivalent stays out of scope permanently (D-255); the user-facing control moved *in* scope, entitlement-gated and throttled, in `docs/specs/2026-08-27-instant-setlist-refresh.md` (D-254) |
 | **Per-user quota enforcement** on setlist reads | Prompt 22 (entitlement and quota seam). This feature enforces the *application's* budget; per-user fairness is a separate seam |
 | **Applying for the higher rate tier** | An operational action (R-2), not code. Nothing here blocks on it |
 | **A commercial-use agreement with setlist.fm** | `docs/external-apis.md`'s monetization checklist; prompt 23. The product is unmonetized, so the free terms hold today |
@@ -672,7 +751,7 @@ scheduled budget spend.
 | R-1 | **The 1,440/day budget is the single biggest scaling constraint in the product** — and it is shared with the developer's own testing | Existential at any real user count | Instrumented from day one (US-11), not added after the first outage. The cache is designed around immutability (D-59) so steady-state consumption is dominated by *new* bands and *new* shows, not by traffic. If the dashboard shows the hit rate below ~90% in normal use, the cache design is wrong and must be revisited before user growth, not after |
 | R-2 | **The higher rate tier (16/s, 50k/day) is not granted, or is granted late** | Medium — caps growth, does not block this branch | Applying is an operational action, not a code dependency (D-69): both limits are env vars, so a grant is a config change. Apply now; build as if the answer is no |
 | R-3 | **Band identity is genuinely ambiguous** — shared names, tribute bands, reunions under variant spellings | High: wrong identity means wrong setlists, which means a wrong playlist, which is the product failing at its one job | MBID everywhere (D-56), stored disambiguation (D-57), a DB-level uniqueness guarantee (AC-1.5), and an operator correction path (AC-11.5). Ambiguity is a *visible state*, never a silent guess (AC-2.1) |
-| R-4 | **A wrong shared disambiguation propagates to every user** (the cost of D-57) | Medium | Accepted deliberately. Auto-resolution requires an exact normalized match (AC-2.3), so the automatic path is conservative; anything less certain asks. The correction is one audited operator action and takes effect for everyone at once — the same property that makes the mistake shared makes the fix shared |
+| R-4 | **A wrong shared disambiguation propagates to every user** (the cost of D-57) | Medium | Accepted deliberately. Auto-resolution requires an exact normalized match (AC-2.3), so the automatic path is conservative; anything less certain asks. The correction is one audited operator action and takes effect for everyone at once — the same property that makes the mistake shared makes the fix shared. **Widened on 2026-08-27 (D-270 – D-272, `docs/specs/2026-08-27-instant-setlist-refresh.md`):** the *chooser* set widens from "an operator only" to "an operator, or an entitled user picking from a server-produced candidate set, into a vacant identity, once" — the severity and the fix are unchanged, the likelihood is what rises, and that amendment's own R-11 carries the fuller accounting (candidate-set-only, vacancy-only, once-only, an ownership gate, and a `choose_band_mbid` audit entry the operator's correction never had) |
 | R-5 | **The cache is bypassed by a future call site** that injects the HTTP client directly | High — silently reintroduces the problem this whole feature solves | Structural, not procedural: the client is private and a container test asserts nothing outside `Service/Setlist/` depends on it (AC-6.5, D-58) |
 | R-6 | **A retry storm burns the remaining budget during an upstream incident** | High — an outage becomes a day-long outage | Capped, jittered retries; `Retry-After` honoured; a Redis-shared circuit breaker (D-64); AC-9.5 tests the bound explicitly |
 | R-7 | **Redis unavailability degrades everything at once** — no limiter, no tier-1 cache, no metrics | Medium | Fail-closed (AC-7.6): reads fall through to PostgreSQL and return `upstream_unavailable`. Degraded but correct, and it cannot become an unlimited-request state |
