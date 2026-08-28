@@ -49,7 +49,9 @@ that touches an external API.
   `App\Service\Setlist\SetlistGateway` (`backend/src/Service/Setlist/`) is the only door — no other
   class may hold a reference to the outbound HTTP client, enforced by a static test (D-58,
   `docs/specs/2026-08-22-setlistfm-integration.md`), the same seam shape as the streaming port rule
-  above.
+  above. The one entitled exception to "nightly job only" is instant setlist refresh
+  (`docs/specs/2026-08-27-instant-setlist-refresh.md`) — a single, throttled, on-demand re-check an
+  entitled user can trigger, still spending from this same 1,440/day budget through the same gate.
 - **Provider credentials never leave the secrets layer.** Client IDs and secrets come from
   environment/secret storage only. They are never committed, never logged, and never rendered in the
   backoffice — not even masked.

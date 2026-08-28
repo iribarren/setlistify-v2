@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\ApiResource\Me;
 use App\Entity\User;
+use App\Security\Voter\InstantRefreshVoter;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
@@ -39,6 +40,7 @@ final readonly class MeStateProvider implements ProviderInterface
             emailVerified: $user->isEmailVerified(),
             roles: $user->getRoles(),
             createdAt: $user->getCreatedAt(),
+            canRefreshSetlistNow: $this->security->isGranted(InstantRefreshVoter::ATTRIBUTE, $user),
         );
     }
 }

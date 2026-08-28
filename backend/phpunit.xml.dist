@@ -91,6 +91,11 @@
         <env name="SETLISTFM_HTTP_TIMEOUT" value="5" force="true"/>
         <env name="SETLISTFM_TOKEN_WAIT" value="1" force="true"/>
         <env name="SETLISTFM_REFRESH_BUDGET_SHARE" value="0.25" force="true"/>
+        <!-- Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-259). -->
+        <env name="SETLISTFM_REFRESH_NOW_COOLDOWN" value="3600" force="true"/>
+        <env name="SETLISTFM_REFRESH_NOW_DAILY_PER_USER" value="5" force="true"/>
+        <env name="SETLISTFM_REFRESH_NOW_BUDGET_RESERVE" value="0.10" force="true"/>
+        <env name="SETLISTFM_REFRESH_NOW_TOKEN_WAIT" value="3" force="true"/>
 
         <!-- Streaming port and account linking (docs/specs/2026-08-22-streaming-port-and-account-linking.md)
              — force="true" for the same reason as every block above: the default suite must never

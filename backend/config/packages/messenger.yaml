@@ -28,6 +28,10 @@ framework:
 
         routing:
             'App\Message\BuildPlaylistMessage': async_playlist
+            # Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-256):
+            # the same working transport — it's a low-volume stream of short-lived jobs, same as
+            # BuildPlaylistMessage, and a dedicated transport buys nothing at this volume.
+            'App\Message\RefreshBandSetlistsMessage': async_playlist
 
 when@test:
     framework:

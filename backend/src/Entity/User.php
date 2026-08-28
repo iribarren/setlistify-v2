@@ -51,6 +51,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private bool $isActive = true;
 
+    /**
+     * `null` means not entitled (D-257, docs/specs/2026-08-27-instant-setlist-refresh.md). NOT
+     * `$roles` — this stays a nullable grant timestamp, mirroring `$emailVerifiedAt`'s shape, so
+     * `$roles` remains literally "populated exactly once, server-side, at registration". Written
+     * only by `App\Controller\Admin\UserCrudController`'s grant/revoke action; read only by
+     * `App\Security\Voter\InstantRefreshVoter` (AC-7.3, statically enforced).
+     */
+    #[ORM\Column(name: 'instant_refresh_granted_at', type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $instantRefreshGrantedAt = null;
+
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $createdAt;
 
@@ -188,6 +198,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setActive(bool $active): void
     {
         $this->isActive = $active;
+        $this->touch();
+    }
+
+    public function getInstantRefreshGrantedAt(): ?\DateTimeImmutable
+    {
+        return $this->instantRefreshGrantedAt;
+    }
+
+    /** Admin-only (D-257) — called exclusively from `App\Controller\Admin\UserCrudController`. */
+    public function grantInstantRefresh(\DateTimeImmutable $at): void
+    {
+        $this->instantRefreshGrantedAt = $at;
+        $this->touch();
+    }
+
+    /** Admin-only (D-257) — called exclusively from `App\Controller\Admin\UserCrudController`. */
+    public function revokeInstantRefresh(): void
+    {
+        $this->instantRefreshGrantedAt = null;
         $this->touch();
     }
 

@@ -66,6 +66,32 @@
         {% endif %}
     </div>
 
+    <h3>Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, US-9)</h3>
+    <div style="display:flex; gap:2em; margin-bottom:1em;">
+        <div>
+            <div style="font-size:1.5em;">{{ refresh_now.triggersAccepted }}</div>
+            <div>Triggers accepted today</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ refresh_now.requestsSpent }} ({{ setlistfm_budget > 0 ? (100 * refresh_now.requestsSpent / setlistfm_budget)|round(1) : 0 }}% of today's budget)</div>
+            <div>Requests spent by on-demand refresh today</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ refresh_now_entitled_users }}</div>
+            <div>Currently entitled users</div>
+        </div>
+        <div>
+            <div style="font-size:1.5em;">{{ refresh_now_user_resolutions_today }}</div>
+            <div>User-made band resolutions today (choose_band_mbid)</div>
+        </div>
+    </div>
+    <div style="margin-bottom:2em;">
+        <strong>Refusals today, by reason:</strong>
+        {% for reason, count in refresh_now.refusalsByReason %}
+            {{ reason }}: {{ count }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </div>
+
     <h3>Playlist generation (last 7 days)</h3>
     <div style="display:flex; gap:2em; margin-bottom:1em;">
         <div>

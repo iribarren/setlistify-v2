@@ -112,6 +112,9 @@ final readonly class SetlistChoiceApplier
             if (null === $bandEntry['recommendedSetlistfmId'] && [] === $bandEntry['candidates']) {
                 $reportEntries[] = [ReportCode::NoSetlistForBand, [
                     'band' => $bandEntry['bandName'],
+                    // bandId (2026-08-27-instant-setlist-refresh.md, AC-10.2) — see the matching
+                    // note in SetlistSelectionStage::buildSkeleton().
+                    'bandId' => $bandEntry['bandId'],
                     'cause' => $bandEntry['noSetlistCause'] ?? 'no_setlist_for_show',
                 ]];
             }

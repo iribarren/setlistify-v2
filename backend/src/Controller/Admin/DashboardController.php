@@ -9,6 +9,7 @@ use App\Service\Admin\EmailMasker;
 use App\Service\Playlist\PlaylistDashboardMetrics;
 use App\Service\Setlist\SetlistCacheMetrics;
 use App\Service\Setlist\SetlistFmBudget;
+use App\Service\Setlist\SetlistRefreshMetrics;
 use App\Service\Setlist\SetlistRefreshRunLog;
 use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Attribute\AdminDashboard;
@@ -33,6 +34,7 @@ final class DashboardController extends AbstractDashboardController
         private readonly SetlistFmBudget $setlistFmBudget,
         private readonly SetlistCacheMetrics $setlistCacheMetrics,
         private readonly SetlistRefreshRunLog $setlistRefreshRunLog,
+        private readonly SetlistRefreshMetrics $setlistRefreshMetrics,
         private readonly PlaylistDashboardMetrics $playlistDashboardMetrics,
     ) {
     }
@@ -76,6 +78,15 @@ final class DashboardController extends AbstractDashboardController
             // "Playlist generation (last 7 days)" panel (spec 2026-08-23-spike-playlist-pipeline.md
             // §8, D-141/D-142) — read fresh on each render, same reasoning as the setlist.fm panel.
             'playlist_metrics' => $this->playlistDashboardMetrics->sevenDaySummary(),
+
+            // Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, US-9,
+            // AC-9.1, AC-9.4, AC-9.5) — read fresh on each render (AC-9.3, D-53).
+            'refresh_now' => $this->setlistRefreshMetrics->today(),
+            'refresh_now_entitled_users' => self::toInt($connection->fetchOne('SELECT COUNT(*) FROM users WHERE instant_refresh_granted_at IS NOT NULL')),
+            'refresh_now_user_resolutions_today' => self::toInt($connection->fetchOne(
+                "SELECT COUNT(*) FROM audit_log_entries WHERE action = 'choose_band_mbid' AND occurred_at >= :since",
+                ['since' => (new \DateTimeImmutable('today', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s')],
+            )),
         ]);
     }
 

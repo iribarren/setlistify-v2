@@ -1,5 +1,6 @@
 # Memory Index
 
+- [Scope over deferral](feedback_scope_over_deferral.md) — don't defer the part that fixes the bug; reverse decisions by in-place amendment with a superseded note.
 - [Spec house style](project_spec_house_style.md) — D-nnn numbering is global across all specs; header table, spike conventions, open-question format.
 - [Backlog prompt → spec flow](project_backlog_prompts.md) — specs come from numbered briefs in `docs/prompts/`, expanded not copied.
 - [Spec 00 open decisions](project_spec_00_decisions.md) — FrankenPHP runtime and no-live-APIs-in-CI, approved 2026-08-21.
@@ -16,4 +17,5 @@
 - [Spec 19 playback decisions](project_spec_19_decisions.md) — D-210..D-226: one pure function reads playbackMode, `off` currently leaks; scoped Spotify-only, web-only embed.
 - [Spec 07 tracker UI decisions](project_spec_07_decisions.md) — D-32..D-41: list sections, optimistic reconciliation, one DateField fork, no offline writes.
 - [Admin set-email-verified decisions](project_spec_admin_email_verified_decisions.md) — D-248..D-256: two-way audited toggle, no migration, un-verify does not revoke sessions.
+- [Instant setlist refresh decisions](project_spec_instant_setlist_refresh_decisions.md) — D-254..D-280; amends spec 09 (D-65/D-67/D-57) and supersedes its own D-268.
 - [Spec 20 notes and reviews decisions](project_spec_20_decisions.md) — D-227..D-247: 1–5 stars, dual highlight FK+snapshot, past-only writes, note column migrated then dropped.

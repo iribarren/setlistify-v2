@@ -35,6 +35,12 @@ final readonly class Me
         /** @var list<string> */
         public array $roles,
         public \DateTimeImmutable $createdAt,
+        /**
+         * Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-269,
+         * AC-10.1) — derived from `App\Security\Voter\InstantRefreshVoter`, never the raw
+         * `instantRefreshGrantedAt` column, and never writable.
+         */
+        public bool $canRefreshSetlistNow,
     ) {
     }
 }

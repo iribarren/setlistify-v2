@@ -74,6 +74,10 @@ not take the other down. Redirect URIs are registered per environment.
 | `SETLISTFM_HTTP_TIMEOUT` | no | Total request timeout, seconds. Default `5` (AC-9.1) |
 | `SETLISTFM_TOKEN_WAIT` | no | Max seconds a request waits for a rate-limit token before degrading to cache with `rate_limited` (AC-7.5). Default `1` |
 | `SETLISTFM_REFRESH_BUDGET_SHARE` | no | Share of the daily budget the nightly `app:setlist:refresh` job may spend. Default `0.25` (AC-10.3) |
+| `SETLISTFM_REFRESH_NOW_COOLDOWN` | no | Instant setlist refresh (`docs/specs/2026-08-27-instant-setlist-refresh.md`, D-259): seconds before the same band may be refreshed again, across all users. Default `3600` |
+| `SETLISTFM_REFRESH_NOW_DAILY_PER_USER` | no | Accepted on-demand triggers per user per UTC day. Default `5` |
+| `SETLISTFM_REFRESH_NOW_BUDGET_RESERVE` | no | Share of `SETLISTFM_DAILY_BUDGET` on-demand refresh may never touch. Default `0.10` |
+| `SETLISTFM_REFRESH_NOW_TOKEN_WAIT` | no | Seconds the refresh Messenger handler waits for a rate-limit token — longer than `SETLISTFM_TOKEN_WAIT` (not a web request) but far shorter than the nightly job's patience (a human is watching). Default `3` |
 
 ### Streaming providers
 

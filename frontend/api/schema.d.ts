@@ -29,6 +29,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/bands/{bandId}/setlist-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieves a BandSetlistRefresh resource.
+         * @description Retrieves a BandSetlistRefresh resource.
+         */
+        get: operations["api_bands_bandIdsetlist-refresh_get"];
+        put?: never;
+        /**
+         * Creates a BandSetlistRefresh resource.
+         * @description Creates a BandSetlistRefresh resource.
+         */
+        post: operations["api_bands_bandIdsetlist-refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bands/{bandId}/setlist-refresh/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Creates a BandSetlistRefresh resource.
+         * @description Creates a BandSetlistRefresh resource.
+         */
+        post: operations["api_bands_bandIdsetlist-refreshresolution_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/bands/{bandId}/setlists": {
         parameters: {
             query?: never;
@@ -696,6 +740,31 @@ export interface components {
             sortName?: string | null;
             disambiguation?: string | null;
         };
+        /** @description Triggers a forced re-resolution and, once resolved, a forced-live index fetch (D-263). Async (202); zero outbound calls on this request thread (AC-3.1). A second trigger while one is in flight returns 200 with the existing refresh, never 409 (D-262). Every throttle refusal is 429 with Retry-After and a typed refusedReason (D-260). */
+        "BandSetlistRefresh.BandSetlistRefreshOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
+            bandId?: number;
+            /** @description null when this band has never been refreshed (AC-3.6) */
+            state?: string | null;
+            /** Format: date-time */
+            requestedAt?: string | null;
+            /** Format: date-time */
+            finishedAt?: string | null;
+            /** @description One of `Band::RESOLUTION_*` — the band's resolution state before this refresh ran. */
+            bandResolutionStateBefore?: string;
+            /** @description One of `Band::RESOLUTION_*`, or `null` while not yet terminal. */
+            bandResolutionStateAfter?: string | null;
+            freshness?: components["schemas"]["FreshnessEnvelope.jsonld"];
+            /** Format: date-time */
+            cooldownUntil?: string | null;
+            candidates?: components["schemas"]["BandSearchCandidateOutput.jsonld"][];
+            refusedReason?: string | null;
+            /** Format: date-time */
+            retryAfterAt?: string | null;
+        };
+        /** @description The ambiguity pick (D-270-D-280): selects one candidate from the band's most recent refresh, never a free-text MBID. Vacancy-only and once-only — 422 mbid_not_a_candidate / band_already_resolved. Makes no outbound call itself and is exempt from the cooldown; completes as a one-request setlist fetch that still counts against the daily cap and passes the budget gate. */
+        "BandSetlistRefresh.ResolveBandIdentityInput": {
+            selectedMbid: string | null;
+        };
         /** @description A band's past setlists, newest first (US-3). */
         "BandSetlists.BandSetlistsOutput.jsonld": components["schemas"]["HydraItemBaseSchema"] & {
             /** @description One of 'resolved'|'ambiguous'|'no_presence'|'unresolved' (mirrors `Band::RESOLUTION_*`). */
@@ -981,6 +1050,12 @@ export interface components {
             roles?: string[];
             /** Format: date-time */
             createdAt?: string;
+            /**
+             * @description Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-269,
+             *     AC-10.1) — derived from `App\Security\Voter\InstantRefreshVoter`, never the raw
+             *     `instantRefreshGrantedAt` column, and never writable.
+             */
+            canRefreshSetlistNow?: boolean;
         };
         MoneyData: {
             amount?: number | null;
@@ -1371,6 +1446,160 @@ export interface operations {
                 content: {
                     "application/problem+json": components["schemas"]["Error"];
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "api_bands_bandIdsetlist-refresh_get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BandSetlistRefresh identifier */
+                bandId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description BandSetlistRefresh resource */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["BandSetlistRefresh.BandSetlistRefreshOutput.jsonld"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    "api_bands_bandIdsetlist-refresh_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BandSetlistRefresh identifier */
+                bandId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description BandSetlistRefresh resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["BandSetlistRefresh.BandSetlistRefreshOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
+                };
+            };
+        };
+    };
+    "api_bands_bandIdsetlist-refreshresolution_post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description BandSetlistRefresh identifier */
+                bandId: string;
+            };
+            cookie?: never;
+        };
+        /** @description The new BandSetlistRefresh resource */
+        requestBody: {
+            content: {
+                "application/ld+json": components["schemas"]["BandSetlistRefresh.ResolveBandIdentityInput"];
+            };
+        };
+        responses: {
+            /** @description BandSetlistRefresh resource created */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/ld+json": components["schemas"]["BandSetlistRefresh.BandSetlistRefreshOutput.jsonld"];
+                };
+            };
+            /** @description Invalid input */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Error"];
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description An error occurred */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ConstraintViolation"];
+                    "application/json": components["schemas"]["ConstraintViolation"];
                 };
             };
         };

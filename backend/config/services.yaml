@@ -63,6 +63,14 @@ services:
             $tokenWaitSeconds: '%env(float:SETLISTFM_TOKEN_WAIT)%'
             $refreshBudgetShare: '%env(float:SETLISTFM_REFRESH_BUDGET_SHARE)%'
             $setlistfmLogger: '@monolog.logger.setlistfm'
+            # Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-259).
+            # `$refreshNowTokenWaitSeconds` is deliberately its own bind, not `$tokenWaitSeconds`
+            # above (SETLISTFM_TOKEN_WAIT) — the two env vars govern different callers with
+            # different patience budgets (AC-3.3).
+            $cooldownSeconds: '%env(int:SETLISTFM_REFRESH_NOW_COOLDOWN)%'
+            $dailyPerUserCap: '%env(int:SETLISTFM_REFRESH_NOW_DAILY_PER_USER)%'
+            $budgetReserveShare: '%env(float:SETLISTFM_REFRESH_NOW_BUDGET_RESERVE)%'
+            $refreshNowTokenWaitSeconds: '%env(float:SETLISTFM_REFRESH_NOW_TOKEN_WAIT)%'
             # Playlist generation (docs/specs/2026-08-23-spike-playlist-pipeline.md,
             # docs/specs/2026-08-23-playlist-fast-mode-backend.md). P-1/P-4/§4/§5's numeric
             # constants, bound globally so every stage/command that needs one just asks for it.
@@ -180,12 +188,27 @@ services:
         arguments:
             $redis: '@setlistfm.redis'
 
+    App\Service\Setlist\SetlistRefreshMetrics:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
     App\Service\Setlist\SetlistRefreshRunLog:
         public: true
         arguments:
             $redis: '@setlistfm.redis'
 
     App\Service\Setlist\SetlistCache:
+        public: true
+        arguments:
+            $redis: '@setlistfm.redis'
+
+    # Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-264). Same
+    # dedicated Redis connection as the rest of the setlist.fm integration — the cooldown, the
+    # per-user cap and the refresh-state record have nothing to do with sessions either. Public so
+    # tests can drive the coordinator directly (AC-5.6/AC-6.14's concurrency tests), mirroring
+    # SetlistFmBudget's rationale above.
+    App\Service\Setlist\SetlistRefreshCoordinator:
         public: true
         arguments:
             $redis: '@setlistfm.redis'

@@ -13,11 +13,16 @@ export interface RequiredMe {
   emailVerified: boolean;
   roles: string[];
   createdAt: string;
+  /**
+   * Instant setlist refresh (docs/specs/2026-08-27-instant-setlist-refresh.md, D-269, AC-10.1) —
+   * derived server-side from `InstantRefreshVoter`, never the raw grant timestamp.
+   */
+  canRefreshSetlistNow: boolean;
 }
 
 function requireMe(body: Me): RequiredMe {
   // The generated type marks every field optional (Hydra/JSON-LD's schema shape), but
-  // `MeStateProvider` always returns all four (AC-8.1) — narrow once, here, rather than at every
+  // `MeStateProvider` always returns all five (AC-8.1) — narrow once, here, rather than at every
   // call site.
   return {
     id: body.id ?? 0,
@@ -25,6 +30,7 @@ function requireMe(body: Me): RequiredMe {
     emailVerified: body.emailVerified ?? false,
     roles: (body.roles ?? []).filter((role): role is string => typeof role === "string"),
     createdAt: body.createdAt ?? new Date(0).toISOString(),
+    canRefreshSetlistNow: body.canRefreshSetlistNow ?? false,
   };
 }
 
